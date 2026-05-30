@@ -3,6 +3,7 @@
     <Project Path="src/CompanyOps.Api/CompanyOps.Api.csproj" />
     <Project Path="src/CompanyOps.Application/CompanyOps.Application.csproj" />
     <Project Path="src/CompanyOps.Domain/CompanyOps.Domain.csproj" />
+    <Project Path="src/CompanyOps.FakeExternals/CompanyOps.FakeExternals.csproj" />
     <Project Path="src/CompanyOps.Infrastructure/CompanyOps.Infrastructure.csproj" />
     <Project Path="src/CompanyOps.Worker/CompanyOps.Worker.csproj" />
   </Folder>

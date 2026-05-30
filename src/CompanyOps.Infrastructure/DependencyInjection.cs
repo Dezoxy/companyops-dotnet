@@ -1,4 +1,6 @@
 using CompanyOps.Application.Abstractions;
+using CompanyOps.Application.ExternalSystems;
+using CompanyOps.Infrastructure.ExternalSystems;
 using CompanyOps.Infrastructure.Messaging;
 using CompanyOps.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -46,6 +48,24 @@ public static class DependencyInjection
     {
         services.Configure<RabbitMqOptions>(configuration.GetSection(RabbitMqOptions.SectionName));
         services.AddSingleton<RabbitMqConnection>();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the external-system gateways as resilient typed HttpClients (timeout +
+    /// retry via the standard resilience handler). Used by the Worker (ADR 0008).
+    /// </summary>
+    public static IServiceCollection AddExternalSystems(this IServiceCollection services, IConfiguration configuration)
+    {
+        var options = configuration.GetSection(ExternalSystemsOptions.SectionName).Get<ExternalSystemsOptions>()
+            ?? throw new InvalidOperationException("ExternalSystems configuration is missing.");
+
+        services.AddHttpClient<IFinanceGateway, FinanceGateway>(client =>
+            client.BaseAddress = new Uri(options.FinanceBaseUrl)).AddStandardResilienceHandler();
+
+        services.AddHttpClient<IInventoryGateway, InventoryGateway>(client =>
+            client.BaseAddress = new Uri(options.InventoryBaseUrl)).AddStandardResilienceHandler();
+
         return services;
     }
 
