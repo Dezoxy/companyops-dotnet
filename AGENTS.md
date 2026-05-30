@@ -24,6 +24,11 @@ lifecycle with different chains and fulfillment actions.
 This is **not** a production product and **not** a CRUD demo. The point is to
 demonstrate enterprise backend + DevOps thinking. **The journey is the deliverable.**
 
+Treat architecture, tests, CI, and security practices as production-grade
+requirements for learning outcomes. Operational hardening such as SLA, HA,
+multi-region deployment, and enterprise support are out of scope for this project
+and should be documented as a trade-off in PRs or ADRs.
+
 **Scope:** backend-first. The core focus is the API, data, messaging, auth,
 observability, and infra. A **thin Angular SPA** is included for **demo
 purposes** — to show the approval workflow and the Keycloak login flow
@@ -34,11 +39,38 @@ derail the backend phases.
 ## Learning mode (read this first)
 
 - **Don't scaffold ahead of the current phase.** Build what the active phase needs,
-  nothing more. We are following the 11 phases in order.
-- When introducing an enterprise pattern **for the first time**, explain the
-  trade-off and the realistic alternative *before or while* writing it — briefly.
-  A silently-perfect repo teaches nothing.
+  nothing more. We are following the 14 phases in order. The active phase is
+  declared by the repo-root file `ACTIVE_PHASE` containing a single integer
+  `1..14`; tools and humans must not introduce features for phases greater than
+  that value.
+- When you introduce an enterprise pattern in this repo/module, add a 2–3
+  sentence rationale plus a 3-line alternative in the PR description and add a
+  single-line code comment linking to the ADR if applicable.
+- Scaffolding tools must validate generated files against the per-phase feature
+  whitelist (below) and stop — listing the offending files — rather than scaffold
+  ahead; the `new-slice` skill reads `ACTIVE_PHASE` and does this. A CI gate that
+  fails the build on out-of-phase files is *planned, not yet implemented*: until
+  it lands, phase-gating is enforced by tooling and review, not CI.
 - Prefer one well-understood vertical slice over broad half-built scaffolding.
+
+### Phase feature table
+
+The per-phase feature whitelist. A phase unlocks its own row **and** every row
+above it. Operational phases (8 tests, 9 CI/CD, 10 observability, 11 infra) and
+the additional flows (13 helpdesk-light, 14 asset lifecycle) add no *new* gated
+feature category — they harden operations or run on the existing engine — so they
+have no row here. "Don't scaffold ahead" still applies to everything; the table
+only enforces the categories most likely to be pulled in early.
+
+| Phase | Allowed feature additions |
+|---|---|
+| 1–2 | Core API/domain/application slices only; no auth, no audit, no queue. |
+| 3 | Add auth / JWT security. |
+| 4 | Add audit logging for runtime/data changes. |
+| 5 | Add queue/worker integration. |
+| 6 | Add external-integration clients (Finance/Inventory mocks). |
+| 7 | Add full local stack wiring via Docker Compose. |
+| 12 | Add frontend SPA features. |
 
 ## Locked stack decisions
 
@@ -62,6 +94,12 @@ Recorded as ADRs in `docs/decisions/`. Defaults for this repo:
 | CI/CD | GitHub Actions |
 
 Don't swap any of these without a new ADR.
+
+To change a locked stack item, create an ADR in `docs/decisions/` describing the
+rationale, migration plan, and rollback. The ADR must list approvers: at minimum
+the architecture owner and the security owner. Emergency exceptions may be
+applied only after a temporary ADR and must be followed by a retrospective ADR
+within 72 hours.
 
 **Versioning policy: newest LTS / newest-supported, pinned.** .NET, EF Core, and
 Node.js follow a formal LTS line — use the newest LTS major. PostgreSQL, Redis,
@@ -103,20 +141,39 @@ truth. See [frontend/CLAUDE.md](frontend/CLAUDE.md).
 
 ## Non-negotiables
 
-- **No secrets in git.** Config via environment variables / user-secrets. Enforced
-  by gitleaks — local pre-commit hook (`.githooks/pre-commit`, enable with
-  `git config core.hooksPath .githooks`) and a CI gate. See [docs/security.md](docs/security.md).
-- **Business actions, not CRUD.** Model real workflow: `POST /requests/{id}/approve-manager`,
-  not generic update. Endpoints map to domain operations.
-- **Every meaningful state change is audit-logged** (who / what / when / old→new /
-  affected object). Once Phase 4 lands, no approval/rejection/fulfillment without it.
-- **Invalid status transitions must be rejected** in the domain (throw), not just
-  guarded in the UI/API. The `Request` state machine is enforced in Domain.
-- **Auditor role is read-only.** Never let it mutate.
-- Validate all input at the Application boundary (FluentValidation or equivalent).
-- **Authorization rules live in [docs/security.md](docs/security.md)** (role × action
-  matrix + threat model). Treat that matrix as the source of truth; enforce
-  Manager actions as **department-scoped** (resource-level), not role-only.
+Each rule names an *owner* role (security, backend, platform, domain,
+architecture). This is a deliberate enterprise simulation: in a team these map to
+CODEOWNERS and reviewers. In this solo repo the single maintainer wears every
+hat — the labels record *which hat* a decision belongs to, not separate people.
+
+1. **No secrets in git.** Config must use environment variables or user-secrets.
+   Enforced by gitleaks — local pre-commit hook (`.githooks/pre-commit`, enable
+   with `git config core.hooksPath .githooks`) and a CI gate. If gitleaks or CI
+   fails due to secrets:
+   - abort the commit/PR,
+   - run `gitleaks detect` locally to identify offending files,
+   - remove secrets and rotate any exposed credentials,
+   - document the rotation in the PR and notify the security owner per
+     `docs/security.md`.
+   Owner: security.
+2. **Input validation is mandatory.** Validate all input at the Application
+   boundary using FluentValidation or equivalent. Owner: backend.
+3. **Audit logging is required for runtime/data changes.** Code changes that
+   affect runtime behavior or data (API, Domain, Infrastructure, Worker,
+   migrations) must include audit entries. Pure docs/config/CI changes do not
+   require audit entries. Audit at minimum: request creation, all request status
+   transitions, approval/rejection actions, assignment or department changes,
+   permission/grant modifications, and fulfillment completion. Record
+   who/what/when/old_value→new_value/affected_object for each. Owner: platform.
+4. **Invalid status transitions must be rejected in the domain.** Throw in the
+   domain model rather than only guarding in UI/API. The `Request` state machine
+   is enforced in Domain. Owner: domain.
+5. **Auditor role is read-only.** Never let it mutate. Owner: security.
+6. **Authorization rules live in [docs/security.md](docs/security.md).** Treat the
+   role × action matrix as the source of truth; enforce Manager actions as
+   department-scoped (resource-level), not role-only. Owner: security.
+7. **Business actions, not CRUD.** Model real workflow: `POST /requests/{id}/approve-manager`,
+   not generic update. Endpoints map to domain operations. Owner: architecture.
 
 ## Conventions
 
@@ -124,7 +181,12 @@ truth. See [frontend/CLAUDE.md](frontend/CLAUDE.md).
   domain method + endpoint + audit entry + tests. Keep a slice's files together.
 - EF entities are **not** API contracts — map to/from request/response DTOs.
 - EF migrations: review the generated SQL before applying. Migrations live in
-  Infrastructure; never hand-edit applied migrations.
+  Infrastructure; never hand-edit applied migrations. If generated SQL contains
+  destructive operations such as `DROP`/`ALTER` that may lose data, do not apply
+  to staging/production. Open a migration-fix PR, require DB owner sign-off, and
+  run the migration on a staging DB restored from production before applying to
+  production. Include the reviewed SQL in the PR description. (Staging/production
+  arrive in Phase 11; until then, review the SQL and avoid destructive migrations.)
 - Async all the way for I/O; `CancellationToken` on handler/repository methods.
 - Tests: AAA, descriptive names (`Method_Scenario_ExpectedResult`). Integration
   tests use Testcontainers against real Postgres, not in-memory.
@@ -159,8 +221,8 @@ ng lint                            # lint (CI enforces this)
 - **new-slice** skill — scaffolds a backend vertical slice for one business action
   (command) or read (query) across all four layers in the project's conventions:
   domain method, Application command/query + handler + DI registration, a
-  business-action endpoint, and tests. Phase-aware (no MediatR/FluentValidation yet,
-  audit from Phase 4, auth from Phase 3).
+  business-action endpoint, and tests. Phase-aware tooling must read the active
+  phase from `ACTIVE_PHASE` and refuse to add code for phases greater than that value.
 - **new-angular-feature** skill — scaffolds an Angular feature (component +
   service + route + model + guard) in the project's conventions.
 - Marketplace skills already cover ADRs (`engineering:architecture`), code review
@@ -173,4 +235,8 @@ ng lint                            # lint (CI enforces this)
 ## Definition of done (per change)
 
 `dotnet build` clean → `dotnet test` green → `dotnet format` clean →
-layer rules respected → audit logged (where applicable) → no secrets staged.
+layer rules respected → no secrets staged.
+
+Code changes that affect runtime behavior or data (API, Domain,
+Infrastructure, Worker, migrations) must include audit entries. Pure docs,
+config, or CI changes do not require audit entries.
