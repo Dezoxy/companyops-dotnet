@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+location         = "germanywestcentral" # any EU region: westeurope, northeurope, swedencentral, ...
+vm_size          = "Standard_B2s"       # ~2 GB RAM; bump or use prebuilt images for heavier builds
+admin_username   = "companyops"
+ssh_public_key   = "ssh-ed25519 AAAA...replace-with-your-public-key... you@host"
+allowed_ssh_cidr = "203.0.113.4/32" # YOUR address as a /32 — do not use 0.0.0.0/0

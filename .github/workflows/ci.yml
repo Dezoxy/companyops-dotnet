@@ -89,3 +89,43 @@ jobs:
       #     echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       #     docker compose -f infra/docker-compose.yml push
       #   # requires: permissions: packages: write, and image: names retagged to ghcr.io/<owner>/…
+
+  # Validate the Phase 11 infrastructure-as-code: Terraform, the prod Compose file, the
+  # Ansible playbook, and the shell scripts. Independent of the build/test jobs (none applied).
+  iac-validate:
+    name: iac validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform fmt + validate
+        working-directory: infra/terraform
+        run: |
+          terraform fmt -check -recursive
+          terraform init -backend=false -input=false
+          terraform validate
+
+      - name: ShellCheck infra scripts
+        run: shellcheck infra/backup/*.sh infra/postgres/initdb/*.sh
+
+      - name: Validate prod Compose config
+        run: docker compose -f infra/docker-compose.prod.yml config -q
+        env:
+          APP_DOMAIN: app.example.com
+          KEYCLOAK_DOMAIN: auth.example.com
+          ACME_EMAIL: ci@example.com
+          POSTGRES_PASSWORD: ci_dummy_not_a_secret
+          KC_DB_PASSWORD: ci_dummy_not_a_secret
+          RABBITMQ_PASSWORD: ci_dummy_not_a_secret
+          KC_ADMIN_USER: ci
+          KC_ADMIN_PASSWORD: ci_dummy_not_a_secret
+
+      - name: Ansible lint
+        run: |
+          python3 -m venv /tmp/av
+          /tmp/av/bin/pip install --quiet 'ansible-lint==26.3.0'
+          /tmp/av/bin/ansible-galaxy collection install -r infra/ansible/requirements.yml
+          /tmp/av/bin/ansible-lint infra/ansible/playbook.yml

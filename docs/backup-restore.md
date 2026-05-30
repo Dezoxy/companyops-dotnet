@@ -75,15 +75,18 @@ let the `migrator` create the schema (or restore creates it), then `pg_restore`.
 Run this drill whenever the backup procedure changes — an untested backup is a
 guess.
 
-## Deployed environments — (Phase 11)
+## Deployed environments — Phase 11
 
-Not built yet; recorded so the gap is explicit. Two paths for my context
-(EU-based, cost-conscious, evaluating clouds):
+**Implemented:** the Ansible deploy installs a **nightly `pg_dump` cron**
+(`infra/backup/pg-backup.sh` — `-Fc` custom format, 14-day retention) to
+`/var/backups/companyops` on the VM. That delivers the scheduled-dump path below; the
+remaining hardening (encryption, offsite copies, PITR) is what's still open.
 
-**Self-hosted (homelab / VPS):** scheduled `pg_dump` (or `pgBackRest` for
-incremental + PITR via WAL archiving) to **encrypted, offsite** storage; daily
-full + WAL shipping gets RPO to minutes. Cheapest, most control, all the operational
-burden is yours.
+Two paths for my context (EU-based, cost-conscious, evaluating clouds):
+
+**Self-hosted (homelab / VPS):** the nightly dump above, hardened with **encrypted, offsite**
+copies (and `pgBackRest` for incremental + PITR via WAL archiving — daily full + WAL shipping
+gets RPO to minutes). Cheapest, most control, all the operational burden is yours.
 
 **Managed Postgres (cloud):** automated backups + **PITR** out of the box, backups
 **encrypted at rest** by default. RDS / Azure Database for PostgreSQL / Cloud SQL all
