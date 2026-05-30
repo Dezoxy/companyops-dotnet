@@ -91,8 +91,9 @@ truth. See [frontend/CLAUDE.md](frontend/CLAUDE.md).
 
 ## Non-negotiables
 
-- **No secrets in git.** Config via environment variables / user-secrets. Check
-  before every commit.
+- **No secrets in git.** Config via environment variables / user-secrets. Enforced
+  by gitleaks — local pre-commit hook (`.githooks/pre-commit`, enable with
+  `git config core.hooksPath .githooks`) and a CI gate. See [docs/security.md](docs/security.md).
 - **Business actions, not CRUD.** Model real workflow: `POST /requests/{id}/approve-manager`,
   not generic update. Endpoints map to domain operations.
 - **Every meaningful state change is audit-logged** (who / what / when / old→new /
@@ -101,6 +102,9 @@ truth. See [frontend/CLAUDE.md](frontend/CLAUDE.md).
   guarded in the UI/API. The `Request` state machine is enforced in Domain.
 - **Auditor role is read-only.** Never let it mutate.
 - Validate all input at the Application boundary (FluentValidation or equivalent).
+- **Authorization rules live in [docs/security.md](docs/security.md)** (role × action
+  matrix + threat model). Treat that matrix as the source of truth; enforce
+  Manager actions as **department-scoped** (resource-level), not role-only.
 
 ## Conventions
 

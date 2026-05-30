@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+# Local secret-scan gate, backs the "no secrets in git" rule (docs/security.md).
+# Enabled via:  git config core.hooksPath .githooks
+# CI enforces the same scan, so a missing local install is a warning, not a block.
+
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact
+  if [ $? -ne 0 ]; then
+    echo ""
+    echo "✖ gitleaks found potential secrets in staged changes — commit aborted."
+    echo "  Review the findings above. If it is a genuine false positive,"
+    echo "  add an allowlist entry to .gitleaks.toml (don't disable the hook)."
+    exit 1
+  fi
+else
+  echo "⚠ gitleaks not installed — skipping local secret scan (CI still enforces it)."
+  echo "  Install:  brew install gitleaks   ·   https://github.com/gitleaks/gitleaks"
+fi
+
+exit 0

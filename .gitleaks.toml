@@ -1,0 +1,11 @@
+# Extends gitleaks' built-in ruleset; only adds an allowlist for known-safe
+# placeholders so the gate doesn't cry wolf on examples/docs.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Files containing only placeholders or documentation examples"
+paths = [
+  '''\.env\.example$''',
+  '''^docs/''',
+]
