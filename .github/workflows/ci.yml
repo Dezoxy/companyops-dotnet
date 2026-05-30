@@ -147,7 +147,10 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - run: npm ci
+      # `npm install`, not `npm ci`: the macOS-generated lock omits Linux-only optional deps
+      # (e.g. @emnapi/* pulled in by the Linux native build packages), which `npm ci` rejects.
+      # install resolves the runner's platform deps from the committed lock.
+      - run: npm install --no-audit --no-fund
       - name: Build
         run: npx ng build
       - name: Lint
