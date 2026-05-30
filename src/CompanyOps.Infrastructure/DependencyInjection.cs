@@ -27,6 +27,9 @@ public static class DependencyInjection
         services.AddScoped<IAuditLogger>(sp => sp.GetRequiredService<AuditLogStore>());
         services.AddScoped<IAuditLogReader>(sp => sp.GetRequiredService<AuditLogStore>());
 
+        // Integration events are written to the outbox in the same transaction (ADR 0007).
+        services.AddScoped<IIntegrationEventPublisher, IntegrationEventPublisher>();
+
         return services;
     }
 }

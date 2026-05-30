@@ -1,5 +1,7 @@
 using CompanyOps.Application.Abstractions;
+using CompanyOps.Application.IntegrationEvents;
 using CompanyOps.Domain.Auditing;
+using CompanyOps.Domain.Requests;
 
 namespace CompanyOps.Application.Requests.ApproveRequest;
 
@@ -11,6 +13,7 @@ namespace CompanyOps.Application.Requests.ApproveRequest;
 public sealed class ApproveRequestHandler(
     IRequestRepository requests,
     IAuditLogger auditLogger,
+    IIntegrationEventPublisher eventPublisher,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -27,6 +30,15 @@ public sealed class ApproveRequestHandler(
 
         request.Approve(command.ApproverId, command.ApproverRole, command.ApproverDepartmentId, now, command.Note);
         auditLogger.Add(AuditLog.ForRequest(AuditAction.RequestApproved, request.Id, command.ApproverId, fromStatus, request.Status, now));
+
+        // The final required approval moved the request to Approved — emit the event
+        // (to the outbox, same transaction) for the Worker to react to. Earlier steps
+        // leave it Submitted and emit nothing.
+        if (fromStatus != RequestStatus.Approved && request.Status == RequestStatus.Approved)
+        {
+            eventPublisher.Enqueue(new RequestApproved(request.Id, request.RequesterId, request.DepartmentId, now));
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return RequestDto.FromDomain(request);
