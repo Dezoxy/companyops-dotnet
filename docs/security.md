@@ -136,11 +136,16 @@ their Employee role (roles compose — resolves the earlier Create TODO).
   API trusts `X-Forwarded-Proto`/`-For` from the single Traefik ingress (it has no public
   binding), so it sees the real scheme + client IP. App-level `UseHttpsRedirection` stays
   off — the edge owns the redirect.
-- TODO (Phase 12): CORS restricted to the SPA origin; a Content-Security-Policy at the edge
-  for Keycloak's login pages and the SPA; and split the single `companyops-api` client into a
-  public SPA client + a bearer-only API audience client (today one client serves both — fine
-  while ROPC is off, PKCE is enforced, and redirect URIs are pinned, but split it before the
-  SPA ships).
+- **CORS restricted to the SPA origin** (Phase 13): the API allows only `Cors:AllowedOrigins`
+  (dev `http://localhost:4200`; the deployed SPA origin via env), Bearer-token only (no
+  credentials). Verified by an integration test (allowed vs unknown origin).
+- **Keycloak client split** (Phase 13): a public **`companyops-spa`** client (Auth Code + PKCE,
+  pinned redirect/web origins, audience mapper → `companyops-api`) is separate from the
+  **bearer-only `companyops-api`** audience. The dev realm keeps `companyops-api` with ROPC for
+  the integration tests; the prod realm makes it bearer-only.
+- TODO (when the SPA is served in prod): a **Content-Security-Policy** on the SPA's responses
+  (script/style/connect-src for the API + Keycloak). Deferred until the SPA is dockerised behind
+  the edge — a CSP on the API/Keycloak routers now would be the wrong target.
 - TODO (enterprise-optional): split the security knobs keyed on the environment name (e.g.
   `RequireHttpsMetadata`) into explicit config flags so a stray environment value can't
   silently drop a protection.

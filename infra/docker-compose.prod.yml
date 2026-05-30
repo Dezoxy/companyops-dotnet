@@ -143,6 +143,7 @@ services:
       RabbitMq__Username: companyops
       RabbitMq__Password: ${RABBITMQ_PASSWORD:?}
       # Behind Traefik: trust X-Forwarded-* and let the edge own the HTTPS redirect.
+      Cors__AllowedOrigins__0: https://${APP_DOMAIN}
       ForwardedHeaders__Enabled: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
     depends_on:

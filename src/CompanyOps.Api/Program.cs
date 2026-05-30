@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using CompanyOps.Api.Auth;
+using CompanyOps.Api.Cors;
 using CompanyOps.Api.ErrorHandling;
 using CompanyOps.Api.Observability;
 using CompanyOps.Application;
@@ -47,6 +48,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddKeycloakAuthentication(builder.Configuration, builder.Environment.IsDevelopment());
 builder.Services.AddCompanyOpsAuthorization();
+builder.Services.AddCompanyOpsCors(builder.Configuration);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -104,6 +106,9 @@ if (app.Configuration.GetValue<bool>("Security:EnableHttpsRedirection"))
 {
     app.UseHttpsRedirection();
 }
+
+// CORS before auth so the SPA's preflight (OPTIONS) isn't rejected by the 401 challenge.
+app.UseCors(CorsSetup.PolicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();

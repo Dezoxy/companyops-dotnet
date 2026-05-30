@@ -17,7 +17,7 @@
   },
   "clients": [
     {
-      "clientId": "companyops-api",
+      "clientId": "companyops-spa",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": true,
@@ -54,6 +54,14 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "companyops-api",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
     }
   ],
   "components": {
