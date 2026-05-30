@@ -82,7 +82,7 @@ their Employee role (roles compose — resolves the earlier Create TODO).
 - **Defense in depth:** policies are the coarse role gate at the boundary; department
   scope, workflow stage, and submit-own are enforced as Domain invariants.
 - TODO: token lifetime tuning, refresh strategy, clock-skew tolerance, key rotation
-  (currently Keycloak defaults; revisit Phase 10/11).
+  (currently Keycloak defaults; revisit Phase 11).
 - **The committed realm (`infra/keycloak/realm-companyops.json`) is dev-only and must
   not be imported as-is into any deployed environment.** It enables direct access
   grants (ROPC), `sslRequired: none`, and wildcard `redirectUris`/`webOrigins` for
@@ -102,9 +102,10 @@ their Employee role (roles compose — resolves the earlier Create TODO).
   principal, so they record the **reserved system actor**
   `ffffffff-ffff-ffff-ffff-ffffffffffff` (`WellKnownActors.SystemWorker`) — never assign
   it to a real user.
-- TODO: source IP + correlation id (enrich when correlation IDs land, Phase 10);
-  DB-level grants so even the app user cannot UPDATE/DELETE `audit_logs` (Phase 11);
-  tamper-evidence / hash chain — enterprise-optional.
+- Correlation id + trace id now flow through logs and traces (Phase 10), so any audited
+  action is traceable end-to-end; persisting them onto the audit record itself (with
+  source IP) is an optional follow-up. DB-level grants so even the app user cannot
+  UPDATE/DELETE `audit_logs` (Phase 11); tamper-evidence / hash chain — enterprise-optional.
 
 ## Secrets handling
 
@@ -124,7 +125,7 @@ their Employee role (roles compose — resolves the earlier Create TODO).
 - All input validated at the Application boundary (FluentValidation). TODO: wire
   global model-validation + problem-details responses in the API (Phase 1–3).
 
-## Transport & headers — TODO (Phase 10–11)
+## Transport & headers — TODO (Phase 11)
 
 - HTTPS/TLS in deployed environments; HSTS, secure headers, CORS restricted to
   known SPA origins.
@@ -133,10 +134,12 @@ their Employee role (roles compose — resolves the earlier Create TODO).
 
 - Consider per-user/IP limits on auth and write endpoints.
 
-## Backup encryption & recovery — TODO (Phase 10–11)
+## Backup encryption & recovery
 
-- See [backup-restore.md](backup-restore.md). Encrypt backups at rest; document
-  RPO/RTO and a tested restore procedure.
+- [backup-restore.md](backup-restore.md) documents what to back up (Postgres is the
+  only source of truth), RPO/RTO targets, and a tested restore drill (Phase 10).
+- TODO (Phase 11): encryption at rest, scheduled/offsite backups, and managed
+  point-in-time recovery in a deployed (EU-region) environment.
 
 ## Threat model (skeleton — STRIDE)
 

@@ -55,6 +55,16 @@ public static class DependencyInjection
     }
 
     /// <summary>
+    /// Readiness health checks for the infrastructure dependencies (Postgres + RabbitMQ),
+    /// tagged <c>ready</c>. Lives here, not in the API, so the probes sit with the types
+    /// they check; the API only calls this and maps the result to an HTTP endpoint.
+    /// </summary>
+    public static IHealthChecksBuilder AddInfrastructureHealthChecks(this IHealthChecksBuilder builder) =>
+        builder
+            .AddDbContextCheck<AppDbContext>("database", tags: ["ready"])
+            .AddCheck<RabbitMqHealthCheck>("rabbitmq", tags: ["ready"]);
+
+    /// <summary>
     /// Registers the external-system gateways as resilient typed HttpClients (timeout +
     /// retry via the standard resilience handler). Used by the Worker (ADR 0008).
     /// </summary>
