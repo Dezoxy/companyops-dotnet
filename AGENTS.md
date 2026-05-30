@@ -247,6 +247,10 @@ ng lint                            # lint (CI enforces this)
 `dotnet build` clean → `dotnet test` green → `dotnet format` clean →
 layer rules respected → no secrets staged.
 
+CI enforces this on every push/PR: `.github/workflows/ci.yml` runs format + build +
+domain unit tests (fast job) then the Testcontainers integration tests (Docker job);
+`.github/workflows/security.yml` runs gitleaks. Green CI is required.
+
 Code changes that affect runtime behavior or data (API, Domain,
 Infrastructure, Worker, migrations) must include audit entries. Pure docs,
 config, or CI changes do not require audit entries.

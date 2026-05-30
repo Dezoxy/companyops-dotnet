@@ -1,0 +1,65 @@
+name: ci
+
+# Build, format, and test gate. Runs on every push to main and on PRs.
+# The gitleaks secret scan is a separate workflow (security.yml).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Fast feedback: format + build + the pure-domain unit tests (no Docker).
+  build-and-unit:
+    name: build + unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - run: dotnet restore
+      - name: Verify formatting
+        run: dotnet format --verify-no-changes
+      - run: dotnet build --no-restore --configuration Release
+      - name: Domain unit tests
+        run: dotnet test tests/CompanyOps.Domain.Tests --no-build --configuration Release
+
+  # Heavier: the Testcontainers integration tests (real Postgres, Keycloak, RabbitMQ).
+  # GitHub's ubuntu-latest runner has Docker, so Testcontainers works out of the box.
+  # Gated on the fast job so a format/build/unit failure fails in seconds.
+  integration-tests:
+    name: integration tests (Testcontainers)
+    needs: build-and-unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Integration tests
+        run: dotnet test tests/CompanyOps.Api.IntegrationTests --configuration Release
