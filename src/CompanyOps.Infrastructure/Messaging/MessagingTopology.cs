@@ -36,5 +36,6 @@ public static class MessagingTopology
         };
         await channel.QueueDeclareAsync(Queue, durable: true, exclusive: false, autoDelete: false, arguments: args, cancellationToken: cancellationToken);
         await channel.QueueBindAsync(Queue, Exchange, RoutingKeyFor("RequestApproved"), cancellationToken: cancellationToken);
+        await channel.QueueBindAsync(Queue, Exchange, RoutingKeyFor("RequestFulfilled"), cancellationToken: cancellationToken);
     }
 }

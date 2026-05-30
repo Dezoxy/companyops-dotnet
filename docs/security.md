@@ -98,6 +98,10 @@ their Employee role (roles compose — resolves the earlier Create TODO).
   write/update/delete API path; reads go through `GET /audit-logs` (Auditor).
 - Records who (`ActorId` = `sub`) / what (`AuditAction`) / when / old→new status /
   affected object (`TargetType`+`TargetId`) for create, submit, approve, reject, fulfill.
+- Worker-driven outcomes (budget committed / asset reserved, Phase 6) have no human
+  principal, so they record the **reserved system actor**
+  `ffffffff-ffff-ffff-ffff-ffffffffffff` (`WellKnownActors.SystemWorker`) — never assign
+  it to a real user.
 - TODO: source IP + correlation id (enrich when correlation IDs land, Phase 10);
   DB-level grants so even the app user cannot UPDATE/DELETE `audit_logs` (Phase 11);
   tamper-evidence / hash chain — enterprise-optional.

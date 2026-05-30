@@ -19,7 +19,7 @@ namespace CompanyOps.Api.IntegrationTests;
 /// Both the token fetch and the API talk to Keycloak on the same host:port, so the
 /// token issuer matches the API's configured authority.
 /// </summary>
-public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public sealed class ApiFactory : WebApplicationFactory<CompanyOps.Api.ApiHost>, IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18")
         .WithDatabase("companyops")
@@ -43,6 +43,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         .Build();
 
     private string KeycloakBaseUrl => $"http://localhost:{_keycloak.GetMappedPublicPort(8080)}";
+
+    /// <summary>The test Postgres connection string — used to build a worker host in tests.</summary>
+    public string PostgresConnectionString => _postgres.GetConnectionString();
 
     /// <summary>Connection options for the test broker — used to host a consumer in tests.</summary>
     public RabbitMqOptions RabbitMqOptions => new()

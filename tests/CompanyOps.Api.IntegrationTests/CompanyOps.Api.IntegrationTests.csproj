@@ -25,6 +25,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\CompanyOps.Api\CompanyOps.Api.csproj" />
     <ProjectReference Include="..\..\src\CompanyOps.Worker\CompanyOps.Worker.csproj" />
+    <ProjectReference Include="..\..\src\CompanyOps.FakeExternals\CompanyOps.FakeExternals.csproj" />
   </ItemGroup>
 
 </Project>
