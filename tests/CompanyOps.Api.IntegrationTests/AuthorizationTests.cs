@@ -9,7 +9,8 @@ namespace CompanyOps.Api.IntegrationTests;
 /// the docs/security.md matrix (authentication, RBAC, department IDOR, submit-own) and
 /// the happy path. Uses the seed users from the committed realm.
 /// </summary>
-public sealed class AuthorizationTests(ApiFactory factory) : IClassFixture<ApiFactory>
+[Collection("Integration")]
+public sealed class AuthorizationTests(ApiFactory factory)
 {
     private static readonly Guid EmployeeEngSub = Guid.Parse("10000000-0000-0000-0000-000000000001");
     private static readonly Guid EngineeringDept = Guid.Parse("11111111-1111-1111-1111-111111111111");

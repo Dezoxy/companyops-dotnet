@@ -38,6 +38,8 @@ jobs:
       - run: dotnet build --no-restore --configuration Release
       - name: Domain unit tests
         run: dotnet test tests/CompanyOps.Domain.Tests --no-build --configuration Release
+      - name: Application unit tests
+        run: dotnet test tests/CompanyOps.Application.Tests --no-build --configuration Release
 
   # Heavier: the Testcontainers integration tests (real Postgres, Keycloak, RabbitMQ).
   # GitHub's ubuntu-latest runner has Docker, so Testcontainers works out of the box.
