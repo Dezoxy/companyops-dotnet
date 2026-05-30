@@ -1,0 +1,67 @@
+# ---- .NET ----
+bin/
+obj/
+out/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userosscache
+*.dbmdl
+.vs/
+project.lock.json
+artifacts/
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+[Tt]est[Rr]esults/
+
+# ---- EF Core / local data ----
+*.db
+*.db-shm
+*.db-wal
+
+# ---- Secrets / config (never commit) ----
+*.env
+.env.*
+!.env.example
+appsettings.*.local.json
+secrets.json
+*.pfx
+*.key
+*.pem
+
+# ---- Angular / Node (frontend/) ----
+node_modules/
+dist/
+.angular/
+.npm/
+npm-debug.log*
+yarn-error.log*
+*.tsbuildinfo
+.eslintcache
+
+# ---- Docker / infra local state ----
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+*.retry
+
+# ---- IDE / editor ----
+.idea/
+*.swp
+*~
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
