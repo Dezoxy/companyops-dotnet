@@ -70,7 +70,15 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference(); // interactive API docs at /scalar
 }
 
-app.UseHttpsRedirection();
+// TLS terminates at the edge (ingress/reverse proxy); the app speaks HTTP in-cluster, so
+// app-level redirect is OFF by default — it never fires in dev/compose (no HTTPS port, which
+// would only log "failed to determine the https port") and never auto-arms a redirect loop on
+// a deployment that lacks ForwardedHeaders. Phase 11 wires ForwardedHeaders (KnownProxies),
+// then opts in explicitly via Security:EnableHttpsRedirection=true.
+if (app.Configuration.GetValue<bool>("Security:EnableHttpsRedirection"))
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();

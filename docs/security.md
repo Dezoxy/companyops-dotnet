@@ -125,10 +125,19 @@ their Employee role (roles compose — resolves the earlier Create TODO).
 - All input validated at the Application boundary (FluentValidation). TODO: wire
   global model-validation + problem-details responses in the API (Phase 1–3).
 
-## Transport & headers — TODO (Phase 11)
+## Transport & headers
 
-- HTTPS/TLS in deployed environments; HSTS, secure headers, CORS restricted to
-  known SPA origins.
+- **TLS terminates at the edge** (ingress / reverse proxy); the app speaks HTTP
+  in-cluster. App-level `UseHttpsRedirection` is **off by default** (opt-in via
+  `Security:EnableHttpsRedirection`), so it never fires in dev/compose and never auto-arms
+  a redirect loop on a deployment that hasn't yet wired forwarded headers.
+- TODO (Phase 11): wire `ForwardedHeaders` (with `KnownProxies`/`KnownNetworks`) so the
+  app trusts `X-Forwarded-Proto` only from the edge — the prerequisite for setting
+  `Security:EnableHttpsRedirection=true` without a redirect loop.
+- TODO (Phase 11): HSTS at the edge, secure response headers, CORS restricted to known SPA
+  origins. Also split the security knobs currently keyed on the environment name (e.g.
+  `RequireHttpsMetadata`) into explicit config flags so a stray environment value can't
+  silently drop a protection.
 
 ## Rate limiting — TODO (enterprise-optional)
 
