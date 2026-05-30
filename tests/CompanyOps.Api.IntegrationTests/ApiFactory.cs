@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using CompanyOps.Infrastructure.Messaging;
 using CompanyOps.Infrastructure.Persistence;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
+using Testcontainers.RabbitMq;
 using Xunit;
 
 namespace CompanyOps.Api.IntegrationTests;
@@ -35,11 +37,25 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             r.ForPort(8080).ForPath("/realms/companyops/.well-known/openid-configuration")))
         .Build();
 
+    private readonly RabbitMqContainer _rabbitmq = new RabbitMqBuilder("rabbitmq:4-management")
+        .WithUsername("companyops")
+        .WithPassword("localdev_only_not_a_secret")
+        .Build();
+
     private string KeycloakBaseUrl => $"http://localhost:{_keycloak.GetMappedPublicPort(8080)}";
+
+    /// <summary>Connection options for the test broker — used to host a consumer in tests.</summary>
+    public RabbitMqOptions RabbitMqOptions => new()
+    {
+        Host = _rabbitmq.Hostname,
+        Port = _rabbitmq.GetMappedPublicPort(5672),
+        Username = "companyops",
+        Password = "localdev_only_not_a_secret",
+    };
 
     public async Task InitializeAsync()
     {
-        await Task.WhenAll(_postgres.StartAsync(), _keycloak.StartAsync());
+        await Task.WhenAll(_postgres.StartAsync(), _keycloak.StartAsync(), _rabbitmq.StartAsync());
 
         // First Services access builds the host with the container-derived settings below;
         // apply the schema before any test runs.
@@ -53,6 +69,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("ConnectionStrings:CompanyOps", _postgres.GetConnectionString());
         builder.UseSetting("Keycloak:Authority", $"{KeycloakBaseUrl}/realms/companyops");
         builder.UseSetting("Keycloak:Audience", "companyops-api");
+        builder.UseSetting("RabbitMq:Host", RabbitMqOptions.Host);
+        builder.UseSetting("RabbitMq:Port", RabbitMqOptions.Port.ToString());
+        builder.UseSetting("RabbitMq:Username", RabbitMqOptions.Username);
+        builder.UseSetting("RabbitMq:Password", RabbitMqOptions.Password);
     }
 
     /// <summary>Fetch a real access token for a seed user via the realm's password grant.</summary>
@@ -83,6 +103,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public new async Task DisposeAsync()
     {
+        await _rabbitmq.DisposeAsync();
         await _keycloak.DisposeAsync();
         await _postgres.DisposeAsync();
         await base.DisposeAsync();

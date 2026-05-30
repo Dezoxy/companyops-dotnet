@@ -27,6 +27,7 @@ builder.Services.AddCompanyOpsAuthorization();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddOutboxRelay(); // producer-side: publish the outbox to RabbitMQ
 
 var app = builder.Build();
 
