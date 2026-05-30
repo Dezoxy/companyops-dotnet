@@ -139,9 +139,9 @@ public class Request
     /// <see cref="RequestStatus.Approved"/>.
     /// </summary>
     /// <remarks>
-    /// The approver identity is passed in because there is no authenticated principal
-    /// until Phase 3 (the same temporary bridge as <see cref="RequesterId"/>). From
-    /// Phase 3 the source becomes the JWT principal; this rule does not change.
+    /// The approver identity is supplied by the caller (the Api derives it from the
+    /// authenticated JWT principal as of Phase 3 — never from the request body). The
+    /// Domain enforces the rule regardless of where the identity came from.
     /// </remarks>
     public void Approve(Guid approverId, ApproverRole approverRole, Guid approverDepartmentId, DateTimeOffset nowUtc, string? note = null)
     {

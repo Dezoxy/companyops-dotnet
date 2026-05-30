@@ -6,7 +6,7 @@ namespace CompanyOps.Api.Auth;
 /// boundary; the fine-grained department-scope and workflow-stage rules are enforced
 /// in the Domain (defense in depth — see docs/security.md).
 /// </summary>
-public static class Roles
+internal static class Roles
 {
     public const string Employee = "Employee";
     public const string Manager = "Manager";
@@ -15,7 +15,7 @@ public static class Roles
     public const string Auditor = "Auditor";
 }
 
-public static class Policies
+internal static class Policies
 {
     /// <summary>Create and submit a request — the requester acts as an Employee.</summary>
     public const string CreateRequests = "CreateRequests";

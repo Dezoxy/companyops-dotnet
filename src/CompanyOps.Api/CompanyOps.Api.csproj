@@ -17,6 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Domain is referenced directly: the Api maps JWT claims to Domain types
+         (ApproverRole) and exposes Domain enums in contracts. Allowed — dependencies
+         still point inward (Api → Domain). -->
+    <ProjectReference Include="..\CompanyOps.Domain\CompanyOps.Domain.csproj" />
     <ProjectReference Include="..\CompanyOps.Application\CompanyOps.Application.csproj" />
     <ProjectReference Include="..\CompanyOps.Infrastructure\CompanyOps.Infrastructure.csproj" />
   </ItemGroup>

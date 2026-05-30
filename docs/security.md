@@ -83,6 +83,12 @@ their Employee role (roles compose — resolves the earlier Create TODO).
   scope, workflow stage, and submit-own are enforced as Domain invariants.
 - TODO: token lifetime tuning, refresh strategy, clock-skew tolerance, key rotation
   (currently Keycloak defaults; revisit Phase 10/11).
+- **The committed realm (`infra/keycloak/realm-companyops.json`) is dev-only and must
+  not be imported as-is into any deployed environment.** It enables direct access
+  grants (ROPC), `sslRequired: none`, and wildcard `redirectUris`/`webOrigins` for
+  local convenience. Before non-local use (Phase 11): split a deployed realm that
+  disables ROPC, sets `sslRequired`, and pins redirect URIs / web origins to the SPA
+  origin. Phase 4 audit must key on the immutable `sub`, not `preferred_username`.
 
 ## Audit logging — TODO (Phase 4)
 

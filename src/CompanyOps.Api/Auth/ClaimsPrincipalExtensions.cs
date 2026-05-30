@@ -37,7 +37,7 @@ public static class ClaimsPrincipalExtensions
     {
         foreach (var role in principal.FindAll(ClaimTypes.Role))
         {
-            if (Enum.TryParse<ApproverRole>(role.Value, out var approverRole))
+            if (Enum.TryParse<ApproverRole>(role.Value, ignoreCase: true, out var approverRole))
             {
                 return approverRole;
             }
