@@ -31,6 +31,14 @@ builder.Services.AddOutboxRelay(); // producer-side: publish the outbox to Rabbi
 
 var app = builder.Build();
 
+// One-shot migrator mode (used by the compose `migrator` service): apply migrations
+// and exit, so the app processes never self-migrate and startup ordering is explicit.
+if (args.Contains("--migrate"))
+{
+    await app.Services.MigrateDatabaseAsync();
+    return;
+}
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())

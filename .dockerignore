@@ -1,0 +1,12 @@
+# Keep the build context small and deterministic.
+**/bin/
+**/obj/
+**/.vs/
+.git/
+.github/
+.githooks/
+tests/
+frontend/
+docs/
+**/*.user
+**/appsettings.*.local.json
