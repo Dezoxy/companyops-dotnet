@@ -83,12 +83,14 @@ their Employee role (roles compose — resolves the earlier Create TODO).
   scope, workflow stage, and submit-own are enforced as Domain invariants.
 - TODO: token lifetime tuning, refresh strategy, clock-skew tolerance, key rotation
   (currently Keycloak defaults; revisit Phase 11).
-- **The committed realm (`infra/keycloak/realm-companyops.json`) is dev-only and must
-  not be imported as-is into any deployed environment.** It enables direct access
-  grants (ROPC), `sslRequired: none`, and wildcard `redirectUris`/`webOrigins` for
-  local convenience. Before non-local use (Phase 11): split a deployed realm that
-  disables ROPC, sets `sslRequired`, and pins redirect URIs / web origins to the SPA
-  origin. Phase 4 audit must key on the immutable `sub`, not `preferred_username`.
+- **Two realms.** The committed dev realm (`infra/keycloak/realm-companyops.json`) is
+  **local-only** — ROPC on, `sslRequired: none`, wildcard `redirectUris`/`webOrigins`,
+  seed users with throwaway passwords. The **deployed realm**
+  (`infra/keycloak/realm-companyops.prod.json`, Phase 11) hardens it: ROPC **disabled**,
+  `sslRequired: external`, PKCE (S256) enforced, brute-force protection on, pinned redirect
+  URIs / web origins (placeholder until the SPA origin lands in Phase 12), and **no seed
+  users** (real users are created by an admin — no committed credentials). Audit keys on the
+  immutable `sub`, not `preferred_username`.
 
 ## Audit logging — Phase 4 (implemented)
 
@@ -127,15 +129,15 @@ their Employee role (roles compose — resolves the earlier Create TODO).
 
 ## Transport & headers
 
-- **TLS terminates at the edge** (ingress / reverse proxy); the app speaks HTTP
-  in-cluster. App-level `UseHttpsRedirection` is **off by default** (opt-in via
-  `Security:EnableHttpsRedirection`), so it never fires in dev/compose and never auto-arms
-  a redirect loop on a deployment that hasn't yet wired forwarded headers.
-- TODO (Phase 11): wire `ForwardedHeaders` (with `KnownProxies`/`KnownNetworks`) so the
-  app trusts `X-Forwarded-Proto` only from the edge — the prerequisite for setting
-  `Security:EnableHttpsRedirection=true` without a redirect loop.
-- TODO (Phase 11): HSTS at the edge, secure response headers, CORS restricted to known SPA
-  origins. Also split the security knobs currently keyed on the environment name (e.g.
+- **TLS terminates at the Traefik edge** (Phase 11, [ADR 0009](decisions/0009-deployment-topology-edge.md)):
+  Let's Encrypt certificates, HTTP→HTTPS redirect, and HSTS + `nosniff` / `frameDeny` /
+  `referrer-policy` response headers as Traefik middleware. The app speaks HTTP in-cluster.
+- **`ForwardedHeaders` is wired** (`ForwardedHeaders:Enabled`, on in the prod compose): the
+  API trusts `X-Forwarded-Proto`/`-For` from the single Traefik ingress (it has no public
+  binding), so it sees the real scheme + client IP. App-level `UseHttpsRedirection` stays
+  off — the edge owns the redirect.
+- TODO (Phase 12): CORS restricted to the SPA origin (no SPA yet).
+- TODO (enterprise-optional): split the security knobs keyed on the environment name (e.g.
   `RequireHttpsMetadata`) into explicit config flags so a stray environment value can't
   silently drop a protection.
 
