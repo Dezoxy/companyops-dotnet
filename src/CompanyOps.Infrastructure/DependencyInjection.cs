@@ -34,6 +34,9 @@ public static class DependencyInjection
         // Integration events are written to the outbox in the same transaction (ADR 0007).
         services.AddScoped<IIntegrationEventPublisher, IntegrationEventPublisher>();
 
+        // Idempotency guard for at-least-once consumers (ADR 0008).
+        services.AddScoped<IProcessedMessageGuard, ProcessedMessageGuard>();
+
         services.AddMessaging(configuration);
 
         return services;

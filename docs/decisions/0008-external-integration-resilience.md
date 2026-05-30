@@ -39,9 +39,14 @@ request regardless, and record the integration outcome as audit — "advance and
    the queryable record of integration state; the `Request` aggregate is not polluted
    with integration status fields.
 
-5. **The consumer is now idempotent.** Real side effects make at-least-once delivery
-   matter (the deferred Phase 5 item): the Worker dedups on the outbox message id before
-   acting, so a redelivered message does not double-commit budget or double-reserve.
+5. **The consumer dedups on the outbox message id** before acting, and records the id as
+   processed in the same transaction as the side effect's audit. A message redelivered
+   *after* it was committed is skipped. Note this is still **at-least-once, not
+   exactly-once**: a crash between a successful gateway call and the commit, or two
+   concurrent in-flight deliveries of the same id, can produce one extra gateway call
+   (the duplicate row is prevented by the primary key, and the redelivery then acks on
+   the dedup check). Truly-once external effects need an idempotency key honored by the
+   downstream system — out of scope here.
 
 ## Options considered
 

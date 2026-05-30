@@ -48,5 +48,11 @@ app.MapControllers();
 
 app.Run();
 
-// Exposed so integration tests (Phase 8) can use WebApplicationFactory<Program>.
-public partial class Program;
+namespace CompanyOps.Api
+{
+    /// <summary>
+    /// Entry-point marker for integration tests (WebApplicationFactory&lt;ApiHost&gt;). A
+    /// distinct named type avoids clashing with other referenced services' top-level Program.
+    /// </summary>
+    public sealed class ApiHost;
+}

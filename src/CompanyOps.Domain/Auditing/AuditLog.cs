@@ -81,4 +81,23 @@ public sealed class AuditLog
             fromStatus?.ToString(),
             toStatus.ToString());
     }
+
+    /// <summary>
+    /// Record an action against a request that is not a status transition (e.g. an
+    /// external-integration outcome like budget committed / asset reserved).
+    /// </summary>
+    public static AuditLog ForRequestEvent(AuditAction action, Guid requestId, Guid actorId, DateTimeOffset nowUtc)
+    {
+        if (actorId == Guid.Empty)
+        {
+            throw new DomainException("An audit entry must record the actor.");
+        }
+
+        if (requestId == Guid.Empty)
+        {
+            throw new DomainException("An audit entry must record the affected request.");
+        }
+
+        return new AuditLog(Guid.NewGuid(), nowUtc, actorId, action, "Request", requestId, null, null);
+    }
 }

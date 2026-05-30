@@ -28,5 +28,12 @@ internal sealed record BudgetCommitResponse(Guid CommitmentId, string Status);
 internal sealed record AssetReservationRequest(Guid RequestId);
 internal sealed record AssetReservationResponse(Guid ReservationId, string Status);
 
-// Exposed so an integration test can host the mock with WebApplicationFactory<Program>.
-public partial class Program;
+namespace CompanyOps.FakeExternals
+{
+    /// <summary>
+    /// Entry-point marker so an integration test can host this service with
+    /// <c>WebApplicationFactory&lt;FakeExternalsApp&gt;</c>. (A distinct named type avoids
+    /// clashing with the API's top-level <c>Program</c> when both are referenced.)
+    /// </summary>
+    public sealed class FakeExternalsApp;
+}

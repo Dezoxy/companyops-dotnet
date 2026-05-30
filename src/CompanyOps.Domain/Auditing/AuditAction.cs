@@ -11,4 +11,8 @@ public enum AuditAction
     RequestApproved = 2,
     RequestRejected = 3,
     RequestFulfilled = 4,
+
+    // External-integration outcomes recorded by the Worker (ADR 0008).
+    BudgetCommitted = 5,
+    AssetReserved = 6,
 }
