@@ -784,30 +784,33 @@ Deployed application with infrastructure automation
 
 ---
 
-### Phase 12 — Angular demo frontend
+### Phase 12 — Angular client: foundation & core workflow UI
 
 Goal:
 
-Add a thin Angular SPA to demo the workflow and the login flow end-to-end. This is
-a *client* of the API — it holds no business logic. Backend stays the source of
-truth.
+Stand up the Angular client (the "CompanyOps Enterprise Suite", ADR 0010) and the core
+workflow screens. The foundation built here — shell, theme, auth, API client — carries the
+whole frontend track (Phases 12–18). Still a *client* of the API: no business logic; the
+backend stays the source of truth.
 
 Tasks:
 
 - scaffold Angular 21 workspace in `frontend/` (standalone components, signals)
-- configure OIDC Authorization Code + PKCE against Keycloak (public client)
-- HTTP interceptor to attach the access token; functional auth/role guards
-- screens: login/logout, create request, my requests + status
-- role-gated workflow actions (submit, approve-manager, approve-finance, reject,
-  fulfill, cancel) wired to the business endpoints
-- read-only audit log view for Auditor
-- configure API CORS for the SPA origin; dev proxy for local
-- basic unit tests (`ng test`) and lint in CI
+- Angular Material (M3) + a custom theme from the Precision-Enterprise tokens; Material
+  Symbols icons; the app shell (responsive sidenav + toolbar) and routing
+- configure OIDC Authorization Code + PKCE against Keycloak; split a public SPA client from
+  the bearer-only API audience; HTTP interceptor to attach the token; functional auth/role guards
+- typed API client + DTO models
+- core screens: login/logout, dashboard, requests (list / detail / create), approvals, and the
+  read-only audit log (Auditor)
+- role-gated workflow actions (submit, approve, reject, fulfill, cancel) wired to the business endpoints
+- configure API CORS for the SPA origin + a CSP at the edge; dev proxy for local
+- unit tests (`ng test`) + lint in CI; Dockerfile + Traefik wiring
 
 Deliverable:
 
 ```text
-Demoable web UI exercising the workflow and Keycloak login against the API
+The Angular client foundation + core workflow UI, running against the API behind Keycloak
 ```
 
 ---
@@ -856,6 +859,98 @@ Deliverable:
 
 ```text
 Assets tracked through their lifecycle, with history and return/reclaim
+```
+
+---
+
+### Phase 15 — IT Admin & fulfilment console
+
+Goal:
+
+A dedicated console for IT Admins to work the fulfilment queue, plus the IT-Admin dashboard
+screen. Reuses the engine, the `ItAdmin` role, and audit — no new workflow.
+
+Tasks:
+
+- fulfilment queue UI: approved-awaiting-fulfilment requests; fulfil / assign (existing endpoints)
+- IT-Admin dashboard UI (open / assigned / overdue, recent activity)
+- small read-only projections/queries for the queue + dashboard counts
+- role-gated to `ItAdmin`; everything still audited via the existing trail
+
+Deliverable:
+
+```text
+IT Admins work approved requests to completion from a dedicated console
+```
+
+---
+
+### Phase 16 — Reporting & analytics
+
+Goal:
+
+A reporting surface (volumes, cycle times, status mix) over the request / approval / audit
+data — a read side, not new write paths.
+
+Tasks:
+
+- read-models / aggregation queries (volume by type/status/department, approval cycle time,
+  fulfilment throughput)
+- the Reports & Analytics dashboard UI (charts + tables) bound to those queries
+- date-range + filters; read scoping by role where relevant
+
+Out of scope: a BI tool, real-time streaming analytics.
+
+Deliverable:
+
+```text
+A reports dashboard summarising the workflow over time
+```
+
+---
+
+### Phase 17 — Integrations console
+
+Goal:
+
+Surface the external-system integration (Finance / Inventory) status and history — observe
+the existing Phase-6 worker/outbox path, no new integration logic.
+
+Tasks:
+
+- integration-status endpoints over the outbox / worker / audit (recent events, success/fail,
+  dead-letters)
+- the Integrations Management UI (connector list, health, recent activity; safe retry/replay)
+
+Out of scope: building new third-party connectors.
+
+Deliverable:
+
+```text
+Operators see external-integration health and history in the UI
+```
+
+---
+
+### Phase 18 — Settings & profile
+
+Goal:
+
+User profile and application settings — the System Settings screen.
+
+Tasks:
+
+- profile view from the Keycloak principal (link out to the Keycloak account console for
+  credential changes)
+- application preferences (theme / notifications) — a small per-user settings store
+- the System Settings UI; admin-only sections gated by role
+
+Out of scope: full tenant / org administration.
+
+Deliverable:
+
+```text
+Users manage their profile and preferences; the Settings screen is live
 ```
 
 ---
