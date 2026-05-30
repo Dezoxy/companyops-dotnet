@@ -1,4 +1,5 @@
 using CompanyOps.Application.Abstractions;
+using CompanyOps.Domain.Auditing;
 using CompanyOps.Domain.Requests;
 
 namespace CompanyOps.Application.Requests.CreateRequest;
@@ -14,20 +15,24 @@ namespace CompanyOps.Application.Requests.CreateRequest;
 /// </remarks>
 public sealed class CreateRequestHandler(
     IRequestRepository requests,
+    IAuditLogger auditLogger,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
     public async Task<RequestDto> HandleAsync(CreateRequestCommand command, CancellationToken cancellationToken = default)
     {
+        var now = timeProvider.GetUtcNow();
+
         var request = Request.Create(
             command.Title,
             command.Description,
             command.Type,
             command.RequesterId,
             command.DepartmentId,
-            timeProvider.GetUtcNow());
+            now);
 
         requests.Add(request);
+        auditLogger.Add(AuditLog.ForRequest(AuditAction.RequestCreated, request.Id, command.RequesterId, null, request.Status, now));
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return RequestDto.FromDomain(request);

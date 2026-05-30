@@ -1,3 +1,4 @@
+using CompanyOps.Application.Auditing.ListAuditLogs;
 using CompanyOps.Application.Requests.ApproveRequest;
 using CompanyOps.Application.Requests.CreateRequest;
 using CompanyOps.Application.Requests.FulfillRequest;
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<ApproveRequestHandler>();
         services.AddScoped<RejectRequestHandler>();
         services.AddScoped<FulfillRequestHandler>();
+        services.AddScoped<ListAuditLogsHandler>();
         return services;
     }
 }

@@ -1,4 +1,5 @@
 using CompanyOps.Application.Abstractions;
+using CompanyOps.Domain.Auditing;
 using CompanyOps.Domain.Requests;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +13,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     : DbContext(options), IUnitOfWork
 {
     public DbSet<Request> Requests => Set<Request>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

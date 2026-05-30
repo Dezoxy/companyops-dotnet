@@ -1,4 +1,5 @@
 using CompanyOps.Application.Abstractions;
+using CompanyOps.Domain.Auditing;
 
 namespace CompanyOps.Application.Requests.ApproveRequest;
 
@@ -9,6 +10,7 @@ namespace CompanyOps.Application.Requests.ApproveRequest;
 /// </summary>
 public sealed class ApproveRequestHandler(
     IRequestRepository requests,
+    IAuditLogger auditLogger,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -20,7 +22,11 @@ public sealed class ApproveRequestHandler(
             return null;
         }
 
-        request.Approve(command.ApproverId, command.ApproverRole, command.ApproverDepartmentId, timeProvider.GetUtcNow(), command.Note);
+        var now = timeProvider.GetUtcNow();
+        var fromStatus = request.Status;
+
+        request.Approve(command.ApproverId, command.ApproverRole, command.ApproverDepartmentId, now, command.Note);
+        auditLogger.Add(AuditLog.ForRequest(AuditAction.RequestApproved, request.Id, command.ApproverId, fromStatus, request.Status, now));
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return RequestDto.FromDomain(request);

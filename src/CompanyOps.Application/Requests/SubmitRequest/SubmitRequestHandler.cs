@@ -1,4 +1,5 @@
 using CompanyOps.Application.Abstractions;
+using CompanyOps.Domain.Auditing;
 
 namespace CompanyOps.Application.Requests.SubmitRequest;
 
@@ -9,6 +10,7 @@ namespace CompanyOps.Application.Requests.SubmitRequest;
 /// </summary>
 public sealed class SubmitRequestHandler(
     IRequestRepository requests,
+    IAuditLogger auditLogger,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -20,7 +22,11 @@ public sealed class SubmitRequestHandler(
             return null;
         }
 
-        request.Submit(command.ActorId, timeProvider.GetUtcNow());
+        var now = timeProvider.GetUtcNow();
+        var fromStatus = request.Status;
+
+        request.Submit(command.ActorId, now);
+        auditLogger.Add(AuditLog.ForRequest(AuditAction.RequestSubmitted, request.Id, command.ActorId, fromStatus, request.Status, now));
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return RequestDto.FromDomain(request);

@@ -90,11 +90,17 @@ their Employee role (roles compose — resolves the earlier Create TODO).
   disables ROPC, sets `sslRequired`, and pins redirect URIs / web origins to the SPA
   origin. Phase 4 audit must key on the immutable `sub`, not `preferred_username`.
 
-## Audit logging — TODO (Phase 4)
+## Audit logging — Phase 4 (implemented)
 
-- Append-only `AuditLog`; no update/delete path exposed to any role.
-- Record actor, action, target, old→new state, timestamp, source IP, correlation ID.
-- TODO: tamper-evidence (e.g. hash chain) — enterprise-optional.
+- **Append-only `AuditLog`** (Domain entity, factory only, no mutators). Written as a
+  side effect of each business action via the `IAuditLogger` port, **enlisted in the
+  same transaction** as the state change — no approved-but-unaudited request. No
+  write/update/delete API path; reads go through `GET /audit-logs` (Auditor).
+- Records who (`ActorId` = `sub`) / what (`AuditAction`) / when / old→new status /
+  affected object (`TargetType`+`TargetId`) for create, submit, approve, reject, fulfill.
+- TODO: source IP + correlation id (enrich when correlation IDs land, Phase 10);
+  DB-level grants so even the app user cannot UPDATE/DELETE `audit_logs` (Phase 11);
+  tamper-evidence / hash chain — enterprise-optional.
 
 ## Secrets handling
 
@@ -132,7 +138,7 @@ API ↔ external mock services (Finance/Inventory).
 |---|---|---|---|
 | **S**poofing | Forged/replayed JWT | OIDC validation (sig/iss/aud/exp), short tokens | ✓ P3 (token lifetime tuning TODO) |
 | **T**ampering | Altering another dept's request (IDOR) | Resource-scoped authz on loaded aggregate | ✓ P3 (Domain dept-scope) |
-| **R**epudiation | "I didn't approve that" | Append-only audit log w/ actor + IP | TODO P4 |
+| **R**epudiation | "I didn't approve that" | Append-only audit log w/ actor + old→new | ✓ P4 (source IP TODO) |
 | **I**nfo disclosure | Leaking entities/PII via API | DTO mapping, least-data responses, authz on reads | partial: DTOs ✓; read scoping TODO |
 | **D**oS | Flooding write/auth endpoints | Rate limiting, timeouts on external calls | TODO P5/opt |
 | **E**oP | Auditor or Employee performing privileged action | Policies + domain invariants, deny-by-default | ✓ P3 |

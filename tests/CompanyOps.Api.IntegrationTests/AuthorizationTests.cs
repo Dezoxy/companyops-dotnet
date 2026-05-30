@@ -100,6 +100,44 @@ public sealed class AuthorizationTests(ApiFactory factory) : IClassFixture<ApiFa
         Assert.Equal("Completed", (await fulfill.Content.ReadFromJsonAsync<RequestResponse>())!.Status);
     }
 
+    [Fact]
+    public async Task GetAuditLogs_AsEmployee_Returns403()
+    {
+        var employee = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
+
+        var response = await employee.GetAsync("/audit-logs");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetAuditLogs_AsAuditor_Returns200_AndRecordsTheFlow()
+    {
+        var id = await CreateSubmittedRequestAsync();
+        var manager = factory.CreateClientWithToken(await factory.GetTokenAsync("manager.eng"));
+        await manager.PostAsJsonAsync($"/requests/{id}/approve", new { note = "ok" });
+        var finance = factory.CreateClientWithToken(await factory.GetTokenAsync("finance.user"));
+        await finance.PostAsJsonAsync($"/requests/{id}/approve", new { });
+        var itAdmin = factory.CreateClientWithToken(await factory.GetTokenAsync("itadmin.user"));
+        await itAdmin.PostAsync($"/requests/{id}/fulfill", content: null);
+
+        var auditor = factory.CreateClientWithToken(await factory.GetTokenAsync("auditor.user"));
+        var response = await auditor.GetAsync("/audit-logs");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var entries = (await response.Content.ReadFromJsonAsync<List<AuditLogResponse>>())!
+            .Where(e => e.TargetId == id)
+            .Select(e => e.Action)
+            .ToList();
+
+        // Created, Submitted, two Approved (manager + finance), Fulfilled.
+        Assert.Contains("RequestCreated", entries);
+        Assert.Contains("RequestSubmitted", entries);
+        Assert.Contains("RequestApproved", entries);
+        Assert.Contains("RequestFulfilled", entries);
+        Assert.Equal(2, entries.Count(a => a == "RequestApproved"));
+    }
+
     private async Task<Guid> CreateDraftRequestAsync()
     {
         var client = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
@@ -119,4 +157,6 @@ public sealed class AuthorizationTests(ApiFactory factory) : IClassFixture<ApiFa
     }
 
     private sealed record RequestResponse(Guid Id, string Status, Guid RequesterId, Guid DepartmentId);
+
+    private sealed record AuditLogResponse(string Action, Guid TargetId, string? FromStatus, string? ToStatus);
 }
