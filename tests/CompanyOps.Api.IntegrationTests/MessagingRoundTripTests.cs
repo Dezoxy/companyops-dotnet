@@ -20,7 +20,8 @@ namespace CompanyOps.Api.IntegrationTests;
 /// outbox + relay), the Worker consumes it, calls the Finance system over HTTP, and
 /// records a BudgetCommitted audit entry — which surfaces through GET /audit-logs.
 /// </summary>
-public sealed class MessagingRoundTripTests(ApiFactory factory) : IClassFixture<ApiFactory>
+[Collection("Integration")]
+public sealed class MessagingRoundTripTests(ApiFactory factory)
 {
     [Fact]
     public async Task ApprovingARequest_CommitsBudgetViaTheWorker_AndAuditsIt()
