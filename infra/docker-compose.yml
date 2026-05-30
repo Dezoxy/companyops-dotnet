@@ -1,6 +1,6 @@
-# Phase 1 local dev: PostgreSQL only. The full stack (API, Worker, Redis,
-# RabbitMQ, Keycloak) is assembled in Phase 7. Credentials here are local-only
-# throwaways and must match src/CompanyOps.Api/appsettings.Development.json.
+# Local dev backing services. Postgres (Phase 1) + Keycloak (Phase 3). The full
+# app stack (API, Worker, Redis, RabbitMQ) is assembled in Phase 7. Credentials
+# here are local-only throwaways and must match src/CompanyOps.Api/appsettings.Development.json.
 services:
   postgres:
     image: postgres:18
@@ -21,6 +21,21 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: companyops-keycloak
+    # start-dev = dev mode (no HTTPS requirement, in-memory friendly). --import-realm
+    # imports any realm JSON mounted under /opt/keycloak/data/import on first boot.
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: localdev_only_not_a_secret
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak/realm-companyops.json:/opt/keycloak/data/import/realm-companyops.json:ro
 
 volumes:
   companyops-pgdata:
