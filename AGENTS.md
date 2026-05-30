@@ -5,9 +5,21 @@ this file; per-layer `src/*/CLAUDE.md` files add rules local to each project.
 
 ## What this is
 
-**CompanyOps** — an internal procurement & asset-management system built as an
+**CompanyOps** — an internal **request & approval platform** built as an
 **enterprise-style learning and portfolio project**. The full roadmap lives in
 [docs/companyops_enterprise_dotnet_project_plan.md](docs/companyops_enterprise_dotnet_project_plan.md).
+
+At its core it is **one configurable approval-workflow engine**. Three real
+internal processes run on it — all built as first-class flows, distinguished by
+**configurable approval chains per request type** (not hard-coded), see
+[ADR 0005](docs/decisions/0005-configurable-approval-workflow.md):
+
+1. **IT request / helpdesk-light** — service/access requests fulfilled by IT.
+2. **Asset management** — assets and their assignment lifecycle.
+3. **Internal approval** — generic multi-step sign-off (procurement is the seed example).
+
+These are not three systems; they are one `request → approval → fulfillment`
+lifecycle with different chains and fulfillment actions.
 
 This is **not** a production product and **not** a CRUD demo. The point is to
 demonstrate enterprise backend + DevOps thinking. **The journey is the deliverable.**

@@ -181,14 +181,20 @@ Suggested entities:
 User
 Department
 CostCenter
+RequestType          # defines the approval chain + fulfillment kind (ADR 0005)
 Request
 RequestItem
-ApprovalStep
+ApprovalStep         # ordered, configured per RequestType
+Comment              # request thread (helpdesk-light)
 Asset
-AssetAssignment
+AssetAssignment      # assignment + return/reclaim
 AuditLog
 Notification
 ```
+
+`RequestType` keys the configurable approval chain so the three flows
+(procurement/approval, helpdesk-light, asset management) run on one engine —
+see `docs/decisions/0005-configurable-approval-workflow.md`.
 
 ---
 
@@ -802,6 +808,54 @@ Deliverable:
 
 ```text
 Demoable web UI exercising the workflow and Keycloak login against the API
+```
+
+---
+
+### Phase 13 — Helpdesk-light flow
+
+Goal:
+
+Add IT request / helpdesk-light as a first-class flow on the existing engine
+(ADR 0005) — not a new subsystem.
+
+Tasks:
+
+- add a `Helpdesk` request type with its own approval chain (e.g. manager-only or
+  none for low-risk) and an IT fulfillment action
+- request categories (incident / service request / access request) and priority
+- comment/note thread on a request (`Comment`)
+- reuse the engine, audit log, and authorization — no parallel workflow code
+
+Out of scope (stays "light"): ITSM queues, SLA timers, escalation engine.
+
+Deliverable:
+
+```text
+Helpdesk requests running through the same approval/fulfillment engine
+```
+
+---
+
+### Phase 14 — Asset lifecycle flow
+
+Goal:
+
+Manage assets beyond initial assignment — the full lifecycle.
+
+Tasks:
+
+- asset lifecycle states: in stock → assigned → in repair → retired
+- return / reclaim flow; reassign an asset to another employee
+- asset history (who held it, when, why state changed) via the audit trail
+- an `AssetReturn` / lifecycle request type on the engine where approval applies
+
+Out of scope: full CMDB / network discovery.
+
+Deliverable:
+
+```text
+Assets tracked through their lifecycle, with history and return/reclaim
 ```
 
 ---

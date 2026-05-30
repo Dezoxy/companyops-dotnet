@@ -21,9 +21,12 @@ that the other two can't reuse it.
 
 ## Decision
 
-**Treat CompanyOps as one configurable approval-workflow engine. Procurement is
-the fully-built reference flow; the other use cases are configurations, not
-forks.**
+**Treat CompanyOps as one configurable approval-workflow engine, and build all
+three use cases as first-class flows on top of it.** Procurement is the seed
+example that proves the engine; helpdesk-light, asset lifecycle, and generic
+internal approval are then implemented as real flows — each a configuration of the
+same engine (its own request type + approval chain + fulfillment action), not a
+fork or a separate subsystem.
 
 Two concrete commitments:
 
@@ -40,9 +43,10 @@ Two concrete commitments:
    actor is derived from the first unsatisfied step. Invalid transitions are still
    rejected in the Domain (throw).
 
-The project is **positioned and documented as a workflow engine** running
-procurement today, extensible to helpdesk/asset/access flows. We do not rename it
-to a generic "ITSM platform" — that would overclaim what is built.
+The project is **positioned and documented as a workflow engine** that runs three
+real internal processes (procurement/approval, helpdesk-light, asset management).
+We do not rename it to a generic "ITSM platform" — the flows are bounded (see scope
+guardrails) and that label would overclaim.
 
 ## Consequences
 
@@ -61,14 +65,23 @@ to a generic "ITSM platform" — that would overclaim what is built.
   decision — start with **seeded/in-code request-type definitions**; a DB-backed
   editor is enterprise-optional and out of MVP scope.
 
-**Scope guardrails (so this doesn't balloon)**
-- Procurement remains the only *fully* implemented flow for the MVP. Helpdesk /
-  asset-lifecycle / access flows are demonstrated as configurations once the engine
-  exists, not built as parallel feature sets up front.
-- Helpdesk stays "light": request types + lifecycle + audit. No ITSM queues,
-  SLAs, or escalation engine.
-- Full asset lifecycle (in stock → assigned → in repair → retired, return/reclaim)
-  is a follow-on once `Asset`/`AssetAssignment` exist — not part of the first slice.
+**Build order (all three are in scope; sequence keeps it sane)**
+- Build the **engine + procurement flow first** (Phases 1–2) so the abstraction is
+  validated against one real, complete flow before generalizing. Adding the engine
+  after a hard-coded flow is far costlier than building it in from the start.
+- Then add **helpdesk-light** and **asset lifecycle** as their own flows — each
+  one is a new request type + approval-chain config + fulfillment handler + slice
+  tests, reusing the engine, audit, and authz. Treat each as a vertical slice, not
+  a parallel half-built subsystem (one working flow at a time).
+
+**Scope guardrails (real flows, but bounded so they don't balloon into products)**
+- Helpdesk stays **"light"**: request types + lifecycle + comments + audit. No ITSM
+  queues, SLA timers, or escalation engine — those are enterprise-optional.
+- Asset lifecycle covers the real states (in stock → assigned → in repair →
+  retired) plus return/reclaim and asset history — but not full CMDB/discovery.
+- "Generic internal approval" = the configurable chain itself; we don't build a
+  no-code workflow *designer* UI. Request types are seeded/in-code for the MVP; a
+  DB-backed admin editor is enterprise-optional.
 
 ## Affects
 
