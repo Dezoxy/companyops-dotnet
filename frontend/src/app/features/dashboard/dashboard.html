@@ -1,0 +1,18 @@
+<header class="page-head">
+  <h1>Dashboard</h1>
+  <p>Overview of your requests and approvals.</p>
+</header>
+
+<section class="stat-grid">
+  @for (stat of stats; track stat.label) {
+    <mat-card appearance="outlined">
+      <mat-card-content class="stat">
+        <mat-icon class="stat-icon" aria-hidden="true">{{ stat.icon }}</mat-icon>
+        <div>
+          <div class="stat-value">{{ stat.value }}</div>
+          <div class="stat-label">{{ stat.label }}</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</section>
