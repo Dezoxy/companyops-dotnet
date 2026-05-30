@@ -4,19 +4,21 @@ using CompanyOps.Domain.Requests;
 namespace CompanyOps.Domain.Tests.Requests;
 
 /// <summary>
-/// Covers the Phase 1 creation invariants of the <see cref="Request"/> aggregate.
-/// The factory enforces these in the Domain and throws <see cref="DomainException"/>;
-/// these tests pin that behaviour. The state-machine transitions arrive in Phase 2.
+/// Covers the creation invariants of the <see cref="Request"/> aggregate. The factory
+/// enforces these in the Domain and throws <see cref="DomainException"/>; these tests
+/// pin that behaviour. The approval state-machine transitions are covered in
+/// <see cref="ApprovalWorkflowTests"/>.
 /// </summary>
 public class RequestTests
 {
     private static readonly DateTimeOffset NowUtc = new(2026, 5, 30, 12, 0, 0, TimeSpan.Zero);
     private static readonly Guid Requester = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid Department = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
     [Fact]
     public void Create_WithValidInput_ReturnsDraftRequestWithFieldsSet()
     {
-        var request = Request.Create("New laptop", "MacBook Pro 14", RequestType.Procurement, Requester, NowUtc);
+        var request = Request.Create("New laptop", "MacBook Pro 14", RequestType.Procurement, Requester, Department, NowUtc);
 
         Assert.NotEqual(Guid.Empty, request.Id);
         Assert.Equal("New laptop", request.Title);
@@ -24,13 +26,15 @@ public class RequestTests
         Assert.Equal(RequestType.Procurement, request.Type);
         Assert.Equal(RequestStatus.Draft, request.Status);
         Assert.Equal(Requester, request.RequesterId);
+        Assert.Equal(Department, request.DepartmentId);
         Assert.Equal(NowUtc, request.CreatedAtUtc);
+        Assert.Empty(request.ApprovalSteps);
     }
 
     [Fact]
     public void Create_TrimsTitleAndDescription()
     {
-        var request = Request.Create("  New laptop  ", "  spec  ", RequestType.Procurement, Requester, NowUtc);
+        var request = Request.Create("  New laptop  ", "  spec  ", RequestType.Procurement, Requester, Department, NowUtc);
 
         Assert.Equal("New laptop", request.Title);
         Assert.Equal("spec", request.Description);
@@ -39,7 +43,7 @@ public class RequestTests
     [Fact]
     public void Create_WithNullDescription_IsAllowed()
     {
-        var request = Request.Create("New laptop", null, RequestType.Procurement, Requester, NowUtc);
+        var request = Request.Create("New laptop", null, RequestType.Procurement, Requester, Department, NowUtc);
 
         Assert.Null(request.Description);
     }
@@ -51,7 +55,7 @@ public class RequestTests
     public void Create_WithMissingTitle_ThrowsDomainException(string? title)
     {
         var ex = Assert.Throws<DomainException>(
-            () => Request.Create(title!, null, RequestType.Procurement, Requester, NowUtc));
+            () => Request.Create(title!, null, RequestType.Procurement, Requester, Department, NowUtc));
 
         Assert.Equal("Request title is required.", ex.Message);
     }
@@ -62,7 +66,7 @@ public class RequestTests
         var tooLong = new string('a', Request.TitleMaxLength + 1);
 
         Assert.Throws<DomainException>(
-            () => Request.Create(tooLong, null, RequestType.Procurement, Requester, NowUtc));
+            () => Request.Create(tooLong, null, RequestType.Procurement, Requester, Department, NowUtc));
     }
 
     [Fact]
@@ -70,7 +74,7 @@ public class RequestTests
     {
         var atLimit = new string('a', Request.TitleMaxLength);
 
-        var request = Request.Create(atLimit, null, RequestType.Procurement, Requester, NowUtc);
+        var request = Request.Create(atLimit, null, RequestType.Procurement, Requester, Department, NowUtc);
 
         Assert.Equal(atLimit, request.Title);
     }
@@ -79,8 +83,17 @@ public class RequestTests
     public void Create_WithEmptyRequesterId_ThrowsDomainException()
     {
         var ex = Assert.Throws<DomainException>(
-            () => Request.Create("New laptop", null, RequestType.Procurement, Guid.Empty, NowUtc));
+            () => Request.Create("New laptop", null, RequestType.Procurement, Guid.Empty, Department, NowUtc));
 
         Assert.Equal("Request must have a requester.", ex.Message);
+    }
+
+    [Fact]
+    public void Create_WithEmptyDepartmentId_ThrowsDomainException()
+    {
+        var ex = Assert.Throws<DomainException>(
+            () => Request.Create("New laptop", null, RequestType.Procurement, Requester, Guid.Empty, NowUtc));
+
+        Assert.Equal("Request must belong to a department.", ex.Message);
     }
 }

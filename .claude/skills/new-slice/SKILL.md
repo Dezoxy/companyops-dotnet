@@ -69,6 +69,11 @@ If the slice needs data access the repo doesn't expose yet, add the method to
 
 ## Phase-awareness (do NOT scaffold ahead)
 
+- **Read `ACTIVE_PHASE` (repo root) first.** It holds a single integer — the
+  current phase. Never scaffold a feature whose phase is greater than that value
+  (see the phase feature table in `AGENTS.md`). If the requested slice needs a
+  later-phase concern (auth, audit, queue, …), stop and flag it rather than
+  generating ahead. The per-phase rules below are relative to that value.
 - **No MediatR.** Handlers are plain injectable classes, registered explicitly.
   Note in a comment where a mediator pipeline would later live; don't add it.
 - **No FluentValidation yet.** Input shape is validated by the domain factory /

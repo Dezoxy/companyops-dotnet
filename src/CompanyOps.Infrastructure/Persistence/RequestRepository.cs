@@ -13,6 +13,12 @@ internal sealed class RequestRepository(AppDbContext dbContext) : IRequestReposi
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
+    public Task<Request?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default) =>
+        // Tracked load (no AsNoTracking) so transitions persist. The owned ApprovalSteps
+        // are auto-included by EF with the owner — no explicit Include needed.
+        dbContext.Requests
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+
     public async Task<IReadOnlyList<Request>> ListAsync(CancellationToken cancellationToken = default) =>
         await dbContext.Requests
             .AsNoTracking()

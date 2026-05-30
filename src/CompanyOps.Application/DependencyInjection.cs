@@ -1,6 +1,10 @@
+using CompanyOps.Application.Requests.ApproveRequest;
 using CompanyOps.Application.Requests.CreateRequest;
+using CompanyOps.Application.Requests.FulfillRequest;
 using CompanyOps.Application.Requests.GetRequest;
 using CompanyOps.Application.Requests.ListRequests;
+using CompanyOps.Application.Requests.RejectRequest;
+using CompanyOps.Application.Requests.SubmitRequest;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CompanyOps.Application;
@@ -18,6 +22,10 @@ public static class DependencyInjection
         services.AddScoped<CreateRequestHandler>();
         services.AddScoped<GetRequestByIdHandler>();
         services.AddScoped<ListRequestsHandler>();
+        services.AddScoped<SubmitRequestHandler>();
+        services.AddScoped<ApproveRequestHandler>();
+        services.AddScoped<RejectRequestHandler>();
+        services.AddScoped<FulfillRequestHandler>();
         return services;
     }
 }
