@@ -12,6 +12,18 @@ This is not meant to be a simple CRUD demo.
 
 The purpose is to demonstrate that I understand how backend systems work in a real company environment.
 
+At its core CompanyOps is **one configurable approval-workflow engine**.
+Procurement & asset management is the fully-built reference flow, but the same
+engine is designed to carry other internal processes by configuring the approval
+chain per request type rather than hard-coding it:
+
+1. **IT request / helpdesk-light** — service/access requests fulfilled by IT.
+2. **Asset management** — assets and their assignment lifecycle.
+3. **Internal approval** — generic multi-step sign-off.
+
+These are not three systems; they are one `request → approval → fulfillment`
+lifecycle with different approval chains. See `docs/decisions/0005-configurable-approval-workflow.md`.
+
 ---
 
 ## Project idea
@@ -497,6 +509,7 @@ Example:
 0002-use-postgresql.md
 0003-use-keycloak-for-auth.md
 0004-use-rabbitmq-for-background-processing.md
+0005-configurable-approval-workflow.md
 ```
 
 ---
@@ -536,13 +549,16 @@ Add enterprise-style request workflow.
 
 Tasks:
 
+- add `RequestType` with a **configurable, ordered approval-step chain** per type
+  (seeded/in-code for now) — see ADR 0005; design this before the state machine
 - add request statuses
 - add submit action
-- add manager approval
+- drive transitions from the configured steps (next actor = first unsatisfied step)
+- add manager approval (department-scoped)
 - add finance approval
 - add rejection
 - add fulfillment
-- prevent invalid status transitions
+- prevent invalid status transitions (enforced in Domain, throw)
 
 Deliverable:
 
