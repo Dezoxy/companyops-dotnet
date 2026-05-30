@@ -1,0 +1,42 @@
+name: codeql
+
+# Static analysis (code scanning) for C#. Code scanning requires GitHub Advanced
+# Security on PRIVATE repos; it's free on public ones. The analyze job is guarded to
+# skip while the repo is private (so it doesn't red-fail) and activates automatically
+# if the repo is made public — or once GHAS is enabled, drop the `if:` guard.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "23 4 * * 1" # weekly, Monday 04:23 UTC
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze:
+    name: analyze (csharp)
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+
+      # Explicit build (more reliable than autobuild for .NET).
+      - run: dotnet build --configuration Release
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3

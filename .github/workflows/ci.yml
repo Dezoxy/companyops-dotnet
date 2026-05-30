@@ -33,6 +33,12 @@ jobs:
           restore-keys: nuget-${{ runner.os }}-
 
       - run: dotnet restore
+      - name: Vulnerable package scan
+        # Free, private-repo-friendly dependency check (NuGet advisory DB). Fails the
+        # job if any restored package (incl. transitive) has a known vulnerability.
+        run: |
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
+          ! grep -q "has the following vulnerable" vulnerable.txt
       - name: Verify formatting
         run: dotnet format --verify-no-changes
       - run: dotnet build --no-restore --configuration Release
@@ -65,3 +71,21 @@ jobs:
 
       - name: Integration tests
         run: dotnet test tests/CompanyOps.Api.IntegrationTests --configuration Release
+
+  # Validate the Dockerfiles actually build (compose builds API/Worker/FakeExternals).
+  # Gated on the fast job. Pushing to a registry (GHCR) is a guarded follow-up — see the
+  # commented step — kept off by default so PRs don't publish images.
+  docker-build:
+    name: docker images
+    needs: build-and-unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build images
+        run: docker compose -f infra/docker-compose.yml build
+      # - name: Push to GHCR (main only)
+      #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      #   run: |
+      #     echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      #     docker compose -f infra/docker-compose.yml push
+      #   # requires: permissions: packages: write, and image: names retagged to ghcr.io/<owner>/…
