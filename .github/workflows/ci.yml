@@ -129,3 +129,28 @@ jobs:
           /tmp/av/bin/pip install --quiet 'ansible-lint==26.3.0'
           /tmp/av/bin/ansible-galaxy collection install -r infra/ansible/requirements.yml
           /tmp/av/bin/ansible-lint infra/ansible/playbook.yml
+
+  # Frontend (Angular client) — build + lint + Vitest unit tests. Independent of the .NET jobs.
+  frontend:
+    name: frontend (Angular)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - name: Build
+        run: npx ng build
+      - name: Lint
+        run: npx ng lint
+      - name: Unit tests
+        run: npx ng test --watch=false
