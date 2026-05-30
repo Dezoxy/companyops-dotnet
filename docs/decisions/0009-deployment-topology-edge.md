@@ -86,6 +86,10 @@ VM" — i.e. an IaaS/VM target, not managed PaaS.
 - The Terraform example is not auto-applied (no cloud account assumed); it is validated
   (`fmt`/`validate`), not deployed by CI.
 - More Compose files and env management; operators must populate `.env` from a secrets store.
+- Traefik needs the Docker socket (mounted `:ro`) for label discovery. Even read-only, a
+  compromised edge could `docker inspect` sibling containers and read their env (secrets).
+  Accepted for a single-VM deploy; the hardening is a read-only docker-socket-proxy or the
+  Traefik file provider (no socket at all) — recorded, not yet applied.
 
 ## Affects
 

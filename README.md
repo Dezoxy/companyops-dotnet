@@ -65,8 +65,14 @@ Postgres + RabbitMQ). How to run, observe, and recover it:
 [docs/runbook.md](docs/runbook.md) · [docs/troubleshooting.md](docs/troubleshooting.md) ·
 [docs/backup-restore.md](docs/backup-restore.md).
 
+## Deployment
+
+Production runs behind a **Traefik** TLS edge ([ADR 0009](docs/decisions/0009-deployment-topology-edge.md)),
+deployed to a Linux VM via **Terraform** (provision) + **Ansible** (configure, deploy,
+schedule backups). Full runbook: [docs/deployment.md](docs/deployment.md).
+
 ## Status
 
 Built in phases (see the plan). Implemented: API + data (1), approval workflow (2), auth (3),
 audit (4), worker + queue (5), external integration (6), Docker orchestration (7), tests (8),
-CI/CD (9), observability & operations (10). Next: infra automation and the Angular demo UI.
+CI/CD (9), observability & operations (10), infrastructure automation (11). Next: the Angular demo UI.

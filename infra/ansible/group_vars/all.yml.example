@@ -1,0 +1,15 @@
+# Copy to group_vars/all.yml and encrypt it:  ansible-vault encrypt group_vars/all.yml
+# group_vars/all.yml is gitignored — never commit these in plaintext.
+app_domain: app.example.com
+keycloak_domain: auth.example.com
+acme_email: admin@example.com
+
+# Generate strong values, e.g.: openssl rand -base64 24
+postgres_password: "CHANGE_ME"
+kc_db_password: "CHANGE_ME" # no single quotes — used in a SQL init string
+rabbitmq_password: "CHANGE_ME"
+kc_admin_user: kcadmin
+kc_admin_password: "CHANGE_ME"
+
+# Optional OpenTelemetry collector:
+# otel_exporter_otlp_endpoint: http://otel-collector:4317

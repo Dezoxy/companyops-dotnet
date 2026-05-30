@@ -1,0 +1,123 @@
+---
+# Provisions a fresh Ubuntu VM and deploys the CompanyOps production stack
+# (docker-compose.prod.yml). Cloud-agnostic — point the inventory at any Ubuntu 24.04 host
+# (Terraform-provisioned, homelab, or hand-rolled). Secrets come from group_vars (use
+# ansible-vault); see group_vars/all.yml.example. Run:
+#   ansible-galaxy collection install -r requirements.yml
+#   ansible-playbook -i inventory.ini playbook.yml --ask-vault-pass
+- name: Deploy the CompanyOps production stack
+  hosts: companyops
+  become: true
+  gather_facts: true
+
+  vars:
+    app_dir: /opt/companyops
+    repo_url: https://github.com/Dezoxy/companyops-dotnet.git
+    repo_ref: main
+    backup_hour: "2"
+    backup_minute: "30"
+    # Required (define in group_vars/all.yml via ansible-vault — no defaults on purpose):
+    #   app_domain, keycloak_domain, acme_email, postgres_password, kc_db_password,
+    #   rabbitmq_password, kc_admin_user, kc_admin_password
+
+  tasks:
+    - name: Install apt prerequisites
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - git
+          - ufw
+        state: present
+        update_cache: true
+
+    - name: Create the apt keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Add the Docker apt GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Add the Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        filename: docker
+        state: present
+
+    - name: Install Docker Engine and the Compose plugin
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker is running and enabled
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Allow SSH through the firewall
+      community.general.ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: Allow HTTP and HTTPS through the firewall
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - "80"
+        - "443"
+
+    - name: Enable the firewall (default-deny incoming)
+      community.general.ufw:
+        state: enabled
+        policy: deny
+        direction: incoming
+
+    - name: Clone or update the repository
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_dir }}"
+        version: "{{ repo_ref }}"
+
+    - name: Render the production .env (secrets from vault)
+      ansible.builtin.template:
+        src: env.j2
+        dest: "{{ app_dir }}/infra/.env"
+        mode: "0600"
+
+    - name: Pin the realm redirect URIs / web origins to the app domain
+      ansible.builtin.replace:
+        path: "{{ app_dir }}/infra/keycloak/realm-companyops.prod.json"
+        regexp: app\.REPLACE_ME\.example
+        replace: "{{ app_domain }}"
+
+    - name: Schedule the nightly database backup
+      ansible.builtin.cron:
+        name: companyops-pg-backup
+        minute: "{{ backup_minute }}"
+        hour: "{{ backup_hour }}"
+        job: "{{ app_dir }}/infra/backup/pg-backup.sh >> /var/log/companyops-backup.log 2>&1"
+
+    - name: Build and start the production stack
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}/infra"
+        files:
+          - docker-compose.prod.yml
+        env_files:
+          - .env
+        build: always
+        state: present

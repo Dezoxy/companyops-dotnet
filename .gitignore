@@ -33,6 +33,17 @@ secrets.json
 *.key
 *.pem
 
+# ---- IaC (state + tfvars/inventory can hold secrets or your IP) ----
+infra/terraform/.terraform/
+# .terraform.lock.hcl IS committed (pins provider versions + multi-platform hashes).
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+infra/ansible/inventory.ini
+infra/ansible/.vault_pass
+infra/ansible/group_vars/all.yml
+
 # ---- Angular / Node (frontend/) ----
 node_modules/
 dist/
