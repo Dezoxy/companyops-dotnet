@@ -1,4 +1,5 @@
 using CompanyOps.Application.Abstractions;
+using CompanyOps.Domain.Auditing;
 
 namespace CompanyOps.Application.Requests.FulfillRequest;
 
@@ -9,6 +10,7 @@ namespace CompanyOps.Application.Requests.FulfillRequest;
 /// </summary>
 public sealed class FulfillRequestHandler(
     IRequestRepository requests,
+    IAuditLogger auditLogger,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -20,7 +22,11 @@ public sealed class FulfillRequestHandler(
             return null;
         }
 
-        request.Fulfill(command.ActorId, timeProvider.GetUtcNow());
+        var now = timeProvider.GetUtcNow();
+        var fromStatus = request.Status;
+
+        request.Fulfill(command.ActorId, now);
+        auditLogger.Add(AuditLog.ForRequest(AuditAction.RequestFulfilled, request.Id, command.ActorId, fromStatus, request.Status, now));
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return RequestDto.FromDomain(request);

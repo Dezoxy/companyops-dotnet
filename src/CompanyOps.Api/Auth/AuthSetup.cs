@@ -63,7 +63,8 @@ public static class AuthSetup
             .AddPolicy(Policies.CreateRequests, p => p.RequireRole(Roles.Employee))
             .AddPolicy(Policies.SubmitRequests, p => p.RequireRole(Roles.Employee))
             .AddPolicy(Policies.DecideRequests, p => p.RequireRole(Roles.Manager, Roles.Finance))
-            .AddPolicy(Policies.FulfillRequests, p => p.RequireRole(Roles.ItAdmin));
+            .AddPolicy(Policies.FulfillRequests, p => p.RequireRole(Roles.ItAdmin))
+            .AddPolicy(Policies.ReadAuditLog, p => p.RequireRole(Roles.Auditor));
 
         return services;
     }

@@ -1,4 +1,5 @@
 using CompanyOps.Application.Abstractions;
+using CompanyOps.Domain.Auditing;
 
 namespace CompanyOps.Application.Requests.RejectRequest;
 
@@ -9,6 +10,7 @@ namespace CompanyOps.Application.Requests.RejectRequest;
 /// </summary>
 public sealed class RejectRequestHandler(
     IRequestRepository requests,
+    IAuditLogger auditLogger,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -20,7 +22,11 @@ public sealed class RejectRequestHandler(
             return null;
         }
 
-        request.Reject(command.ApproverId, command.ApproverRole, command.ApproverDepartmentId, timeProvider.GetUtcNow(), command.Reason);
+        var now = timeProvider.GetUtcNow();
+        var fromStatus = request.Status;
+
+        request.Reject(command.ApproverId, command.ApproverRole, command.ApproverDepartmentId, now, command.Reason);
+        auditLogger.Add(AuditLog.ForRequest(AuditAction.RequestRejected, request.Id, command.ApproverId, fromStatus, request.Status, now));
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return RequestDto.FromDomain(request);
