@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read # gitleaks-action reads the PR's commit range via the GitHub API on pull_request events
 
 jobs:
   gitleaks:
