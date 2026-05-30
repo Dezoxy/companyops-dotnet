@@ -93,12 +93,23 @@ public class Request
     }
 
     /// <summary>
-    /// Submit the request for approval: <c>Draft → Submitted</c>. Materializes the
-    /// approval chain configured for this request's type. The chain is fixed at submit
-    /// time, so later config changes don't mutate in-flight requests.
+    /// Submit the request for approval: <c>Draft → Submitted</c>. Only the requester may
+    /// submit their own request. Materializes the approval chain configured for this
+    /// request's type. The chain is fixed at submit time, so later config changes don't
+    /// mutate in-flight requests.
     /// </summary>
-    public void Submit(DateTimeOffset nowUtc)
+    public void Submit(Guid actorId, DateTimeOffset nowUtc)
     {
+        if (actorId == Guid.Empty)
+        {
+            throw new DomainException("Submitting must record who performed it.");
+        }
+
+        if (actorId != RequesterId)
+        {
+            throw new DomainException("Only the requester can submit their own request.");
+        }
+
         if (Status != RequestStatus.Draft)
         {
             throw new DomainException($"Only a draft request can be submitted; this request is {Status}.");

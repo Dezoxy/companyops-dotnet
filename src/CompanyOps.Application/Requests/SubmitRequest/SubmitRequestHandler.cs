@@ -20,7 +20,7 @@ public sealed class SubmitRequestHandler(
             return null;
         }
 
-        request.Submit(timeProvider.GetUtcNow());
+        request.Submit(command.ActorId, timeProvider.GetUtcNow());
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return RequestDto.FromDomain(request);
