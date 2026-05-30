@@ -29,19 +29,19 @@ requirements for learning outcomes. Operational hardening such as SLA, HA,
 multi-region deployment, and enterprise support are out of scope for this project
 and should be documented as a trade-off in PRs or ADRs.
 
-**Scope:** backend-first. The core focus is the API, data, messaging, auth,
-observability, and infra. A **thin Angular SPA** is included for **demo
-purposes** — to show the approval workflow and the Keycloak login flow
-end-to-end — added as Phase 12, after the backend MVP stands on its own. The UI
-is a *client* of the API; it carries no business logic. Don't let frontend work
-derail the backend phases.
+**Scope:** backend-first, then a full client UI. The backend — API, data, messaging,
+auth, observability, infra — stood up first (Phases 1–11). On top of it the **Angular
+"CompanyOps Enterprise Suite"** is built as a **full client** across Phases 12–18
+([ADR 0010](docs/decisions/0010-frontend-full-client-angular-material.md)), not a thin
+demo. The non-negotiable still holds: the SPA is a *client* of the API and carries **no
+business logic**; the API is the source of truth and re-validates everything.
 
 ## Learning mode (read this first)
 
 - **Don't scaffold ahead of the current phase.** Build what the active phase needs,
-  nothing more. We are following the 14 phases in order. The active phase is
+  nothing more. We are following the 18 phases in order. The active phase is
   declared by the repo-root file `ACTIVE_PHASE` containing a single integer
-  `1..14`; tools and humans must not introduce features for phases greater than
+  `1..18`; tools and humans must not introduce features for phases greater than
   that value.
 - When you introduce an enterprise pattern in this repo/module, add a 2–3
   sentence rationale plus a 3-line alternative in the PR description and add a
@@ -56,11 +56,12 @@ derail the backend phases.
 ### Phase feature table
 
 The per-phase feature whitelist. A phase unlocks its own row **and** every row
-above it. Operational phases (8 tests, 9 CI/CD, 10 observability, 11 infra) and
-the additional flows (13 helpdesk-light, 14 asset lifecycle) add no *new* gated
-feature category — they harden operations or run on the existing engine — so they
-have no row here. "Don't scaffold ahead" still applies to everything; the table
-only enforces the categories most likely to be pulled in early.
+above it. Operational phases (8 tests, 9 CI/CD, 10 observability, 11 infra) add no *new*
+gated feature category — they harden operations — so they have no row here. The frontend
+track (12–18, [ADR 0010](docs/decisions/0010-frontend-full-client-angular-material.md))
+builds the Angular client; each of its phases ships UI **plus** the backend slice that
+screen group needs. "Don't scaffold ahead" still applies to everything; the table only
+enforces the categories most likely to be pulled in early.
 
 | Phase | Allowed feature additions |
 |---|---|
@@ -70,9 +71,13 @@ only enforces the categories most likely to be pulled in early.
 | 5 | Add queue/worker integration. |
 | 6 | Add external-integration clients (Finance/Inventory mocks). |
 | 7 | Add full local stack wiring via Docker Compose. |
-| 12 | Add frontend SPA features. |
-| 13 | Add the helpdesk-light flow (new request type + approval chain + fulfillment). |
-| 14 | Add the asset-lifecycle flow (new request type + asset states + fulfillment). |
+| 12 | Add the Angular client foundation + core workflow UI (shell, auth/OIDC, requests, approvals, audit). |
+| 13 | Add the helpdesk-light flow (new request type + approval chain + fulfillment) + its UI. |
+| 14 | Add the asset-lifecycle flow (asset states + fulfillment) + the Assets UI. |
+| 15 | Add the IT-admin / fulfilment console UI (+ any IT-admin read endpoints). |
+| 16 | Add reporting read-models / aggregations + the Reports & Analytics UI. |
+| 17 | Add integration-status endpoints (over the worker/outbox) + the Integrations UI. |
+| 18 | Add settings / profile (Keycloak account + app prefs) + the Settings UI. |
 
 ## Locked stack decisions
 
@@ -90,7 +95,8 @@ Recorded as ADRs in `docs/decisions/`. Defaults for this repo:
 | Background | .NET Worker Service |
 | Tests | xUnit + Testcontainers (real Postgres) |
 | Node.js | **24 LTS** ("Krypton") — frontend toolchain |
-| Frontend | **Angular 21** (standalone components, signals) — demo UI |
+| Frontend | **Angular 21** (standalone components, signals) — full client UI ([ADR 0010](docs/decisions/0010-frontend-full-client-angular-material.md)) |
+| Frontend UI | **Angular Material (M3)** + a custom theme from the Precision-Enterprise tokens; Material Symbols icons |
 | Frontend auth | `angular-auth-oidc-client` — OIDC Authorization Code + PKCE to Keycloak |
 | Local env | Docker Compose |
 | CI/CD | GitHub Actions |
@@ -225,8 +231,9 @@ ng lint                            # lint (CI enforces this)
 
 - **architecture-guardian** subagent — run it on backend diffs to catch Clean
   Architecture layer violations.
-- **angular-guardian** subagent — run it on frontend diffs: keeps the SPA thin,
-  OIDC/PKCE done right, no secrets/business logic in the UI, demo-quality basics.
+- **angular-guardian** subagent — run it on frontend diffs: SPA stays a thin *client*
+  (no business logic / authz decisions in the UI), OIDC/PKCE done right, no secrets in the
+  bundle, API DTOs not leaking through components, Material a11y + loading/error/empty states.
 - **security-guardian** subagent — run it on auth/endpoint/data-access diffs: checks
   changes against the `docs/security.md` authorization matrix + threat model (authz
   holes, IDOR, privilege escalation, JWT/claims handling, secrets, info disclosure).
@@ -238,8 +245,14 @@ ng lint                            # lint (CI enforces this)
 - **ef-migration** skill — add → review the generated SQL (destructive-op/data-loss
   checklist) → apply, with the project's mapping conventions and banked gotchas
   (PG18 volume path, `ValueGeneratedNever` on owned keys, the revert→re-add flow).
-- **new-angular-feature** skill — scaffolds an Angular feature (component +
-  service + route + model + guard) in the project's conventions.
+- **new-angular-feature** skill — scaffolds an Angular feature (standalone component +
+  service + route + model + guard) in the project's conventions (Angular Material + signals).
+- **Stitch MCP** — the frontend design source ([ADR 0010](docs/decisions/0010-frontend-full-client-angular-material.md)):
+  pull a screen's HTML + screenshot on demand as the visual / information-architecture
+  reference. The UI is rebuilt in Angular Material, not ported from the Tailwind markup.
+- **stitch-port** skill *(planned, Phase 12)* — turn a Stitch screen reference into the
+  matching Angular Material screen (route + component + service + model + spec), themed to the
+  design tokens, with loading/error/empty states.
 - Marketplace skills already cover ADRs (`engineering:architecture`), code review
   (`engineering:code-review`), testing strategy (`engineering:testing-strategy`),
   debugging (`engineering:debug`), runbooks (`operations:runbook`), security review

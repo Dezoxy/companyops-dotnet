@@ -75,4 +75,5 @@ schedule backups). Full runbook: [docs/deployment.md](docs/deployment.md).
 
 Built in phases (see the plan). Implemented: API + data (1), approval workflow (2), auth (3),
 audit (4), worker + queue (5), external integration (6), Docker orchestration (7), tests (8),
-CI/CD (9), observability & operations (10), infrastructure automation (11). Next: the Angular demo UI.
+CI/CD (9), observability & operations (10), infrastructure automation (11). Next: the Angular
+client — the "CompanyOps Enterprise Suite" ([ADR 0010](docs/decisions/0010-frontend-full-client-angular-material.md)), built across Phases 12–18.
