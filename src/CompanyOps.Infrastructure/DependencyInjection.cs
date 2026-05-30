@@ -1,8 +1,10 @@
 using CompanyOps.Application.Abstractions;
+using CompanyOps.Infrastructure.Messaging;
 using CompanyOps.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace CompanyOps.Infrastructure;
 
@@ -30,6 +32,31 @@ public static class DependencyInjection
         // Integration events are written to the outbox in the same transaction (ADR 0007).
         services.AddScoped<IIntegrationEventPublisher, IntegrationEventPublisher>();
 
+        services.AddMessaging(configuration);
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the shared RabbitMQ connection (lazy — connects on first use). Used by
+    /// the API (via <see cref="AddInfrastructure"/>) and standalone by the Worker, which
+    /// needs the broker but not the database.
+    /// </summary>
+    public static IServiceCollection AddMessaging(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<RabbitMqOptions>(configuration.GetSection(RabbitMqOptions.SectionName));
+        services.AddSingleton<RabbitMqConnection>();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the outbox relay (the producer-side publisher). Call from the API host
+    /// only — never the Worker, or the outbox would be published twice.
+    /// </summary>
+    public static IServiceCollection AddOutboxRelay(this IServiceCollection services)
+    {
+        services.AddSingleton<RabbitMqPublisher>();
+        services.AddHostedService<OutboxRelay>();
         return services;
     }
 }

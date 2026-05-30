@@ -37,5 +37,20 @@ services:
     volumes:
       - ./keycloak/realm-companyops.json:/opt/keycloak/data/import/realm-companyops.json:ro
 
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: companyops-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: companyops
+      RABBITMQ_DEFAULT_PASS: localdev_only_not_a_secret
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # management UI
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
 volumes:
   companyops-pgdata:
