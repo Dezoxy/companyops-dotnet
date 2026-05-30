@@ -69,6 +69,7 @@ public sealed class ApiFactory : WebApplicationFactory<CompanyOps.Api.ApiHost>, 
     protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development"); // RequireHttpsMetadata=false against the http Keycloak
+        builder.UseSetting("Cors:AllowedOrigins:0", "http://localhost:4200"); // owned by the test, not appsettings
         builder.UseSetting("ConnectionStrings:CompanyOps", _postgres.GetConnectionString());
         builder.UseSetting("Keycloak:Authority", $"{KeycloakBaseUrl}/realms/companyops");
         builder.UseSetting("Keycloak:Audience", "companyops-api");
