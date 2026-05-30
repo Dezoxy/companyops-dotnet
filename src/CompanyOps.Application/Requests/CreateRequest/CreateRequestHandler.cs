@@ -24,6 +24,7 @@ public sealed class CreateRequestHandler(
             command.Description,
             command.Type,
             command.RequesterId,
+            command.DepartmentId,
             timeProvider.GetUtcNow());
 
         requests.Add(request);

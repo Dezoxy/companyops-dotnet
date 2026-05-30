@@ -13,6 +13,7 @@ public sealed record RequestDto(
     RequestType Type,
     RequestStatus Status,
     Guid RequesterId,
+    Guid DepartmentId,
     DateTimeOffset CreatedAtUtc)
 {
     public static RequestDto FromDomain(Request request) => new(
@@ -22,5 +23,6 @@ public sealed record RequestDto(
         request.Type,
         request.Status,
         request.RequesterId,
+        request.DepartmentId,
         request.CreatedAtUtc);
 }

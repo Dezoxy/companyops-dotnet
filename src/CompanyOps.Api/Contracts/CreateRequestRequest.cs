@@ -7,12 +7,13 @@ namespace CompanyOps.Api.Contracts;
 /// command so the HTTP contract can evolve independently.
 /// </summary>
 /// <remarks>
-/// <see cref="RequesterId"/> is accepted from the client only because there is no
-/// authentication yet (Phase 1). From Phase 3 it is taken from the authenticated
-/// principal and removed from this body.
+/// <see cref="RequesterId"/> and <see cref="DepartmentId"/> are accepted from the
+/// client only because there is no authentication yet. From Phase 3 they are taken
+/// from the authenticated principal and removed from this body.
 /// </remarks>
 public sealed record CreateRequestRequest(
     string Title,
     string? Description,
     RequestType Type,
-    Guid RequesterId);
+    Guid RequesterId,
+    Guid DepartmentId);

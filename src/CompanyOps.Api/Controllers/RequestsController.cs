@@ -24,7 +24,7 @@ public sealed class RequestsController : ControllerBase
         [FromServices] CreateRequestHandler handler,
         CancellationToken cancellationToken)
     {
-        var command = new CreateRequestCommand(body.Title, body.Description, body.Type, body.RequesterId);
+        var command = new CreateRequestCommand(body.Title, body.Description, body.Type, body.RequesterId, body.DepartmentId);
         var created = await handler.HandleAsync(command, cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
