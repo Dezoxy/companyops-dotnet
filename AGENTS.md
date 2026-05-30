@@ -223,19 +223,24 @@ ng lint                            # lint (CI enforces this)
   Architecture layer violations.
 - **angular-guardian** subagent — run it on frontend diffs: keeps the SPA thin,
   OIDC/PKCE done right, no secrets/business logic in the UI, demo-quality basics.
+- **security-guardian** subagent — run it on auth/endpoint/data-access diffs: checks
+  changes against the `docs/security.md` authorization matrix + threat model (authz
+  holes, IDOR, privilege escalation, JWT/claims handling, secrets, info disclosure).
 - **new-slice** skill — scaffolds a backend vertical slice for one business action
   (command) or read (query) across all four layers in the project's conventions:
-  domain method, Application command/query + handler + DI registration, a
-  business-action endpoint, and tests. Phase-aware tooling must read the active
-  phase from `ACTIVE_PHASE` and refuse to add code for phases greater than that value.
+  domain transition, Application command/query + handler (audit + outbox event) + DI
+  registration, an authorized business-action endpoint, and tests. Phase-aware: reads
+  `ACTIVE_PHASE` and refuses to add code for phases greater than that value.
+- **ef-migration** skill — add → review the generated SQL (destructive-op/data-loss
+  checklist) → apply, with the project's mapping conventions and banked gotchas
+  (PG18 volume path, `ValueGeneratedNever` on owned keys, the revert→re-add flow).
 - **new-angular-feature** skill — scaffolds an Angular feature (component +
   service + route + model + guard) in the project's conventions.
 - Marketplace skills already cover ADRs (`engineering:architecture`), code review
   (`engineering:code-review`), testing strategy (`engineering:testing-strategy`),
   debugging (`engineering:debug`), runbooks (`operations:runbook`), security review
   (`security-review`). Reuse these — don't reinvent them.
-- `ef-migration` skill will be added around Phase 8 when migration churn makes it
-  worth it. (`phase-kickoff` was dropped — a short doc covers it without skill overhead.)
+  (`phase-kickoff` was dropped — a short doc covers it without skill overhead.)
 
 ## Definition of done (per change)
 
