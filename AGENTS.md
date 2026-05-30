@@ -71,6 +71,8 @@ only enforces the categories most likely to be pulled in early.
 | 6 | Add external-integration clients (Finance/Inventory mocks). |
 | 7 | Add full local stack wiring via Docker Compose. |
 | 12 | Add frontend SPA features. |
+| 13 | Add the helpdesk-light flow (new request type + approval chain + fulfillment). |
+| 14 | Add the asset-lifecycle flow (new request type + asset states + fulfillment). |
 
 ## Locked stack decisions
 
@@ -172,8 +174,11 @@ hat — the labels record *which hat* a decision belongs to, not separate people
 6. **Authorization rules live in [docs/security.md](docs/security.md).** Treat the
    role × action matrix as the source of truth; enforce Manager actions as
    department-scoped (resource-level), not role-only. Owner: security.
-7. **Business actions, not CRUD.** Model real workflow: `POST /requests/{id}/approve-manager`,
-   not generic update. Endpoints map to domain operations. Owner: architecture.
+7. **Business actions, not CRUD.** Model real workflow: `POST /requests/{id}/submit`,
+   `POST /requests/{id}/approve`, not a generic update. Endpoints map to domain
+   operations. Approval is one step-driven `/approve` (the actor's role + the
+   configured chain select the step), not role-named endpoints — see ADR 0006.
+   Owner: architecture.
 
 ## Conventions
 
