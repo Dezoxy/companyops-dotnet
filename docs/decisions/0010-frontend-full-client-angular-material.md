@@ -33,9 +33,11 @@ markup, not Angular.
    information-architecture reference**; each screen is **rebuilt with Material components**,
    not ported from the Tailwind markup.
 
-3. **The full frontend is an expanded phase track (12 → 18)**, each screen-group shipping with
+3. **The full frontend is an expanded phase track (12 → 20)**, each screen-group shipping with
    the backend slice it needs — reusing the request/approval/audit engine, and adding asset,
-   reporting read-model, integration-status, and settings capabilities as required. See the
+   reporting read-model, integration-status, and settings capabilities as required. (The
+   frontend foundation, auth+API client, and core workflow UI are three distinct phases —
+   12/13/14 — rather than one mega-phase, which is why the track runs to 20.) See the
    phase feature table in `AGENTS.md`.
 
 4. **Tooling:** the **Stitch MCP** is the design source (pull a screen's HTML + screenshot on
@@ -70,7 +72,7 @@ markup, not Angular.
   than a big-bang UI drop.
 
 **Negative / costs**
-- **Bigger scope, more phases** (12 → 18) and a longer timeline.
+- **Bigger scope, more phases** (12 → 20) and a longer timeline.
 - **The backend must grow** to back the designed screens: asset lifecycle (Phase 14, already
   planned), an IT-admin/fulfilment surface (15), reporting read-models/aggregations (16, a
   read-side / CQRS-flavoured addition), integration-status endpoints over the existing
@@ -88,4 +90,4 @@ markup, not Angular.
 - **docs/security.md** — the Phase-12 items already queued are prerequisites: split the Keycloak
   client into a public SPA client + a bearer-only API audience, restrict CORS to the SPA origin,
   and add a CSP at the edge.
-- **Phases 12–18** — the frontend track and its backend slices.
+- **Phases 12–20** — the frontend track and its backend slices.

@@ -2,7 +2,7 @@
 
 The **CompanyOps Enterprise Suite** — a full Angular client of the API
 ([ADR 0010](../docs/decisions/0010-frontend-full-client-angular-material.md)), built across
-Phases 12–18. It is a **client, not a product backend**: every screen is a view over the API.
+Phases 12–20. It is a **client, not a product backend**: every screen is a view over the API.
 
 ## Stack
 
@@ -58,8 +58,9 @@ npx ng test --watch=false   # Vitest unit tests
 npx ng lint          # ESLint
 ```
 
-## The suite (Phases 12–18)
+## The suite (Phases 12–20)
 
-Shell + auth + Dashboard + Requests (list/detail/create) + Approvals + Audit (12) → Helpdesk
-(13) → Assets (14) → IT-Admin console (15) → Reports (16) → Integrations (17) → Settings (18).
+Foundation (12, ✅) → Auth & API client (13) → Core workflow UI: Dashboard / Requests
+(list/detail/create) / Approvals / Audit (14) → Helpdesk (15) → Assets (16) → IT-Admin console
+(17) → Reports (18) → Integrations (19) → Settings (20).
 Build each screen with its backend slice; never invent business logic to fill a screen.

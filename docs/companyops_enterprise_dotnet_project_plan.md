@@ -784,38 +784,76 @@ Deployed application with infrastructure automation
 
 ---
 
-### Phase 12 — Angular client: foundation & core workflow UI
+### Phase 12 — Angular client foundation ✅ (done, #26)
 
 Goal:
 
-Stand up the Angular client (the "CompanyOps Enterprise Suite", ADR 0010) and the core
-workflow screens. The foundation built here — shell, theme, auth, API client — carries the
-whole frontend track (Phases 12–18). Still a *client* of the API: no business logic; the
-backend stays the source of truth.
+Stand up the Angular client (the "CompanyOps Enterprise Suite", ADR 0010) — the shell, theme,
+and tooling that carry the whole frontend track (Phases 12–20). A *client* of the API: no
+business logic; the backend stays the source of truth.
 
 Tasks:
 
-- scaffold Angular 21 workspace in `frontend/` (standalone components, signals)
-- Angular Material (M3) + a custom theme from the Precision-Enterprise tokens; Material
-  Symbols icons; the app shell (responsive sidenav + toolbar) and routing
-- configure OIDC Authorization Code + PKCE against Keycloak; split a public SPA client from
-  the bearer-only API audience; HTTP interceptor to attach the token; functional auth/role guards
-- typed API client + DTO models
-- core screens: login/logout, dashboard, requests (list / detail / create), approvals, and the
-  read-only audit log (Auditor)
-- role-gated workflow actions (submit, approve, reject, fulfill, cancel) wired to the business endpoints
-- configure API CORS for the SPA origin + a CSP at the edge; dev proxy for local
-- unit tests (`ng test`) + lint in CI; Dockerfile + Traefik wiring
+- scaffold Angular 21 workspace in `frontend/` (standalone components, signals, Vitest)
+- Angular Material (M3) + a custom theme from the Precision-Enterprise tokens (overriding the
+  `--mat-sys-*` system variables); Material Symbols icons
+- the app shell (responsive sidenav + toolbar) + lazy routing; a dashboard placeholder
+- ESLint; a CI frontend job (build + lint + Vitest on Node 24)
 
 Deliverable:
 
 ```text
-The Angular client foundation + core workflow UI, running against the API behind Keycloak
+The themed Angular shell builds, lints, and tests, in CI
 ```
 
 ---
 
-### Phase 13 — Helpdesk-light flow
+### Phase 13 — Auth & API client
+
+Goal:
+
+Make the client talk to the API as a real, authenticated user.
+
+Tasks:
+
+- OIDC Authorization Code + PKCE against Keycloak via `angular-auth-oidc-client`
+- split a **public SPA client** from the bearer-only **API audience** in the Keycloak realm(s)
+- HTTP interceptor to attach the access token; functional **auth + role guards**; login / logout
+- API **CORS** for the SPA origin + a **CSP** at the edge; dev proxy (`proxy.conf.json`) for local
+- a typed **API client + DTO models** — the seam every feature service builds on
+
+Deliverable:
+
+```text
+Log in via Keycloak; authenticated, role-aware calls reach the API
+```
+
+---
+
+### Phase 14 — Core workflow UI
+
+Goal:
+
+The core request/approval screens, rebuilt from the Stitch designs in Angular Material
+(via the `stitch-port` skill).
+
+Tasks:
+
+- dashboard bound to real request / approval counts
+- requests: list (my requests + status), detail (+ status timeline), create
+- approvals: the Manager / Finance queue + role-gated approve / reject
+- read-only **audit log** view (Auditor)
+- role-gated workflow actions (submit, approve, reject, fulfill, cancel) wired to the endpoints
+
+Deliverable:
+
+```text
+The full request → approval → fulfilment lifecycle, driven from the UI
+```
+
+---
+
+### Phase 15 — Helpdesk-light flow
 
 Goal:
 
@@ -840,7 +878,7 @@ Helpdesk requests running through the same approval/fulfillment engine
 
 ---
 
-### Phase 14 — Asset lifecycle flow
+### Phase 16 — Asset lifecycle flow
 
 Goal:
 
@@ -863,7 +901,7 @@ Assets tracked through their lifecycle, with history and return/reclaim
 
 ---
 
-### Phase 15 — IT Admin & fulfilment console
+### Phase 17 — IT Admin & fulfilment console
 
 Goal:
 
@@ -885,7 +923,7 @@ IT Admins work approved requests to completion from a dedicated console
 
 ---
 
-### Phase 16 — Reporting & analytics
+### Phase 18 — Reporting & analytics
 
 Goal:
 
@@ -909,7 +947,7 @@ A reports dashboard summarising the workflow over time
 
 ---
 
-### Phase 17 — Integrations console
+### Phase 19 — Integrations console
 
 Goal:
 
@@ -932,7 +970,7 @@ Operators see external-integration health and history in the UI
 
 ---
 
-### Phase 18 — Settings & profile
+### Phase 20 — Settings & profile
 
 Goal:
 
