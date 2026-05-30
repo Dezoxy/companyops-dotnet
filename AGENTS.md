@@ -156,14 +156,19 @@ ng lint                            # lint (CI enforces this)
   Architecture layer violations.
 - **angular-guardian** subagent — run it on frontend diffs: keeps the SPA thin,
   OIDC/PKCE done right, no secrets/business logic in the UI, demo-quality basics.
+- **new-slice** skill — scaffolds a backend vertical slice for one business action
+  (command) or read (query) across all four layers in the project's conventions:
+  domain method, Application command/query + handler + DI registration, a
+  business-action endpoint, and tests. Phase-aware (no MediatR/FluentValidation yet,
+  audit from Phase 4, auth from Phase 3).
 - **new-angular-feature** skill — scaffolds an Angular feature (component +
   service + route + model + guard) in the project's conventions.
 - Marketplace skills already cover ADRs (`engineering:architecture`), code review
   (`engineering:code-review`), testing strategy (`engineering:testing-strategy`),
   debugging (`engineering:debug`), runbooks (`operations:runbook`), security review
   (`security-review`). Reuse these — don't reinvent them.
-- Project-specific skills (`new-slice`, `ef-migration`, `phase-kickoff`) will be
-  added when Phases 1 and 8 make them worth it.
+- `ef-migration` skill will be added around Phase 8 when migration churn makes it
+  worth it. (`phase-kickoff` was dropped — a short doc covers it without skill overhead.)
 
 ## Definition of done (per change)
 
