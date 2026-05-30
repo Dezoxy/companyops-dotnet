@@ -1,6 +1,6 @@
 ---
 name: new-slice
-description: Scaffold a backend vertical slice for one CompanyOps business action (command) or read (query) across all four layers in the project's conventions — domain method, Application command/query + handler + DI registration, a business-action API endpoint, and tests. Use when adding a backend use case such as submit/approve-manager/approve-finance/reject/fulfill/cancel a request, or a new read query.
+description: Scaffold a backend vertical slice for one CompanyOps business action (command) or read (query) across all four layers in the project's conventions — domain transition, Application command/query + handler (audit + outbox event) + DI registration, an authorized business-action endpoint, and tests. Use when adding a backend use case such as submit/approve/reject/fulfill/cancel a request, or a new read query.
 ---
 
 # Scaffold a backend vertical slice (CompanyOps)
@@ -10,112 +10,106 @@ four layers so the developer fills in *logic*, not *plumbing*. This is the backe
 counterpart to `new-angular-feature`.
 
 **Read first:** `AGENTS.md` (conventions + non-negotiables) and the per-layer
-`src/CompanyOps.*/CLAUDE.md`. Use the merged Phase 1 `CreateRequest` slice as the
-reference shape — match its style, XML-doc tone, and file layout exactly.
+`src/CompanyOps.*/CLAUDE.md`. **Reference shapes:** the `CreateRequest` slice (the
+simplest end-to-end) and the `ApproveRequest` slice (shows audit + an outbox event on
+a transition) — match their style, XML-doc tone, and file layout.
+
+**Read `ACTIVE_PHASE` (repo root) first** — a single integer, the current phase. Never
+scaffold a feature whose phase is greater than that value (see the phase-feature table
+in `AGENTS.md`); if a slice needs a later-phase concern, stop and flag it.
 
 ## Inputs to confirm
 
-- **Slice kind** — **command** (changes state / a business action) or **query** (read-only).
-- **Action name** — PascalCase use-case name, not CRUD: `SubmitRequest`,
-  `ApproveRequestByManager`, `ApproveRequestByFinance`, `RejectRequest`,
-  `FulfillRequest`, `CancelRequest`; queries like `GetRequestById`, `ListRequests`.
-- **Aggregate + transition** (commands) — which status → status move it performs,
-  and the invariant that makes it illegal (e.g. can't approve a `Draft`; only the
-  owning department's manager). The valid path is in `src/CompanyOps.Domain/CLAUDE.md`.
-- **Endpoint** — the business-action route, e.g. `POST /requests/{id}/submit`.
-- **Authorization intent** — which role/policy the use case requires (Employee /
-  Manager / Finance / IT Admin / Auditor). Expressed in Application; *enforced* in Api.
+- **Slice kind** — **command** (changes state) or **query** (read-only).
+- **Action name** — PascalCase, not CRUD: `SubmitRequest`, `ApproveRequest`,
+  `RejectRequest`, `FulfillRequest`, `CancelRequest`; queries like `GetRequestById`.
+- **Aggregate + transition** (commands) — which status → status move, and the invariant
+  that makes it illegal. The valid path is in `src/CompanyOps.Domain/CLAUDE.md`.
+- **Authorization** — which role policy gates the endpoint, and any resource scope
+  (department / own) the Domain must enforce. Source of truth: `docs/security.md`.
+- **Async follow-on?** — does the transition need out-of-band work (notify, call an
+  external system)? If so it emits an integration event the Worker handles.
 
-## What to generate
+## What to generate — command slice
 
-### Command slice (business action)
-
-1. **Domain** — `src/CompanyOps.Domain/Requests/Request.cs`: add the transition
-   method (e.g. `public void Submit(DateTimeOffset nowUtc)`). It **validates the
-   current status and throws `DomainException` on an invalid transition** — never
-   returns a bool, never silently no-ops. Mutates state through the private setters.
-   From Phase 2 this raises a domain event (e.g. `RequestSubmitted`) for the worker /
-   audit log to react to — don't call infrastructure from the domain.
+1. **Domain** — `Request.cs`: add the transition method (e.g. `Submit(Guid actorId,
+   DateTimeOffset nowUtc)`). It **validates the current status + the actor's eligibility
+   (role, department scope, ownership) and throws `DomainException` on any illegal move**
+   — never returns a bool, never silently no-ops. Mutate via the private setters. Keep
+   it pure: no infrastructure, no I/O.
 2. **Application** — `src/CompanyOps.Application/Requests/<Action>/`:
-   - `<Action>Command.cs` — `sealed record` of the inputs. The target id + any
-     actor id. (Actor comes from the request until Phase 3, then from the principal.)
-   - `<Action>Handler.cs` — `sealed class`, primary-constructor DI. Orchestrate:
-     load aggregate via the repository port → call the domain method (rule lives
-     there) → `SaveChangesAsync` → **record the audit entry (Phase 4+)** → return a
-     `RequestDto`. Inject `TimeProvider` for "now". `async` + `CancellationToken`.
-   - Register the handler in `src/CompanyOps.Application/DependencyInjection.cs`
-     (`services.AddScoped<<Action>Handler>();`).
-3. **Api** — add the action to `RequestsController` (or the relevant controller):
-   thin — bind DTO → build command → dispatch via `[FromServices]` handler → map to
-   HTTP. Add `[ProducesResponseType]` for success + 400/404. The route is a
-   **business action** (`POST /requests/{id}/submit`), not a generic update.
-4. **Tests** — see "Tests" below: a Domain unit test for the transition (happy path
-   + the throw) and a handler test.
+   - `<Action>Command.cs` — `sealed record` of inputs: the target id + the actor
+     context (`ActorId`, and `ApproverRole`/`ApproverDepartmentId` for decisions). The
+     Api fills these **from the authenticated principal**, not the request body.
+   - `<Action>Handler.cs` — `sealed class`, primary-constructor DI. Orchestrate, in order:
+     load aggregate via `GetForUpdateAsync` → capture `fromStatus` → call the domain
+     method → `auditLogger.Add(AuditLog.ForRequest(...))` → **if the transition produces
+     an integration event**, `eventPublisher.Enqueue(new <Event>(...))` → a single
+     `unitOfWork.SaveChangesAsync` (state + audit + outbox commit atomically). Return
+     `RequestDto`; `null` when the aggregate isn't found. Inject `TimeProvider`.
+   - Register the handler in `DependencyInjection.cs`.
+3. **Api** — add the action to `RequestsController`: `[Authorize(Policy = Policies.…)]`,
+   bind the body (note/reason only — never identity), build the command from
+   `User.GetUserId()` / `GetDepartmentId()` / `GetApproverRole()`, dispatch, map
+   `null → NotFound()`. `[ProducesResponseType]` for 200/400/401/403/404. A **business
+   action** route (`POST /requests/{id}/submit`), not a generic update.
+4. **Worker (only if it emits an event)** — handle the new event type in
+   `IntegrationEventProcessor`: it is **idempotent** (dedup on the message id), calls
+   any external gateway through its port, records the outcome as an audit entry, and
+   marks the message processed — all in one transaction. Bind the event's routing key
+   in `MessagingTopology`.
+5. **Tests** — domain unit tests (happy transition + each illegal-move throw) and, where
+   it earns it, an integration test (see "Tests").
 
-### Query slice (read)
+## What to generate — query slice
 
-1. **Application** — `src/CompanyOps.Application/Requests/<Query>/`:
-   `<Query>Query.cs` (record of filter inputs) + `<Query>Handler.cs` returning
-   `RequestDto` / `IReadOnlyList<RequestDto>` via the repository port. Reads use
-   `AsNoTracking()` in the repo. Register the handler in `DependencyInjection.cs`.
-2. **Api** — a `GET` endpoint mapping to the handler; `null` → `NotFound()`.
-3. No domain method, no audit entry (reads don't mutate).
+- **Application** `<Query>/`: `<Query>Query.cs` + `<Query>Handler.cs` returning DTOs via
+  a read port (`AsNoTracking()` in the repo). Register the handler.
+- **Api** — a `GET` endpoint, `[Authorize]` (role per the matrix); `null → NotFound()`.
+- No domain method, no audit, no event (reads don't mutate).
 
-### Ports
+## Ports
 
-If the slice needs data access the repo doesn't expose yet, add the method to
-`IRequestRepository` (Application, `Abstractions/`) and implement it in
-`RequestRepository` (Infrastructure). **Never** touch `DbContext` from a handler.
+If the slice needs data the repo doesn't expose, add the method to the port in
+`Application/Abstractions/` and implement it in Infrastructure. **Never** touch
+`DbContext` from a handler.
 
-## Phase-awareness (do NOT scaffold ahead)
+## Conventions in force (current phase)
 
-- **Read `ACTIVE_PHASE` (repo root) first.** It holds a single integer — the
-  current phase. Never scaffold a feature whose phase is greater than that value
-  (see the phase feature table in `AGENTS.md`). If the requested slice needs a
-  later-phase concern (auth, audit, queue, …), stop and flag it rather than
-  generating ahead. The per-phase rules below are relative to that value.
-- **No MediatR.** Handlers are plain injectable classes, registered explicitly.
-  Note in a comment where a mediator pipeline would later live; don't add it.
-- **No FluentValidation yet.** Input shape is validated by the domain factory /
-  transition (which throws). Add a `<Action>Validator.cs` (FluentValidation) **only
-  once the project has adopted it** — until then, don't.
-- **Audit logging from Phase 4.** Before Phase 4, leave a `// TODO(Phase 4): audit`
-  marker at the persist step — do not invent an `IAuditLogger` call that maps to
-  nothing. From Phase 4 on, every state change records who / what / when / old→new.
-- **Auth from Phase 3.** Until then the actor id arrives in the request DTO
-  (documented as temporary, as in Phase 1). From Phase 3 it comes from the principal
-  and is removed from the body; enforcement (role + department scope) is wired in Api.
+- **Auth (Phase 3):** identity comes from the validated JWT principal, never the body.
+  Endpoints are deny-by-default with a role policy; resource scope (department) + stage
+  + ownership are Domain invariants (defense in depth).
+- **Audit (Phase 4):** every state change records who / what / when / old→new via
+  `IAuditLogger`, enlisted in the same transaction. No state change without it.
+- **Events (Phase 5–6):** cross-process effects go through the **outbox**
+  (`IIntegrationEventPublisher.Enqueue`, committed with the change); the Worker consumes
+  idempotently. The API never calls a broker or external system inline.
+- **Still NOT adopted:** **MediatR** (handlers are plain injectable classes, registered
+  explicitly) and **FluentValidation** (input is validated by the domain factory /
+  transition, which throws → mapped to 400 by `DomainExceptionHandler`). Don't add
+  either unless the project has adopted it.
 
 ## Rules (do not violate)
 
-- Dependencies point **inward only**. No EF/HTTP/queue types in Domain or
-  Application. No business rules in the controller or the handler — the rule lives
-  in the Domain method.
-- **Business actions, not CRUD.** The endpoint and the command name a domain
-  operation.
-- **Invalid transitions throw in Domain**, not just guarded in Api/UI.
-- EF entities are not API contracts — map to/from DTOs (`RequestDto.FromDomain`).
-- Auditor role is read-only; never give it a mutating slice.
+- Dependencies point **inward only**. No EF/HTTP/broker types in Domain or Application.
+  Business rules live in the Domain method, not the controller or handler.
+- **Business actions, not CRUD.** Invalid transitions **throw in Domain**.
+- EF entities are not API contracts — map to/from DTOs (`*.FromDomain`).
+- Auditor is read-only — never give it a mutating slice.
 
 ## Tests
 
-Integration tests use **Testcontainers against real Postgres** (not in-memory);
-domain tests are plain xUnit. AAA, names `Method_Scenario_ExpectedResult`.
+Domain tests are plain xUnit (AAA, `Method_Scenario_ExpectedResult`). Integration tests
+live in `tests/CompanyOps.Api.IntegrationTests` and run the real API behind real Keycloak
+JWTs against real Postgres (Testcontainers) — extend them for an authorization-sensitive
+or event-driven slice (assert 401/403/400 + the happy path, and any audit/round-trip).
 
-If no test project exists yet (true through early Phase 1), bootstrap it **once**:
-create `tests/CompanyOps.Domain.Tests` (and `tests/CompanyOps.Application.Tests`
-when a handler test needs the DB) as xUnit projects, reference the projects under
-test, and add them to `CompanyOps.slnx`. Mention this to the user before creating
-projects — it's a structural change, not part of the slice.
-
-Per slice, add at minimum:
-- Domain: `Request_<Action>_<Scenario>_<Expected>` — the happy transition **and**
-  the `DomainException` on an illegal one.
-- Handler: the orchestration (loads, calls domain, persists, returns DTO).
+Per slice, at minimum:
+- Domain: the happy transition **and** the `DomainException` on each illegal one.
+- An integration assertion when the slice changes the authz matrix or emits an event.
 
 ## After scaffolding
 
 - `dotnet build` clean → `dotnet test` green → `dotnet format` clean.
-- Run the **architecture-guardian** subagent on the diff (layer-rule check).
-- From Phase 3: confirm the new endpoint is covered by the authorization matrix in
-  `docs/security.md`.
+- Run **architecture-guardian** on the diff; run **security-guardian** if it touches
+  auth, endpoints, or data access. Update `docs/security.md` if the matrix changed.
