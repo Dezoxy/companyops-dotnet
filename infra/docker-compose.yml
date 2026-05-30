@@ -1,0 +1,26 @@
+# Phase 1 local dev: PostgreSQL only. The full stack (API, Worker, Redis,
+# RabbitMQ, Keycloak) is assembled in Phase 7. Credentials here are local-only
+# throwaways and must match src/CompanyOps.Api/appsettings.Development.json.
+services:
+  postgres:
+    image: postgres:18
+    container_name: companyops-postgres
+    environment:
+      POSTGRES_DB: companyops
+      POSTGRES_USER: companyops
+      POSTGRES_PASSWORD: localdev_only_not_a_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      # Postgres 18+ expects the mount at /var/lib/postgresql (data lands in a
+      # version-specific subdir), NOT /var/lib/postgresql/data — the old path
+      # makes the 18 image exit 1 on startup.
+      - companyops-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U companyops -d companyops"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  companyops-pgdata:

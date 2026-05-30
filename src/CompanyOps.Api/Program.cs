@@ -1,0 +1,43 @@
+using System.Text.Json.Serialization;
+using CompanyOps.Api.ErrorHandling;
+using CompanyOps.Application;
+using CompanyOps.Infrastructure;
+using Scalar.AspNetCore;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+        // Serialize enums as their names (e.g. "Procurement"), not integers.
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+builder.Services.AddOpenApi();
+
+// Map domain rule violations to RFC 7807 problem responses.
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<DomainExceptionHandler>();
+
+// TimeProvider.System makes "now" injectable and testable (no custom clock port).
+builder.Services.AddSingleton(TimeProvider.System);
+
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
+
+var app = builder.Build();
+
+app.UseExceptionHandler();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference(); // interactive API docs at /scalar
+}
+
+app.UseHttpsRedirection();
+app.MapControllers();
+
+app.Run();
+
+// Exposed so integration tests (Phase 8) can use WebApplicationFactory<Program>.
+public partial class Program;
