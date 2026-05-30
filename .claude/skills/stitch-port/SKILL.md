@@ -1,6 +1,6 @@
 ---
 name: stitch-port
-description: Turn a Stitch "CompanyOps Enterprise Suite" screen into an Angular Material feature in the project's conventions — pull the screen's reference (screenshot + HTML), rebuild it with Material components themed to the design tokens, and wire it to the real API. Use when implementing a designed screen (dashboard, requests list/detail/create, approvals, audit, assets, IT-admin, reports, integrations, settings) during the frontend track (Phases 12–18).
+description: Turn a Stitch "CompanyOps Enterprise Suite" screen into an Angular Material feature in the project's conventions — pull the screen's reference (screenshot + HTML), rebuild it with Material components themed to the design tokens, and wire it to the real API. Use when implementing a designed screen (dashboard, requests list/detail/create, approvals, audit, assets, IT-admin, reports, integrations, settings) during the frontend track (Phases 12–20).
 ---
 
 # Port a Stitch screen → Angular Material (CompanyOps)

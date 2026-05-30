@@ -31,7 +31,7 @@ and should be documented as a trade-off in PRs or ADRs.
 
 **Scope:** backend-first, then a full client UI. The backend — API, data, messaging,
 auth, observability, infra — stood up first (Phases 1–11). On top of it the **Angular
-"CompanyOps Enterprise Suite"** is built as a **full client** across Phases 12–18
+"CompanyOps Enterprise Suite"** is built as a **full client** across Phases 12–20
 ([ADR 0010](docs/decisions/0010-frontend-full-client-angular-material.md)), not a thin
 demo. The non-negotiable still holds: the SPA is a *client* of the API and carries **no
 business logic**; the API is the source of truth and re-validates everything.
@@ -39,9 +39,9 @@ business logic**; the API is the source of truth and re-validates everything.
 ## Learning mode (read this first)
 
 - **Don't scaffold ahead of the current phase.** Build what the active phase needs,
-  nothing more. We are following the 18 phases in order. The active phase is
+  nothing more. We are following the 20 phases in order. The active phase is
   declared by the repo-root file `ACTIVE_PHASE` containing a single integer
-  `1..18`; tools and humans must not introduce features for phases greater than
+  `1..20`; tools and humans must not introduce features for phases greater than
   that value.
 - When you introduce an enterprise pattern in this repo/module, add a 2–3
   sentence rationale plus a 3-line alternative in the PR description and add a
@@ -58,7 +58,7 @@ business logic**; the API is the source of truth and re-validates everything.
 The per-phase feature whitelist. A phase unlocks its own row **and** every row
 above it. Operational phases (8 tests, 9 CI/CD, 10 observability, 11 infra) add no *new*
 gated feature category — they harden operations — so they have no row here. The frontend
-track (12–18, [ADR 0010](docs/decisions/0010-frontend-full-client-angular-material.md))
+track (12–20, [ADR 0010](docs/decisions/0010-frontend-full-client-angular-material.md))
 builds the Angular client; each of its phases ships UI **plus** the backend slice that
 screen group needs. "Don't scaffold ahead" still applies to everything; the table only
 enforces the categories most likely to be pulled in early.
@@ -71,13 +71,15 @@ enforces the categories most likely to be pulled in early.
 | 5 | Add queue/worker integration. |
 | 6 | Add external-integration clients (Finance/Inventory mocks). |
 | 7 | Add full local stack wiring via Docker Compose. |
-| 12 | Add the Angular client foundation + core workflow UI (shell, auth/OIDC, requests, approvals, audit). |
-| 13 | Add the helpdesk-light flow (new request type + approval chain + fulfillment) + its UI. |
-| 14 | Add the asset-lifecycle flow (asset states + fulfillment) + the Assets UI. |
-| 15 | Add the IT-admin / fulfilment console UI (+ any IT-admin read endpoints). |
-| 16 | Add reporting read-models / aggregations + the Reports & Analytics UI. |
-| 17 | Add integration-status endpoints (over the worker/outbox) + the Integrations UI. |
-| 18 | Add settings / profile (Keycloak account + app prefs) + the Settings UI. |
+| 12 | Angular client foundation (workspace, Material M3 theme, app shell, routing, CI). |
+| 13 | Auth & API client (OIDC/PKCE, Keycloak SPA-client split, CORS/CSP, token interceptor, role guards, typed API client). |
+| 14 | Core workflow UI (dashboard, requests list/detail/create, approvals, audit). |
+| 15 | Add the helpdesk-light flow (new request type + approval chain + fulfillment) + its UI. |
+| 16 | Add the asset-lifecycle flow (asset states + fulfillment) + the Assets UI. |
+| 17 | Add the IT-admin / fulfilment console UI (+ any IT-admin read endpoints). |
+| 18 | Add reporting read-models / aggregations + the Reports & Analytics UI. |
+| 19 | Add integration-status endpoints (over the worker/outbox) + the Integrations UI. |
+| 20 | Add settings / profile (Keycloak account + app prefs) + the Settings UI. |
 
 ## Locked stack decisions
 
