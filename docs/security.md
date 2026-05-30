@@ -110,6 +110,11 @@ their Employee role (roles compose — resolves the earlier Create TODO).
 
 - gitleaks runs as a local pre-commit hook (`.githooks/pre-commit`) and as a CI
   gate (`.github/workflows/security.yml`). Allowlist lives in `.gitleaks.toml`.
+- **GitHub native secret scanning + push protection are enabled** on the repo
+  (defense in depth alongside gitleaks): pushes containing a detected secret are
+  blocked, and history is scanned. The committed local-dev throwaways
+  (`localdev_only_not_a_secret`, `Passw0rd!`) are low-entropy and non-routable, so
+  neither scanner flags them.
 - Connection strings / client secrets via env vars or .NET user-secrets in dev;
   a secrets manager in deployed environments (TODO: choose — Phase 11).
 - Least-privilege DB user (not owner/superuser). TODO: define roles/grants.
@@ -146,7 +151,7 @@ API ↔ external mock services (Finance/Inventory).
 | **I**nfo disclosure | Leaking entities/PII via API | DTO mapping, least-data responses, authz on reads | partial: DTOs ✓; read scoping TODO |
 | **D**oS | Flooding write/auth endpoints | Rate limiting, timeouts on external calls | TODO P5/opt |
 | **E**oP | Auditor or Employee performing privileged action | Policies + domain invariants, deny-by-default | ✓ P3 |
-| Supply chain | Vulnerable NuGet/npm dep, leaked secret | gitleaks + dep/vuln scan + CodeQL in CI | gitleaks ✓, rest TODO P9 |
+| Supply chain | Vulnerable NuGet/npm dep, leaked secret | gitleaks + native secret scanning/push protection + `dotnet list --vulnerable` + Dependabot + CodeQL | ✓ P9 |
 
 ## Security checklist
 
