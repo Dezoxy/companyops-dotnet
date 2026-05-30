@@ -104,6 +104,29 @@ public sealed class ApiFactory : WebApplicationFactory<CompanyOps.Api.ApiHost>, 
         return client;
     }
 
+    /// <summary>
+    /// Drives a Procurement request to Approved (create → submit → manager → finance) with
+    /// real seed-user tokens and returns its id. Shared by tests that need an approved
+    /// request — reaching Approved is what publishes RequestApproved via the outbox.
+    /// </summary>
+    public async Task<Guid> FullyApproveRequestAsync()
+    {
+        var employee = CreateClientWithToken(await GetTokenAsync("employee.eng"));
+        var created = await employee.PostAsJsonAsync("/requests", new { title = "Laptop", type = "Procurement" });
+        created.EnsureSuccessStatusCode();
+        var id = (await created.Content.ReadFromJsonAsync<CreatedRequest>())!.Id;
+
+        (await employee.PostAsync($"/requests/{id}/submit", content: null)).EnsureSuccessStatusCode();
+
+        var manager = CreateClientWithToken(await GetTokenAsync("manager.eng"));
+        (await manager.PostAsJsonAsync($"/requests/{id}/approve", new { note = "ok" })).EnsureSuccessStatusCode();
+
+        var finance = CreateClientWithToken(await GetTokenAsync("finance.user"));
+        (await finance.PostAsJsonAsync($"/requests/{id}/approve", new { })).EnsureSuccessStatusCode();
+
+        return id;
+    }
+
     public new async Task DisposeAsync()
     {
         await _rabbitmq.DisposeAsync();
@@ -129,6 +152,8 @@ public sealed class ApiFactory : WebApplicationFactory<CompanyOps.Api.ApiHost>, 
 
         throw new FileNotFoundException("Could not locate infra/keycloak/realm-companyops.json from the test output directory.");
     }
+
+    private sealed record CreatedRequest(Guid Id);
 
     private sealed record TokenResponse(
         [property: System.Text.Json.Serialization.JsonPropertyName("access_token")] string AccessToken);

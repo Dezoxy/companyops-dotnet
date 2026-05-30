@@ -37,7 +37,7 @@ public sealed class MessagingRoundTripTests(ApiFactory factory)
 
         try
         {
-            var id = await FullyApproveARequestAsync();
+            var id = await factory.FullyApproveRequestAsync();
             var auditor = factory.CreateClientWithToken(await factory.GetTokenAsync("auditor.user"));
 
             // RequestApproved → Worker commits budget via the Finance mock.
@@ -105,30 +105,10 @@ public sealed class MessagingRoundTripTests(ApiFactory factory)
         return services.BuildServiceProvider();
     }
 
-    private async Task<Guid> FullyApproveARequestAsync()
-    {
-        var employee = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
-        var created = await employee.PostAsJsonAsync("/requests", new { title = "Laptop", type = "Procurement" });
-        created.EnsureSuccessStatusCode();
-        var id = (await created.Content.ReadFromJsonAsync<CreatedRequest>())!.Id;
-
-        (await employee.PostAsync($"/requests/{id}/submit", content: null)).EnsureSuccessStatusCode();
-
-        var manager = factory.CreateClientWithToken(await factory.GetTokenAsync("manager.eng"));
-        (await manager.PostAsJsonAsync($"/requests/{id}/approve", new { note = "ok" })).EnsureSuccessStatusCode();
-
-        var finance = factory.CreateClientWithToken(await factory.GetTokenAsync("finance.user"));
-        (await finance.PostAsJsonAsync($"/requests/{id}/approve", new { })).EnsureSuccessStatusCode();
-
-        return id;
-    }
-
     private sealed class NoopNotificationSimulator : INotificationSimulator
     {
         public Task NotifyApprovedAsync(RequestApproved approved, CancellationToken cancellationToken) => Task.CompletedTask;
     }
-
-    private sealed record CreatedRequest(Guid Id);
 
     private sealed record AuditLogResponse(string Action, Guid TargetId);
 }
