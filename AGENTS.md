@@ -198,6 +198,10 @@ hat — the labels record *which hat* a decision belongs to, not separate people
 
 ## Commands
 
+Common tasks are wrapped in the repo `Makefile` — run `make help` to list targets
+(`make check` is the fast pre-commit gate; `make iac` mirrors the CI IaC checks). The
+underlying commands:
+
 ```bash
 dotnet build                       # build solution
 dotnet test                        # all tests
