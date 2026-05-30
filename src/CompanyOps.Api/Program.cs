@@ -4,6 +4,7 @@ using CompanyOps.Api.ErrorHandling;
 using CompanyOps.Api.Observability;
 using CompanyOps.Application;
 using CompanyOps.Infrastructure;
+using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
@@ -16,6 +17,18 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Services(services)
     .Enrich.FromLogContext()
     .WriteTo.Console(new Serilog.Formatting.Json.JsonFormatter()));
+
+// One-shot migrator mode (the compose `migrator` service): register only what EF needs,
+// apply migrations, and exit. Deliberately skips auth/controllers/observability so the
+// migrator never requires their config — or that Keycloak is reachable — just to migrate.
+if (args.Contains("--migrate"))
+{
+    builder.Services.AddSingleton(TimeProvider.System); // AddInfrastructure's graph needs it
+    builder.Services.AddInfrastructure(builder.Configuration);
+    var migrator = builder.Build();
+    await migrator.Services.MigrateDatabaseAsync();
+    return;
+}
 
 builder.Services
     .AddControllers()
@@ -40,14 +53,27 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddOutboxRelay(); // producer-side: publish the outbox to RabbitMQ
 builder.Services.AddObservability(builder.Configuration, builder.Environment.IsDevelopment());
 
+// Behind the Traefik edge (Phase 11) the API speaks HTTP; trust X-Forwarded-Proto/-For so it
+// sees the real https scheme + client IP. The API is only reachable via the edge on the
+// internal Docker network (no public binding + host firewall), so that single ingress is
+// trusted. The middleware itself is only added when deployed (ForwardedHeaders:Enabled).
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Trust forwarded headers only from the private Docker bridge range the edge sits on —
+    // not from any source. The API has no public binding, so the edge is the only thing that
+    // can set these. (Adjust if Docker's address pool is customised away from 172.16.0.0/12.)
+    options.KnownProxies.Clear();
+    options.KnownIPNetworks.Clear();
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(System.Net.IPAddress.Parse("172.16.0.0"), 12));
+});
+
 var app = builder.Build();
 
-// One-shot migrator mode (used by the compose `migrator` service): apply migrations
-// and exit, so the app processes never self-migrate and startup ordering is explicit.
-if (args.Contains("--migrate"))
+// Must run before any middleware that reads the scheme/client IP (logging, auth, redirect).
+if (app.Configuration.GetValue<bool>("ForwardedHeaders:Enabled"))
 {
-    await app.Services.MigrateDatabaseAsync();
-    return;
+    app.UseForwardedHeaders();
 }
 
 app.UseExceptionHandler();
@@ -70,11 +96,10 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference(); // interactive API docs at /scalar
 }
 
-// TLS terminates at the edge (ingress/reverse proxy); the app speaks HTTP in-cluster, so
-// app-level redirect is OFF by default — it never fires in dev/compose (no HTTPS port, which
-// would only log "failed to determine the https port") and never auto-arms a redirect loop on
-// a deployment that lacks ForwardedHeaders. Phase 11 wires ForwardedHeaders (KnownProxies),
-// then opts in explicitly via Security:EnableHttpsRedirection=true.
+// The Traefik edge terminates TLS and does the HTTP→HTTPS redirect; the app speaks HTTP
+// in-cluster, so app-level redirect stays OFF by default (it would only log "failed to
+// determine the https port"). Left as an explicit opt-in for any topology that wants the app
+// to redirect — set Security:EnableHttpsRedirection=true (ForwardedHeaders is wired above).
 if (app.Configuration.GetValue<bool>("Security:EnableHttpsRedirection"))
 {
     app.UseHttpsRedirection();

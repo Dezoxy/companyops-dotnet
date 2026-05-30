@@ -1,0 +1,209 @@
+# Production stack (Phase 11). A single Traefik edge terminates TLS (Let's Encrypt) and is
+# the ONLY public ingress (:80/:443); every other service is internal to the Docker network.
+# Standalone on purpose — not an overlay on docker-compose.yml — so dev-only host-port
+# bindings and throwaway secrets never leak in via Compose's append-merge.
+#
+# Secrets + domains come from an untracked .env (see .env.example); nothing here is committed
+# with a real value. Run on a VM provisioned by the Ansible playbook:
+#   docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+#
+# Real TLS needs APP_DOMAIN / KEYCLOAK_DOMAIN to resolve to this host's public IP (ACME
+# tls-alpn-01 over :443). Locally the stack boots with Traefik's self-signed default cert.
+name: companyops-prod
+
+services:
+  traefik:
+    image: traefik:v3.3
+    container_name: companyops-traefik
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      # Redirect all HTTP to HTTPS at the edge — the app never does this itself.
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --certificatesresolvers.le.acme.email=${ACME_EMAIL:?set ACME_EMAIL in .env}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-letsencrypt:/letsencrypt
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:18
+    container_name: companyops-postgres
+    environment:
+      POSTGRES_DB: companyops
+      POSTGRES_USER: companyops
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      # Consumed by the init script to provision Keycloak's own database/user on first boot.
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:?set KC_DB_PASSWORD in .env}
+    volumes:
+      # PG 18 mounts at /var/lib/postgresql (data lands in a version-specific subdir).
+      - companyops-pgdata:/var/lib/postgresql
+      - ./postgres/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U companyops -d companyops"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: companyops-keycloak
+    # Production mode (not start-dev): persistent Postgres store, hardened realm import.
+    command: ["start", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_ADMIN_USER:?set KC_ADMIN_USER in .env}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:?set KC_ADMIN_PASSWORD in .env}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:?set KC_DB_PASSWORD in .env}
+      # Stable public issuer; TLS terminates at Traefik so Keycloak speaks HTTP and trusts
+      # the X-Forwarded-* headers from the edge.
+      KC_HOSTNAME: https://${KEYCLOAK_DOMAIN:?set KEYCLOAK_DOMAIN in .env}
+      # Pin the issuer/redirect base to KC_HOSTNAME; don't derive it from X-Forwarded-Host
+      # (the default in prod mode, set explicitly so a default change can't loosen it).
+      KC_HOSTNAME_STRICT: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./keycloak/realm-companyops.prod.json:/opt/keycloak/data/import/realm-companyops.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.kc.rule=Host(`${KEYCLOAK_DOMAIN}`)
+      - traefik.http.routers.kc.entrypoints=websecure
+      - traefik.http.routers.kc.tls.certresolver=le
+      - traefik.http.services.kc.loadbalancer.server.port=8080
+      # HSTS + hardening headers on the login/token pages too (where users enter credentials).
+      - traefik.http.routers.kc.middlewares=sec-headers
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: companyops-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: companyops
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?set RABBITMQ_PASSWORD in .env}
+    volumes:
+      - companyops-rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  redis:
+    image: redis:8
+    container_name: companyops-redis
+    volumes:
+      - companyops-redis:/data
+    restart: unless-stopped
+
+  # One-shot: applies EF migrations then exits. Also builds the shared companyops-api:local
+  # image the api service reuses. api/worker wait for it to complete.
+  migrator:
+    build:
+      context: ..
+      dockerfile: src/CompanyOps.Api/Dockerfile
+    image: companyops-api:local
+    container_name: companyops-migrator
+    command: ["--migrate"]
+    environment:
+      # The --migrate path registers only EF/Infrastructure, so the connection string is all
+      # it needs — no auth/broker config required to apply migrations.
+      ConnectionStrings__CompanyOps: Host=postgres;Port=5432;Database=companyops;Username=companyops;Password=${POSTGRES_PASSWORD:?}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    image: companyops-api:local # built by the migrator service
+    container_name: companyops-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__CompanyOps: Host=postgres;Port=5432;Database=companyops;Username=companyops;Password=${POSTGRES_PASSWORD:?}
+      Keycloak__Authority: https://${KEYCLOAK_DOMAIN}/realms/companyops
+      Keycloak__Audience: companyops-api
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Username: companyops
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:?}
+      # Behind Traefik: trust X-Forwarded-* and let the edge own the HTTPS redirect.
+      ForwardedHeaders__Enabled: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api.rule=Host(`${APP_DOMAIN:?set APP_DOMAIN in .env}`)
+      - traefik.http.routers.api.entrypoints=websecure
+      - traefik.http.routers.api.tls.certresolver=le
+      - traefik.http.services.api.loadbalancer.server.port=8080
+      # HSTS + hardening headers applied at the edge.
+      - traefik.http.routers.api.middlewares=sec-headers
+      - traefik.http.middlewares.sec-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.sec-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.sec-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.sec-headers.headers.frameDeny=true
+      - traefik.http.middlewares.sec-headers.headers.referrerPolicy=no-referrer
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ..
+      dockerfile: src/CompanyOps.Worker/Dockerfile
+    image: companyops-worker:local
+    container_name: companyops-worker
+    environment:
+      DOTNET_ENVIRONMENT: Production
+      ConnectionStrings__CompanyOps: Host=postgres;Port=5432;Database=companyops;Username=companyops;Password=${POSTGRES_PASSWORD:?}
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Username: companyops
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:?}
+      ExternalSystems__FinanceBaseUrl: ${FINANCE_BASE_URL:-http://fakeexternals:8080}
+      ExternalSystems__InventoryBaseUrl: ${INVENTORY_BASE_URL:-http://fakeexternals:8080}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+      fakeexternals:
+        condition: service_started
+    restart: unless-stopped
+
+  # Stands in for the real Finance/Inventory systems (no real integrations in this project).
+  fakeexternals:
+    build:
+      context: ..
+      dockerfile: src/CompanyOps.FakeExternals/Dockerfile
+    image: companyops-fakeexternals:local
+    container_name: companyops-fakeexternals
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    restart: unless-stopped
+
+volumes:
+  companyops-pgdata:
+  companyops-rabbitmq:
+  companyops-redis:
+  traefik-letsencrypt:

@@ -1,0 +1,71 @@
+{
+  "realm": "companyops",
+  "enabled": true,
+  "sslRequired": "external",
+  "accessTokenLifespan": 900,
+  "bruteForceProtected": true,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "roles": {
+    "realm": [
+      { "name": "Employee", "description": "Creates and submits their own requests." },
+      { "name": "Manager", "description": "Approves/rejects requests for their own department." },
+      { "name": "Finance", "description": "Approves/rejects the budget step." },
+      { "name": "ItAdmin", "description": "Fulfills approved requests." },
+      { "name": "Auditor", "description": "Reads everything; never mutates." }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "companyops-api",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["https://app.REPLACE_ME.example/*"],
+      "webOrigins": ["https://app.REPLACE_ME.example"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://app.REPLACE_ME.example/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-companyops-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "companyops-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "department",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "department",
+            "claim.name": "department",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "config": {
+          "kc.user.profile.config": [
+            "{\"unmanagedAttributePolicy\":\"ADMIN_EDIT\"}"
+          ]
+        }
+      }
+    ]
+  }
+}
