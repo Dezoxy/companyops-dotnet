@@ -1,11 +1,21 @@
 using System.Text.Json.Serialization;
 using CompanyOps.Api.Auth;
 using CompanyOps.Api.ErrorHandling;
+using CompanyOps.Api.Observability;
 using CompanyOps.Application;
 using CompanyOps.Infrastructure;
 using Scalar.AspNetCore;
+using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Structured logging (JSON to console), enriched with the request correlation id.
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(new Serilog.Formatting.Json.JsonFormatter()));
 
 builder.Services
     .AddControllers()
@@ -28,6 +38,7 @@ builder.Services.AddCompanyOpsAuthorization();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddOutboxRelay(); // producer-side: publish the outbox to RabbitMQ
+builder.Services.AddObservability(builder.Configuration, builder.Environment.IsDevelopment());
 
 var app = builder.Build();
 
@@ -41,6 +52,18 @@ if (args.Contains("--migrate"))
 
 app.UseExceptionHandler();
 
+// Correlation id first (so it's in the log context for everything), then request logging.
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseSerilogRequestLogging(options =>
+    // Health probes are polled constantly; drop them to Debug so they don't drown the
+    // request log. Errors/5xx still surface; everything else stays at Information.
+    options.GetLevel = (httpContext, _, ex) =>
+        ex is not null || httpContext.Response.StatusCode >= 500
+            ? LogEventLevel.Error
+            : httpContext.Request.Path.StartsWithSegments("/health")
+                ? LogEventLevel.Debug
+                : LogEventLevel.Information);
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -53,6 +76,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthEndpoints(); // /health (liveness) + /health/ready (DB + RabbitMQ)
 
 app.Run();
 

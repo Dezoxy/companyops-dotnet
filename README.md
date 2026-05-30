@@ -57,8 +57,16 @@ integration suite (Docker), a vulnerable-package scan, and a Docker image build;
 gates secrets; CodeQL activates if the repo goes public. See
 [docs/testing-strategy.md](docs/testing-strategy.md) and [docs/security.md](docs/security.md).
 
+## Operability
+
+Structured JSON logs (Serilog), OpenTelemetry metrics + traces, a request correlation id
+(`X-Correlation-ID`), and health endpoints (`/health` liveness, `/health/ready` checks
+Postgres + RabbitMQ). How to run, observe, and recover it:
+[docs/runbook.md](docs/runbook.md) · [docs/troubleshooting.md](docs/troubleshooting.md) ·
+[docs/backup-restore.md](docs/backup-restore.md).
+
 ## Status
 
 Built in phases (see the plan). Implemented: API + data (1), approval workflow (2), auth (3),
 audit (4), worker + queue (5), external integration (6), Docker orchestration (7), tests (8),
-CI/CD (9). Next: observability, infra automation, and the Angular demo UI.
+CI/CD (9), observability & operations (10). Next: infra automation and the Angular demo UI.
