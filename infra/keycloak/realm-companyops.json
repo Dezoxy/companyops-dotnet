@@ -1,0 +1,138 @@
+{
+  "realm": "companyops",
+  "enabled": true,
+  "sslRequired": "none",
+  "accessTokenLifespan": 900,
+  "roles": {
+    "realm": [
+      { "name": "Employee", "description": "Creates and submits their own requests." },
+      { "name": "Manager", "description": "Approves/rejects requests for their own department." },
+      { "name": "Finance", "description": "Approves/rejects the budget step." },
+      { "name": "ItAdmin", "description": "Fulfills approved requests." },
+      { "name": "Auditor", "description": "Reads everything; never mutates." }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "companyops-api",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "protocolMappers": [
+        {
+          "name": "audience-companyops-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "companyops-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "department",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "department",
+            "claim.name": "department",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "10000000-0000-0000-0000-000000000001",
+      "username": "employee.eng",
+      "enabled": true,
+      "email": "employee.eng@companyops.local",
+      "emailVerified": true,
+      "firstName": "Emma",
+      "lastName": "Engineer",
+      "attributes": { "department": ["11111111-1111-1111-1111-111111111111"] },
+      "credentials": [{ "type": "password", "value": "Passw0rd!", "temporary": false }],
+      "realmRoles": ["Employee"]
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000002",
+      "username": "manager.eng",
+      "enabled": true,
+      "email": "manager.eng@companyops.local",
+      "emailVerified": true,
+      "firstName": "Mark",
+      "lastName": "Manager",
+      "attributes": { "department": ["11111111-1111-1111-1111-111111111111"] },
+      "credentials": [{ "type": "password", "value": "Passw0rd!", "temporary": false }],
+      "realmRoles": ["Manager", "Employee"]
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000003",
+      "username": "manager.sales",
+      "enabled": true,
+      "email": "manager.sales@companyops.local",
+      "emailVerified": true,
+      "firstName": "Sam",
+      "lastName": "SalesManager",
+      "attributes": { "department": ["22222222-2222-2222-2222-222222222222"] },
+      "credentials": [{ "type": "password", "value": "Passw0rd!", "temporary": false }],
+      "realmRoles": ["Manager", "Employee"]
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000004",
+      "username": "finance.user",
+      "enabled": true,
+      "email": "finance.user@companyops.local",
+      "emailVerified": true,
+      "firstName": "Fiona",
+      "lastName": "Finance",
+      "attributes": { "department": ["33333333-3333-3333-3333-333333333333"] },
+      "credentials": [{ "type": "password", "value": "Passw0rd!", "temporary": false }],
+      "realmRoles": ["Finance", "Employee"]
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000005",
+      "username": "itadmin.user",
+      "enabled": true,
+      "email": "itadmin.user@companyops.local",
+      "emailVerified": true,
+      "firstName": "Ivan",
+      "lastName": "ItAdmin",
+      "attributes": { "department": ["44444444-4444-4444-4444-444444444444"] },
+      "credentials": [{ "type": "password", "value": "Passw0rd!", "temporary": false }],
+      "realmRoles": ["ItAdmin", "Employee"]
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000006",
+      "username": "auditor.user",
+      "enabled": true,
+      "email": "auditor.user@companyops.local",
+      "emailVerified": true,
+      "firstName": "Aud",
+      "lastName": "Auditor",
+      "attributes": { "department": ["11111111-1111-1111-1111-111111111111"] },
+      "credentials": [{ "type": "password", "value": "Passw0rd!", "temporary": false }],
+      "realmRoles": ["Auditor"]
+    }
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "config": {
+          "kc.user.profile.config": [
+            "{\"unmanagedAttributePolicy\":\"ENABLED\"}"
+          ]
+        }
+      }
+    ]
+  }
+}

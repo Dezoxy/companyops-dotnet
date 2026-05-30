@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using CompanyOps.Api.Auth;
 using CompanyOps.Api.ErrorHandling;
 using CompanyOps.Application;
 using CompanyOps.Infrastructure;
@@ -21,6 +22,9 @@ builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 // TimeProvider.System makes "now" injectable and testable (no custom clock port).
 builder.Services.AddSingleton(TimeProvider.System);
 
+builder.Services.AddKeycloakAuthentication(builder.Configuration, builder.Environment.IsDevelopment());
+builder.Services.AddCompanyOpsAuthorization();
+
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -35,6 +39,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();

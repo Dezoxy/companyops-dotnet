@@ -6,6 +6,7 @@
     <Project Path="src/CompanyOps.Infrastructure/CompanyOps.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/CompanyOps.Api.IntegrationTests/CompanyOps.Api.IntegrationTests.csproj" />
     <Project Path="tests/CompanyOps.Domain.Tests/CompanyOps.Domain.Tests.csproj" />
   </Folder>
 </Solution>

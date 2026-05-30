@@ -93,12 +93,23 @@ public class Request
     }
 
     /// <summary>
-    /// Submit the request for approval: <c>Draft → Submitted</c>. Materializes the
-    /// approval chain configured for this request's type. The chain is fixed at submit
-    /// time, so later config changes don't mutate in-flight requests.
+    /// Submit the request for approval: <c>Draft → Submitted</c>. Only the requester may
+    /// submit their own request. Materializes the approval chain configured for this
+    /// request's type. The chain is fixed at submit time, so later config changes don't
+    /// mutate in-flight requests.
     /// </summary>
-    public void Submit(DateTimeOffset nowUtc)
+    public void Submit(Guid actorId, DateTimeOffset nowUtc)
     {
+        if (actorId == Guid.Empty)
+        {
+            throw new DomainException("Submitting must record who performed it.");
+        }
+
+        if (actorId != RequesterId)
+        {
+            throw new DomainException("Only the requester can submit their own request.");
+        }
+
         if (Status != RequestStatus.Draft)
         {
             throw new DomainException($"Only a draft request can be submitted; this request is {Status}.");
@@ -128,9 +139,9 @@ public class Request
     /// <see cref="RequestStatus.Approved"/>.
     /// </summary>
     /// <remarks>
-    /// The approver identity is passed in because there is no authenticated principal
-    /// until Phase 3 (the same temporary bridge as <see cref="RequesterId"/>). From
-    /// Phase 3 the source becomes the JWT principal; this rule does not change.
+    /// The approver identity is supplied by the caller (the Api derives it from the
+    /// authenticated JWT principal as of Phase 3 — never from the request body). The
+    /// Domain enforces the rule regardless of where the identity came from.
     /// </remarks>
     public void Approve(Guid approverId, ApproverRole approverRole, Guid approverDepartmentId, DateTimeOffset nowUtc, string? note = null)
     {

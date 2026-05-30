@@ -24,7 +24,7 @@ public class ApprovalWorkflowTests
     private static Request NewSubmitted()
     {
         var request = NewDraft();
-        request.Submit(Now);
+        request.Submit(Requester, Now);
         return request;
     }
 
@@ -35,7 +35,7 @@ public class ApprovalWorkflowTests
     {
         var request = NewDraft();
 
-        request.Submit(Now);
+        request.Submit(Requester, Now);
 
         Assert.Equal(RequestStatus.Submitted, request.Status);
         Assert.Collection(
@@ -61,7 +61,7 @@ public class ApprovalWorkflowTests
     {
         var request = NewSubmitted();
 
-        Assert.Throws<DomainException>(() => request.Submit(Now));
+        Assert.Throws<DomainException>(() => request.Submit(Requester, Now));
         Assert.Equal(2, request.ApprovalSteps.Count); // guard runs before any steps are re-added
     }
 
@@ -70,8 +70,27 @@ public class ApprovalWorkflowTests
     {
         var request = NewDraft(RequestType.Helpdesk);
 
-        var ex = Assert.Throws<DomainException>(() => request.Submit(Now));
+        var ex = Assert.Throws<DomainException>(() => request.Submit(Requester, Now));
         Assert.Contains("No approval chain", ex.Message);
+    }
+
+    [Fact]
+    public void Submit_ByNonRequester_ThrowsDomainException()
+    {
+        var request = NewDraft();
+        var someoneElse = Guid.Parse("99999999-9999-9999-9999-999999999999");
+
+        var ex = Assert.Throws<DomainException>(() => request.Submit(someoneElse, Now));
+        Assert.Contains("requester", ex.Message);
+        Assert.Equal(RequestStatus.Draft, request.Status);
+    }
+
+    [Fact]
+    public void Submit_WithEmptyActorId_ThrowsDomainException()
+    {
+        var request = NewDraft();
+
+        Assert.Throws<DomainException>(() => request.Submit(Guid.Empty, Now));
     }
 
     // --- Approve --------------------------------------------------------------
