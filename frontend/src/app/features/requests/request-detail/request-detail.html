@@ -34,12 +34,18 @@
         </div>
         <p class="meta">{{ r.typeLabel }} · Created {{ r.createdAt | date: 'medium' }}</p>
 
-        @if (canSubmit() || canDecide()) {
+        @if (canSubmit() || canFulfill() || canDecide()) {
           <div class="detail-actions">
             @if (canSubmit()) {
               <button mat-flat-button [disabled]="acting()" (click)="submit()">
                 <mat-icon>send</mat-icon>
                 Submit for approval
+              </button>
+            }
+            @if (canFulfill()) {
+              <button mat-flat-button [disabled]="acting()" (click)="fulfill()">
+                <mat-icon>inventory_2</mat-icon>
+                Mark fulfilled
               </button>
             }
             @if (canDecide()) {

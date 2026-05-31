@@ -102,6 +102,78 @@ public sealed class AuthorizationTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task FullHelpdeskFlow_ManagerOnly_ReachesCompleted()
+    {
+        // Helpdesk runs on the same engine with a different chain: manager-only (no Finance
+        // step), so a single manager approval reaches Approved, then IT fulfils.
+        var employee = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
+        var created = await employee.PostAsJsonAsync("/requests", new { title = "VPN access", type = "Helpdesk" });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var id = (await created.Content.ReadFromJsonAsync<RequestResponse>())!.Id;
+
+        (await employee.PostAsync($"/requests/{id}/submit", content: null)).EnsureSuccessStatusCode();
+
+        var manager = factory.CreateClientWithToken(await factory.GetTokenAsync("manager.eng"));
+        var managerStep = await manager.PostAsJsonAsync($"/requests/{id}/approve", new { note = "approved" });
+        Assert.Equal(HttpStatusCode.OK, managerStep.StatusCode);
+        // One step is enough — no Finance approval required for helpdesk.
+        Assert.Equal("Approved", (await managerStep.Content.ReadFromJsonAsync<RequestResponse>())!.Status);
+
+        var itAdmin = factory.CreateClientWithToken(await factory.GetTokenAsync("itadmin.user"));
+        var fulfill = await itAdmin.PostAsync($"/requests/{id}/fulfill", content: null);
+        Assert.Equal(HttpStatusCode.OK, fulfill.StatusCode);
+        Assert.Equal("Completed", (await fulfill.Content.ReadFromJsonAsync<RequestResponse>())!.Status);
+    }
+
+    [Fact]
+    public async Task Approve_Helpdesk_ByManagerFromAnotherDepartment_Returns400()
+    {
+        // The department-scoped Manager invariant (IDOR) holds for the helpdesk chain too.
+        var id = await CreateSubmittedHelpdeskRequestAsync();
+        var salesManager = factory.CreateClientWithToken(await factory.GetTokenAsync("manager.sales"));
+
+        var response = await salesManager.PostAsJsonAsync($"/requests/{id}/approve", new { });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Approve_Helpdesk_ByFinance_Returns400()
+    {
+        // DecideRequests admits Finance, but the helpdesk step requires Manager — the domain
+        // rejects the wrong-role actor, so the shorter chain is no privilege-escalation path.
+        var id = await CreateSubmittedHelpdeskRequestAsync();
+        var finance = factory.CreateClientWithToken(await factory.GetTokenAsync("finance.user"));
+
+        var response = await finance.PostAsJsonAsync($"/requests/{id}/approve", new { });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetAuditLogs_Helpdesk_RecordsManagerOnlyFlow()
+    {
+        var id = await CreateSubmittedHelpdeskRequestAsync();
+        var manager = factory.CreateClientWithToken(await factory.GetTokenAsync("manager.eng"));
+        await manager.PostAsJsonAsync($"/requests/{id}/approve", new { note = "ok" });
+        var itAdmin = factory.CreateClientWithToken(await factory.GetTokenAsync("itadmin.user"));
+        await itAdmin.PostAsync($"/requests/{id}/fulfill", content: null);
+
+        var auditor = factory.CreateClientWithToken(await factory.GetTokenAsync("auditor.user"));
+        var response = await auditor.GetAsync("/audit-logs");
+        var entries = (await response.Content.ReadFromJsonAsync<List<AuditLogResponse>>())!
+            .Where(e => e.TargetId == id)
+            .Select(e => e.Action)
+            .ToList();
+
+        Assert.Contains("RequestCreated", entries);
+        Assert.Contains("RequestSubmitted", entries);
+        Assert.Contains("RequestFulfilled", entries);
+        // Manager-only chain: exactly one approval recorded — no phantom Finance step.
+        Assert.Equal(1, entries.Count(a => a == "RequestApproved"));
+    }
+
+    [Fact]
     public async Task GetAuditLogs_AsEmployee_Returns403()
     {
         var employee = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
@@ -154,6 +226,16 @@ public sealed class AuthorizationTests(ApiFactory factory)
         var client = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
         var submit = await client.PostAsync($"/requests/{id}/submit", content: null);
         submit.EnsureSuccessStatusCode();
+        return id;
+    }
+
+    private async Task<Guid> CreateSubmittedHelpdeskRequestAsync()
+    {
+        var client = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
+        var created = await client.PostAsJsonAsync("/requests", new { title = "VPN access", type = "Helpdesk" });
+        created.EnsureSuccessStatusCode();
+        var id = (await created.Content.ReadFromJsonAsync<RequestResponse>())!.Id;
+        (await client.PostAsync($"/requests/{id}/submit", content: null)).EnsureSuccessStatusCode();
         return id;
     }
 
