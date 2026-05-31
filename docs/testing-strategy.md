@@ -18,7 +18,7 @@ domain unit tests (pure)                                       many, fastest
 |---|---|---|---|
 | **Domain** | `CompanyOps.Domain.Tests` | Aggregate invariants (`Request.Create`), the **step-driven approval state machine** (every legal transition + every illegal one throws), `AuditLog` factory rules | Pure C#, no I/O — the business rules are the most important thing to test and the cheapest to test exhaustively. Every `DomainException` path is pinned here. |
 | **Application** | `CompanyOps.Application.Tests` | Handler **orchestration** with hand-written fake ports (no DB): audit entry recorded per state change, integration event enqueued on the *right* transition (and not on intermediate ones), `null`-when-not-found, actor threaded from the command | The handler's job is orchestration, not rules. Fakes make "did it enqueue / audit / save" assertions in milliseconds, without a database. |
-| **Integration** | `CompanyOps.Api.IntegrationTests` | The real API behind real Keycloak JWTs against real Postgres, RabbitMQ, and the FakeExternals service (Testcontainers + `WebApplicationFactory`): authorization matrix, audit trail, the outbox→relay→RabbitMQ→worker round-trip, the worker→FakeExternals→audit round-trip, and the resilience paths | Confidence in the *wiring* the lower layers can't see: auth, EF mapping/migrations, message delivery, HTTP gateways, real serialization. |
+| **Integration** | `CompanyOps.Api.IntegrationTests` | The real API behind real Keycloak JWTs against real Postgres, RabbitMQ, and the FakeExternals service (Testcontainers + `WebApplicationFactory`): authorization matrix, request read-scoping (list + single read, own/dept/all), audit trail, the outbox→relay→RabbitMQ→worker round-trip, the worker→FakeExternals→audit round-trip, and the resilience paths | Confidence in the *wiring* the lower layers can't see: auth, EF mapping/migrations, message delivery, HTTP gateways, real serialization. |
 
 ## Conventions
 
@@ -34,9 +34,9 @@ domain unit tests (pure)                                       many, fastest
 ## What we cover / skip
 
 **Cover:** business rules and every invalid workflow transition (Domain); handler
-orchestration — audit, events, idempotency, not-found (Application); the authorization
-matrix and invalid-transition HTTP responses, audit read access, and the async
-round-trips incl. failure/retry and dedup (Integration).
+orchestration — audit, events, idempotency, not-found, read-scoping (Application); the
+authorization matrix, request read-scoping, invalid-transition HTTP responses, audit read
+access, and the async round-trips incl. failure/retry and dedup (Integration).
 
 **Skip:** trivial DTO mapping / getters, framework code, and one-off scripts.
 
@@ -53,8 +53,6 @@ Green CI is required to merge.
 
 ## Known gaps / deferrals
 
-- **Row-level read scoping** (own/department on `GET`) is not implemented yet, so it
-  isn't tested — tracked in [security.md](security.md).
 - **Performance / load / chaos** testing is out of scope for this learning project.
 - **Worker consumer internals** (the `IntegrationEventProcessor` dedup/route logic) are
   covered end-to-end by the integration round-trip + resilience tests rather than in
