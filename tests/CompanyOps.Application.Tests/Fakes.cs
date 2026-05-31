@@ -29,6 +29,18 @@ internal sealed class FakeRequestRepository : IRequestRepository
         Task.FromResult<IReadOnlyList<Request>>([.. _store.Values]);
 }
 
+internal sealed class FakeCommentRepository : ICommentRepository
+{
+    private readonly List<Comment> _store = [];
+
+    public IReadOnlyList<Comment> Store => _store;
+
+    public void Add(Comment comment) => _store.Add(comment);
+
+    public Task<IReadOnlyList<Comment>> ListByRequestAsync(Guid requestId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<Comment>>([.. _store.Where(c => c.RequestId == requestId)]);
+}
+
 internal sealed class FakeAssetRepository : IAssetRepository
 {
     private readonly Dictionary<Guid, Asset> _store = [];
