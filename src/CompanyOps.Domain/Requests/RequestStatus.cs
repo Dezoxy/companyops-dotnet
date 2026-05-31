@@ -25,7 +25,6 @@ public enum RequestStatus
     Completed = 4,
     Rejected = 5,
 
-    // Reserved — no Cancel transition is built yet (tracked in docs/security.md). Status has a
-    // private setter, so only a (future) Domain Cancel method could ever set this.
+    // Terminal: set by Request.Cancel (the requester cancels their own Draft/Submitted request).
     Cancelled = 6,
 }

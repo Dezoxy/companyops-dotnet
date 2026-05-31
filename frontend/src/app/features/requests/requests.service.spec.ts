@@ -115,6 +115,13 @@ describe('RequestsService', () => {
     req.flush(dto());
   });
 
+  it('cancel POSTs to the cancel endpoint', () => {
+    service.cancel('r1').subscribe();
+    const req = httpMock.expectOne('/api/requests/r1/cancel');
+    expect(req.request.method).toBe('POST');
+    req.flush(dto());
+  });
+
   it('approve POSTs the note to the approve endpoint', () => {
     service.approve('r1', 'looks good').subscribe();
     const req = httpMock.expectOne('/api/requests/r1/approve');

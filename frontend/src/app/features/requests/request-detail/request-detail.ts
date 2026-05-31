@@ -81,6 +81,12 @@ export class RequestDetail {
    *  assigned asset; others see its id as text (the /assets route is role-guarded). */
   protected readonly canViewAssets = computed(() => this.auth.hasRole('ItAdmin') || this.auth.hasRole('Auditor'));
 
+  /** Cancel is available to the requester while the request is still Draft or Submitted. */
+  protected readonly canCancel = computed(() => {
+    const r = this.request();
+    return !!r && (r.status === 'Draft' || r.status === 'Submitted') && r.requesterId === this.auth.userId();
+  });
+
   constructor() {
     this.load();
   }
@@ -109,6 +115,14 @@ export class RequestDetail {
       return;
     }
     this.run(this.service.submit(r.id), 'Request submitted for approval.');
+  }
+
+  protected cancel(): void {
+    const r = this.request();
+    if (!r || this.acting()) {
+      return;
+    }
+    this.run(this.service.cancel(r.id), 'Request cancelled.');
   }
 
   protected fulfill(): void {

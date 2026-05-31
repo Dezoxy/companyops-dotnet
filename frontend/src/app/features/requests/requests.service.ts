@@ -112,6 +112,11 @@ export class RequestsService {
     return this.http.post<RequestDto>(`${this.baseUrl}/${id}/submit`, {}).pipe(map(mapRequest));
   }
 
+  /** Cancel a request — the requester, while it's still Draft or Submitted (the API re-checks). */
+  cancel(id: string): Observable<RequestVm> {
+    return this.http.post<RequestDto>(`${this.baseUrl}/${id}/cancel`, {}).pipe(map(mapRequest));
+  }
+
   /** Approve the current step — the actor's role + the configured chain select which step. */
   approve(id: string, note?: string): Observable<RequestVm> {
     return this.http

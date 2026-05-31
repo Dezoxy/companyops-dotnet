@@ -331,4 +331,45 @@ public class ApprovalWorkflowTests
         // A procurement request is not fulfilled by assigning an asset; a stray id is rejected.
         Assert.Throws<DomainException>(() => request.Fulfill(ItAdminId, Guid.NewGuid(), Now));
     }
+
+    // --- Cancel ---------------------------------------------------------------
+
+    [Fact]
+    public void Cancel_DraftByRequester_SetsCancelled()
+    {
+        var request = NewDraft();
+
+        request.Cancel(Requester, Now);
+
+        Assert.Equal(RequestStatus.Cancelled, request.Status);
+    }
+
+    [Fact]
+    public void Cancel_SubmittedByRequester_SetsCancelled()
+    {
+        var request = NewSubmitted();
+
+        request.Cancel(Requester, Now);
+
+        Assert.Equal(RequestStatus.Cancelled, request.Status);
+    }
+
+    [Fact]
+    public void Cancel_ByNonRequester_ThrowsDomainException()
+    {
+        var request = NewDraft();
+
+        Assert.Throws<DomainException>(() => request.Cancel(ManagerId, Now));
+    }
+
+    [Fact]
+    public void Cancel_WhenApproved_ThrowsDomainException()
+    {
+        var request = NewSubmitted();
+        request.Approve(ManagerId, [ApproverRole.Manager], Department, Now);
+        request.Approve(FinanceId, [ApproverRole.Finance], OtherDepartment, Now); // now Approved
+
+        // Cancellation is only allowed before approval completes.
+        Assert.Throws<DomainException>(() => request.Cancel(Requester, Now));
+    }
 }

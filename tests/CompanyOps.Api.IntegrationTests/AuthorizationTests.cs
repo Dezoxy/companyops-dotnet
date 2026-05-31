@@ -309,6 +309,44 @@ public sealed class AuthorizationTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Cancel_OwnDraft_AsRequester_Returns200_Cancelled()
+    {
+        var id = await CreateDraftRequestAsync(); // created by employee.eng
+        var employee = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
+
+        var response = await employee.PostAsync($"/requests/{id}/cancel", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Cancelled", (await response.Content.ReadFromJsonAsync<RequestResponse>())!.Status);
+    }
+
+    [Fact]
+    public async Task Cancel_AnotherUsersRequest_Returns400()
+    {
+        var id = await CreateDraftRequestAsync(); // employee.eng's request
+        var manager = factory.CreateClientWithToken(await factory.GetTokenAsync("manager.eng")); // holds Employee role → passes the policy
+
+        var response = await manager.PostAsync($"/requests/{id}/cancel", content: null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode); // the Domain rejects: only the requester can cancel
+    }
+
+    [Fact]
+    public async Task Cancel_ApprovedRequest_Returns400()
+    {
+        var id = await CreateSubmittedRequestAsync();
+        var manager = factory.CreateClientWithToken(await factory.GetTokenAsync("manager.eng"));
+        await manager.PostAsJsonAsync($"/requests/{id}/approve", new { note = "ok" });
+        var finance = factory.CreateClientWithToken(await factory.GetTokenAsync("finance.user"));
+        await finance.PostAsJsonAsync($"/requests/{id}/approve", new { }); // → Approved
+        var employee = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
+
+        var response = await employee.PostAsync($"/requests/{id}/cancel", content: null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode); // only a Draft/Submitted request can be cancelled
+    }
+
     private async Task<Guid> CreateDraftRequestAsync()
     {
         var client = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
