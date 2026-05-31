@@ -99,5 +99,6 @@ integrations status (19), settings & profile with light/dark theming (20).
 
 Three real processes run on the one engine — IT/helpdesk requests, asset lifecycle, and generic
 internal approvals — distinguished by configurable approval chains, not separate code paths
-([ADR 0005](docs/decisions/0005-configurable-approval-workflow.md)). Deferred hardening (row-level
-read scoping, rate limiting, …) is tracked as enterprise-optional in [docs/security.md](docs/security.md).
+([ADR 0005](docs/decisions/0005-configurable-approval-workflow.md)). Deliberately deferred work
+(pre-production hardening, enterprise-optional, and explicit non-goals) is tiered in
+[docs/future-improvements.md](docs/future-improvements.md).
