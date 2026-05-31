@@ -86,7 +86,7 @@ public class RequestHandlerTests
         var handler = new ApproveRequestHandler(_requests, _audit, _events, _uow, _clock);
 
         // Manager step: request stays Submitted (finance still pending).
-        var dto = await handler.HandleAsync(new ApproveRequestCommand(request.Id, ManagerId, ApproverRole.Manager, Department, "ok"));
+        var dto = await handler.HandleAsync(new ApproveRequestCommand(request.Id, ManagerId, [ApproverRole.Manager], Department, "ok"));
 
         Assert.Equal("Submitted", dto!.Status.ToString());
         Assert.Contains(_audit.Entries, e => e.Action == AuditAction.RequestApproved);
@@ -97,11 +97,11 @@ public class RequestHandlerTests
     public async Task Approve_FinalStep_EnqueuesRequestApproved()
     {
         var request = Submitted();
-        request.Approve(ManagerId, ApproverRole.Manager, Department, Now); // manager step done
+        request.Approve(ManagerId, [ApproverRole.Manager], Department, Now); // manager step done
         _requests.Seed(request);
         var handler = new ApproveRequestHandler(_requests, _audit, _events, _uow, _clock);
 
-        var dto = await handler.HandleAsync(new ApproveRequestCommand(request.Id, FinanceId, ApproverRole.Finance, Department, null));
+        var dto = await handler.HandleAsync(new ApproveRequestCommand(request.Id, FinanceId, [ApproverRole.Finance], Department, null));
 
         Assert.Equal("Approved", dto!.Status.ToString());
         var approved = Assert.Single(_events.Events);
@@ -114,7 +114,7 @@ public class RequestHandlerTests
     {
         var handler = new ApproveRequestHandler(_requests, _audit, _events, _uow, _clock);
 
-        var dto = await handler.HandleAsync(new ApproveRequestCommand(Guid.NewGuid(), ManagerId, ApproverRole.Manager, Department, null));
+        var dto = await handler.HandleAsync(new ApproveRequestCommand(Guid.NewGuid(), ManagerId, [ApproverRole.Manager], Department, null));
 
         Assert.Null(dto);
         Assert.Empty(_events.Events);
@@ -129,7 +129,7 @@ public class RequestHandlerTests
         _requests.Seed(request);
         var handler = new RejectRequestHandler(_requests, _audit, _uow, _clock);
 
-        var dto = await handler.HandleAsync(new RejectRequestCommand(request.Id, ManagerId, ApproverRole.Manager, Department, "Over budget"));
+        var dto = await handler.HandleAsync(new RejectRequestCommand(request.Id, ManagerId, [ApproverRole.Manager], Department, "Over budget"));
 
         Assert.Equal("Rejected", dto!.Status.ToString());
         Assert.Contains(_audit.Entries, e => e.Action == AuditAction.RequestRejected);
@@ -142,8 +142,8 @@ public class RequestHandlerTests
     public async Task Fulfill_Procurement_EnqueuesRequestFulfilled_AndAudits()
     {
         var request = Submitted();
-        request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
-        request.Approve(FinanceId, ApproverRole.Finance, Department, Now); // now Approved
+        request.Approve(ManagerId, [ApproverRole.Manager], Department, Now);
+        request.Approve(FinanceId, [ApproverRole.Finance], Department, Now); // now Approved
         _requests.Seed(request);
         var handler = new FulfillRequestHandler(_requests, _assets, _audit, _events, _uow, _clock);
 
@@ -214,7 +214,7 @@ public class RequestHandlerTests
     {
         var request = Request.Create("Need a laptop", null, RequestType.AssetLifecycle, RequestPriority.Medium, null, Requester, Department, Now);
         request.Submit(Requester, Now);
-        request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
+        request.Approve(ManagerId, [ApproverRole.Manager], Department, Now);
         return request;
     }
 }

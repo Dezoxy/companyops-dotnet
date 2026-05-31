@@ -29,20 +29,23 @@ public static class ClaimsPrincipalExtensions
     }
 
     /// <summary>
-    /// The approver role the actor is acting as (the first role that maps to an
-    /// <see cref="ApproverRole"/>). Endpoint policies guarantee an approver-capable role
-    /// is present; the Domain then checks it against the current step.
+    /// The approver-capable roles the actor holds (every realm role that maps to an
+    /// <see cref="ApproverRole"/>). The Domain matches the current step's required role against
+    /// this set, so a user holding more than one approver role isn't pinned to a single
+    /// pre-selected one. Endpoint policies guarantee at least one decide-capable role is present;
+    /// an empty set simply fails the Domain's role check (a clean 400), never a 500.
     /// </summary>
-    public static ApproverRole GetApproverRole(this ClaimsPrincipal principal)
+    public static IReadOnlyCollection<ApproverRole> GetApproverRoles(this ClaimsPrincipal principal)
     {
+        var roles = new HashSet<ApproverRole>();
         foreach (var role in principal.FindAll(ClaimTypes.Role))
         {
             if (Enum.TryParse<ApproverRole>(role.Value, ignoreCase: true, out var approverRole))
             {
-                return approverRole;
+                roles.Add(approverRole);
             }
         }
 
-        throw new InvalidOperationException("Authenticated principal holds no approver role.");
+        return roles;
     }
 }

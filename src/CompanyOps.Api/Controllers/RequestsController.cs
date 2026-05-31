@@ -102,7 +102,7 @@ public sealed class RequestsController : ControllerBase
         [FromServices] ApproveRequestHandler handler,
         CancellationToken cancellationToken)
     {
-        var command = new ApproveRequestCommand(id, User.GetUserId(), User.GetApproverRole(), User.GetDepartmentId(), body.Note);
+        var command = new ApproveRequestCommand(id, User.GetUserId(), User.GetApproverRoles(), User.GetDepartmentId(), body.Note);
         var result = await handler.HandleAsync(command, cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }
@@ -118,7 +118,7 @@ public sealed class RequestsController : ControllerBase
         [FromServices] RejectRequestHandler handler,
         CancellationToken cancellationToken)
     {
-        var command = new RejectRequestCommand(id, User.GetUserId(), User.GetApproverRole(), User.GetDepartmentId(), body.Reason);
+        var command = new RejectRequestCommand(id, User.GetUserId(), User.GetApproverRoles(), User.GetDepartmentId(), body.Reason);
         var result = await handler.HandleAsync(command, cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }

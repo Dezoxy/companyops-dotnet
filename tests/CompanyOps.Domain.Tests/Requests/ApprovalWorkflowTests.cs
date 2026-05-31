@@ -34,7 +34,7 @@ public class ApprovalWorkflowTests
     {
         var request = NewDraft(RequestType.AssetLifecycle);
         request.Submit(Requester, Now);
-        request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
+        request.Approve(ManagerId, [ApproverRole.Manager], Department, Now);
         return request;
     }
 
@@ -125,7 +125,7 @@ public class ApprovalWorkflowTests
         var request = NewDraft(RequestType.Helpdesk);
         request.Submit(Requester, Now);
 
-        request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
+        request.Approve(ManagerId, [ApproverRole.Manager], Department, Now);
 
         Assert.Equal(RequestStatus.Approved, request.Status);
     }
@@ -137,7 +137,7 @@ public class ApprovalWorkflowTests
     {
         var request = NewSubmitted();
 
-        request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
+        request.Approve(ManagerId, [ApproverRole.Manager], Department, Now);
 
         Assert.Equal(RequestStatus.Submitted, request.Status); // finance still pending
         Assert.Equal(ApprovalDecision.Approved, request.ApprovalSteps[0].Decision);
@@ -146,12 +146,25 @@ public class ApprovalWorkflowTests
     }
 
     [Fact]
+    public void Approve_ByActorHoldingBothManagerAndFinance_MatchesTheCurrentStep()
+    {
+        // The fix for the dual-role ambiguity: the actor's full role set is matched against the
+        // step, so a user holding Manager + Finance clears the Manager step (the set includes the
+        // step's required role) — no dependence on which role happened to be selected first.
+        var request = NewSubmitted();
+
+        request.Approve(ManagerId, [ApproverRole.Manager, ApproverRole.Finance], Department, Now);
+
+        Assert.Equal(ApprovalDecision.Approved, request.ApprovalSteps[0].Decision); // the manager step
+    }
+
+    [Fact]
     public void Approve_AllRequiredSteps_SetsApproved()
     {
         var request = NewSubmitted();
 
-        request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
-        request.Approve(FinanceId, ApproverRole.Finance, OtherDepartment, Now); // global step: dept ignored
+        request.Approve(ManagerId, [ApproverRole.Manager], Department, Now);
+        request.Approve(FinanceId, [ApproverRole.Finance], OtherDepartment, Now); // global step: dept ignored
 
         Assert.Equal(RequestStatus.Approved, request.Status);
         Assert.All(request.ApprovalSteps, step => Assert.Equal(ApprovalDecision.Approved, step.Decision));
@@ -163,7 +176,7 @@ public class ApprovalWorkflowTests
         var request = NewSubmitted(); // current step requires Manager
 
         Assert.Throws<DomainException>(
-            () => request.Approve(FinanceId, ApproverRole.Finance, Department, Now));
+            () => request.Approve(FinanceId, [ApproverRole.Finance], Department, Now));
     }
 
     [Fact]
@@ -172,7 +185,7 @@ public class ApprovalWorkflowTests
         var request = NewSubmitted();
 
         var ex = Assert.Throws<DomainException>(
-            () => request.Approve(ManagerId, ApproverRole.Manager, OtherDepartment, Now));
+            () => request.Approve(ManagerId, [ApproverRole.Manager], OtherDepartment, Now));
         Assert.Contains("department-scoped", ex.Message);
     }
 
@@ -182,7 +195,7 @@ public class ApprovalWorkflowTests
         var request = NewDraft();
 
         Assert.Throws<DomainException>(
-            () => request.Approve(ManagerId, ApproverRole.Manager, Department, Now));
+            () => request.Approve(ManagerId, [ApproverRole.Manager], Department, Now));
     }
 
     [Fact]
@@ -191,7 +204,7 @@ public class ApprovalWorkflowTests
         var request = NewSubmitted();
 
         Assert.Throws<DomainException>(
-            () => request.Approve(Guid.Empty, ApproverRole.Manager, Department, Now));
+            () => request.Approve(Guid.Empty, [ApproverRole.Manager], Department, Now));
     }
 
     // --- Reject ---------------------------------------------------------------
@@ -201,7 +214,7 @@ public class ApprovalWorkflowTests
     {
         var request = NewSubmitted();
 
-        request.Reject(ManagerId, ApproverRole.Manager, Department, Now, "Out of budget");
+        request.Reject(ManagerId, [ApproverRole.Manager], Department, Now, "Out of budget");
 
         Assert.Equal(RequestStatus.Rejected, request.Status);
         Assert.Equal(ApprovalDecision.Rejected, request.ApprovalSteps[0].Decision);
@@ -212,9 +225,9 @@ public class ApprovalWorkflowTests
     public void Reject_AtFinanceStepAfterManagerApproval_SetsRejected()
     {
         var request = NewSubmitted();
-        request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
+        request.Approve(ManagerId, [ApproverRole.Manager], Department, Now);
 
-        request.Reject(FinanceId, ApproverRole.Finance, OtherDepartment, Now, "No funds this quarter");
+        request.Reject(FinanceId, [ApproverRole.Finance], OtherDepartment, Now, "No funds this quarter");
 
         Assert.Equal(RequestStatus.Rejected, request.Status);
     }
@@ -227,30 +240,30 @@ public class ApprovalWorkflowTests
         var request = NewSubmitted();
 
         Assert.Throws<DomainException>(
-            () => request.Reject(ManagerId, ApproverRole.Manager, Department, Now, reason));
+            () => request.Reject(ManagerId, [ApproverRole.Manager], Department, Now, reason));
     }
 
     [Fact]
     public void Approve_AfterRejected_ThrowsDomainException()
     {
         var request = NewSubmitted();
-        request.Reject(ManagerId, ApproverRole.Manager, Department, Now, "No");
+        request.Reject(ManagerId, [ApproverRole.Manager], Department, Now, "No");
 
         Assert.Throws<DomainException>(
-            () => request.Approve(ManagerId, ApproverRole.Manager, Department, Now));
+            () => request.Approve(ManagerId, [ApproverRole.Manager], Department, Now));
     }
 
     [Fact]
     public void Approve_WhenAlreadyFullyApproved_ThrowsWithStatusBasedMessage()
     {
         var request = NewSubmitted();
-        request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
-        request.Approve(FinanceId, ApproverRole.Finance, OtherDepartment, Now); // now Approved
+        request.Approve(ManagerId, [ApproverRole.Manager], Department, Now);
+        request.Approve(FinanceId, [ApproverRole.Finance], OtherDepartment, Now); // now Approved
 
         // The status guard fires before the pending-step lookup, so the message names
         // the request state rather than a confusing "no pending step".
         var ex = Assert.Throws<DomainException>(
-            () => request.Approve(FinanceId, ApproverRole.Finance, OtherDepartment, Now));
+            () => request.Approve(FinanceId, [ApproverRole.Finance], OtherDepartment, Now));
         Assert.Contains("Approved", ex.Message);
     }
 
@@ -260,8 +273,8 @@ public class ApprovalWorkflowTests
     public void Fulfill_WhenApproved_SetsCompleted()
     {
         var request = NewSubmitted();
-        request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
-        request.Approve(FinanceId, ApproverRole.Finance, OtherDepartment, Now);
+        request.Approve(ManagerId, [ApproverRole.Manager], Department, Now);
+        request.Approve(FinanceId, [ApproverRole.Finance], OtherDepartment, Now);
 
         request.Fulfill(FinanceId, null, Now);
 
@@ -272,7 +285,7 @@ public class ApprovalWorkflowTests
     public void Fulfill_WhenNotYetApproved_ThrowsDomainException()
     {
         var request = NewSubmitted();
-        request.Approve(ManagerId, ApproverRole.Manager, Department, Now); // still Submitted
+        request.Approve(ManagerId, [ApproverRole.Manager], Department, Now); // still Submitted
 
         Assert.Throws<DomainException>(() => request.Fulfill(FinanceId, null, Now));
     }
@@ -281,8 +294,8 @@ public class ApprovalWorkflowTests
     public void Fulfill_WithEmptyActorId_ThrowsDomainException()
     {
         var request = NewSubmitted();
-        request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
-        request.Approve(FinanceId, ApproverRole.Finance, OtherDepartment, Now);
+        request.Approve(ManagerId, [ApproverRole.Manager], Department, Now);
+        request.Approve(FinanceId, [ApproverRole.Finance], OtherDepartment, Now);
 
         Assert.Throws<DomainException>(() => request.Fulfill(Guid.Empty, null, Now));
     }
@@ -312,8 +325,8 @@ public class ApprovalWorkflowTests
     public void Fulfill_NonAssetLifecycleWithAsset_ThrowsDomainException()
     {
         var request = NewSubmitted();
-        request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
-        request.Approve(FinanceId, ApproverRole.Finance, OtherDepartment, Now); // procurement → Approved
+        request.Approve(ManagerId, [ApproverRole.Manager], Department, Now);
+        request.Approve(FinanceId, [ApproverRole.Finance], OtherDepartment, Now); // procurement → Approved
 
         // A procurement request is not fulfilled by assigning an asset; a stray id is rejected.
         Assert.Throws<DomainException>(() => request.Fulfill(ItAdminId, Guid.NewGuid(), Now));

@@ -177,9 +177,9 @@ public class Request
     /// authenticated JWT principal as of Phase 3 — never from the request body). The
     /// Domain enforces the rule regardless of where the identity came from.
     /// </remarks>
-    public void Approve(Guid approverId, ApproverRole approverRole, Guid approverDepartmentId, DateTimeOffset nowUtc, string? note = null)
+    public void Approve(Guid approverId, IReadOnlyCollection<ApproverRole> approverRoles, Guid approverDepartmentId, DateTimeOffset nowUtc, string? note = null)
     {
-        var step = EnsureDecidableBy(approverId, approverRole, approverDepartmentId);
+        var step = EnsureDecidableBy(approverId, approverRoles, approverDepartmentId);
         step.Approve(approverId, nowUtc, note);
 
         if (_approvalSteps.Where(s => s.IsRequired).All(s => s.Decision == ApprovalDecision.Approved))
@@ -192,14 +192,14 @@ public class Request
     /// Reject the current (first pending) step. Eligibility is the same as approval.
     /// A rejection is terminal: the request becomes <see cref="RequestStatus.Rejected"/>.
     /// </summary>
-    public void Reject(Guid approverId, ApproverRole approverRole, Guid approverDepartmentId, DateTimeOffset nowUtc, string reason)
+    public void Reject(Guid approverId, IReadOnlyCollection<ApproverRole> approverRoles, Guid approverDepartmentId, DateTimeOffset nowUtc, string reason)
     {
         if (string.IsNullOrWhiteSpace(reason))
         {
             throw new DomainException("A rejection reason is required.");
         }
 
-        var step = EnsureDecidableBy(approverId, approverRole, approverDepartmentId);
+        var step = EnsureDecidableBy(approverId, approverRoles, approverDepartmentId);
         step.Reject(approverId, nowUtc, reason.Trim());
         Status = RequestStatus.Rejected;
     }
@@ -244,10 +244,12 @@ public class Request
     }
 
     /// <summary>
-    /// Validates that <paramref name="approverId"/> with <paramref name="approverRole"/>
-    /// may decide the current step, and returns that step. Throws otherwise.
+    /// Validates that <paramref name="approverId"/> — holding <paramref name="approverRoles"/> —
+    /// may decide the current step, and returns that step. Throws otherwise. The actor passes when
+    /// their role set <em>includes</em> the step's required role, so a user holding more than one
+    /// approver role is matched against the step rather than a single pre-selected role.
     /// </summary>
-    private ApprovalStep EnsureDecidableBy(Guid approverId, ApproverRole approverRole, Guid approverDepartmentId)
+    private ApprovalStep EnsureDecidableBy(Guid approverId, IReadOnlyCollection<ApproverRole> approverRoles, Guid approverDepartmentId)
     {
         if (Status != RequestStatus.Submitted)
         {
@@ -262,7 +264,7 @@ public class Request
         var current = _approvalSteps.FirstOrDefault(s => s.Decision == ApprovalDecision.Pending)
             ?? throw new DomainException("There is no pending approval step to decide.");
 
-        if (approverRole != current.RequiredRole)
+        if (!approverRoles.Contains(current.RequiredRole))
         {
             throw new DomainException($"Approval step {current.Order} requires the {current.RequiredRole} role.");
         }

@@ -25,7 +25,7 @@ public sealed class RejectRequestHandler(
         var now = timeProvider.GetUtcNow();
         var fromStatus = request.Status;
 
-        request.Reject(command.ApproverId, command.ApproverRole, command.ApproverDepartmentId, now, command.Reason);
+        request.Reject(command.ApproverId, command.ApproverRoles, command.ApproverDepartmentId, now, command.Reason);
         auditLogger.Add(AuditLog.ForRequest(AuditAction.RequestRejected, request.Id, command.ApproverId, fromStatus, request.Status, now));
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
