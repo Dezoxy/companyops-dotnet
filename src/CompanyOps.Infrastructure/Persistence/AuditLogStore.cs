@@ -24,4 +24,15 @@ internal sealed class AuditLogStore(AppDbContext dbContext) : IAuditLogger, IAud
             .OrderByDescending(a => a.OccurredAtUtc)
             .Take(MaxRows)
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<AuditLog>> ListForTargetAsync(
+        string targetType,
+        Guid targetId,
+        CancellationToken cancellationToken = default) =>
+        await dbContext.AuditLogs
+            .AsNoTracking()
+            .Where(a => a.TargetType == targetType && a.TargetId == targetId)
+            .OrderByDescending(a => a.OccurredAtUtc)
+            .Take(MaxRows)
+            .ToListAsync(cancellationToken);
 }

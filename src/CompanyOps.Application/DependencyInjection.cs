@@ -1,3 +1,4 @@
+using CompanyOps.Application.Assets;
 using CompanyOps.Application.Auditing.ListAuditLogs;
 using CompanyOps.Application.Requests.ApproveRequest;
 using CompanyOps.Application.Requests.Comments.AddComment;
@@ -32,6 +33,16 @@ public static class DependencyInjection
         services.AddScoped<AddCommentHandler>();
         services.AddScoped<ListCommentsHandler>();
         services.AddScoped<ListAuditLogsHandler>();
+
+        services.AddScoped<RegisterAssetHandler>();
+        services.AddScoped<AssignAssetHandler>();
+        services.AddScoped<ReclaimAssetHandler>();
+        services.AddScoped<SendAssetToRepairHandler>();
+        services.AddScoped<ReturnAssetFromRepairHandler>();
+        services.AddScoped<RetireAssetHandler>();
+        services.AddScoped<ListAssetsHandler>();
+        services.AddScoped<GetAssetByIdHandler>();
+        services.AddScoped<GetAssetHistoryHandler>();
         return services;
     }
 }

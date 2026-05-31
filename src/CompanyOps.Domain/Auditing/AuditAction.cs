@@ -15,4 +15,12 @@ public enum AuditAction
     // External-integration outcomes recorded by the Worker (ADR 0008).
     BudgetCommitted = 5,
     AssetReserved = 6,
+
+    // Asset lifecycle transitions (Phase 16) — the asset's history.
+    AssetRegistered = 7,
+    AssetAssigned = 8,
+    AssetReclaimed = 9,
+    AssetSentToRepair = 10,
+    AssetReturnedFromRepair = 11,
+    AssetRetired = 12,
 }

@@ -33,4 +33,10 @@ internal static class Policies
 
     /// <summary>Read the audit trail — Auditor (matrix lists IT Admin as a TODO).</summary>
     public const string ReadAuditLog = "ReadAuditLog";
+
+    /// <summary>Manage the asset inventory and its lifecycle (write) — IT Admin.</summary>
+    public const string ManageAssets = "ManageAssets";
+
+    /// <summary>Read the asset inventory + history — IT Admin and the read-only Auditor.</summary>
+    public const string ReadAssets = "ReadAssets";
 }

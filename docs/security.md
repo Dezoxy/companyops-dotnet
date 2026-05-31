@@ -67,6 +67,24 @@ their Employee role (roles compose — resolves the earlier Create TODO).
 > authentication but are not yet narrowed to own/department — any authenticated role
 > sees all requests. Row-level read scoping is a tracked follow-up.
 
+### Asset console (Phase 16)
+
+The asset inventory + lifecycle is an IT-Admin console; **reads also admit the read-only
+Auditor**. Assets are **not department-scoped** (unlike requests) — any IT Admin manages any
+asset (an intentional central-IT model).
+
+| Action (endpoint) | IT Admin | Auditor | Employee / Manager / Finance |
+|---|---|---|---|
+| List / get / history — `GET /assets`, `/assets/{id}`, `/assets/{id}/history` | ✓ | ✓ read | ✗ |
+| Register — `POST /assets` | ✓ | ✗ | ✗ |
+| Assign / reclaim / repair / return-from-repair / retire — `POST /assets/{id}/…` | ✓ | ✗ | ✗ |
+
+Reads use the `ReadAssets` policy (IT Admin + Auditor); writes use `ManageAssets` (IT Admin).
+Every lifecycle transition is audited via `AuditLog.ForAsset` (target type `"Asset"`) — the
+asset's history, also surfaced in `GET /audit-logs`. Open follow-ups: capturing the affected
+holder's id on assign/reclaim audit entries ("who held it"), and a 409 (not 500) on a
+duplicate tag.
+
 **Hard invariants (must always hold):**
 - Auditor has **no** mutating path anywhere.
 - Manager actions are **department-scoped** — a manager cannot act on another
