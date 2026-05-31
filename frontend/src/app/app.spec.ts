@@ -2,12 +2,24 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { App } from './app';
+import { AuthService } from './core/auth/auth.service';
+
+// The shell depends on AuthService (not the OIDC library directly), so a fake keeps the test
+// decoupled from angular-auth-oidc-client.
+const fakeAuth = {
+  isAuthenticated: () => false,
+  userName: () => null,
+  roles: () => [],
+  hasRole: () => false,
+  login: () => undefined,
+  logout: () => undefined,
+} as unknown as AuthService;
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter([]), provideNoopAnimations()],
+      providers: [provideRouter([]), provideNoopAnimations(), { provide: AuthService, useValue: fakeAuth }],
     }).compileComponents();
   });
 

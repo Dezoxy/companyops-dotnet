@@ -14,8 +14,13 @@ Phases 12–20. It is a **client, not a product backend**: every screen is a vie
   `--mat-sys-*` system tokens are overridden with the **Precision Enterprise** design tokens
   in `src/styles.scss`. Icons are **Material Symbols Outlined** (the default `mat-icon` font set).
 - TypeScript strict mode on. Tests run on **Vitest** (the Angular 21 default, jsdom).
-- Auth: **`angular-auth-oidc-client`** — OIDC Authorization Code + **PKCE** against Keycloak as
-  a **public client**. No client secret in the SPA. (Wired in the auth chunk.)
+- Auth: **`angular-auth-oidc-client`** — OIDC Authorization Code + **PKCE** against Keycloak's
+  public `companyops-spa` client. No client secret in the SPA. `AuthService` (`core/auth/`) wraps
+  it and exposes the session as signals; `core/auth/auth.guard.ts` has `authGuard` + `roleGuard`.
+  **Local login:** the OIDC `authority` (`environment.development.ts`) must match the token
+  **issuer** the browser sees — run dev Keycloak with `KC_HOSTNAME=http://localhost:8080` (or map
+  `keycloak` → `127.0.0.1` in `/etc/hosts` and use the `keycloak:8080` authority). `ng serve`
+  proxies `/api` → `http://localhost:5080` (`proxy.conf.json`).
 - HTTP via `HttpClient` + an interceptor that attaches the access token.
 
 ## Hard rules
