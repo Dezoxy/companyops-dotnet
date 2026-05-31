@@ -57,6 +57,7 @@ public class AssetHandlerTests
         var entry = Assert.Single(_audit.Entries, e => e.Action == AuditAction.AssetAssigned);
         Assert.Equal(asset.Id, entry.TargetId);
         Assert.Equal(ItAdmin, entry.ActorId);
+        Assert.Equal(Holder, entry.AffectedUserId); // the audit records who held it, distinct from the actor
         Assert.Equal(1, _uow.SaveCount);
     }
 
@@ -69,7 +70,9 @@ public class AssetHandlerTests
         await handler.HandleAsync(new AssetTransitionCommand(asset.Id, ItAdmin));
 
         Assert.Equal(AssetStatus.InStock, asset.Status);
-        Assert.Contains(_audit.Entries, e => e.Action == AuditAction.AssetReclaimed && e.TargetId == asset.Id);
+        var entry = Assert.Single(_audit.Entries, e => e.Action == AuditAction.AssetReclaimed);
+        Assert.Equal(asset.Id, entry.TargetId);
+        Assert.Equal(Holder, entry.AffectedUserId); // who it was reclaimed from, captured before the transition cleared it
     }
 
     [Fact]
@@ -81,7 +84,9 @@ public class AssetHandlerTests
         await handler.HandleAsync(new AssetTransitionCommand(asset.Id, ItAdmin));
 
         Assert.Equal(AssetStatus.InRepair, asset.Status);
-        Assert.Contains(_audit.Entries, e => e.Action == AuditAction.AssetSentToRepair && e.TargetId == asset.Id);
+        var entry = Assert.Single(_audit.Entries, e => e.Action == AuditAction.AssetSentToRepair);
+        Assert.Equal(asset.Id, entry.TargetId);
+        Assert.Null(entry.AffectedUserId); // sent to repair from stock — no holder to record
     }
 
     [Fact]
@@ -106,6 +111,30 @@ public class AssetHandlerTests
 
         Assert.Equal(AssetStatus.Retired, asset.Status);
         Assert.Contains(_audit.Entries, e => e.Action == AuditAction.AssetRetired && e.TargetId == asset.Id);
+    }
+
+    [Fact]
+    public async Task SendToRepair_WhenAssigned_RecordsPriorHolder()
+    {
+        var asset = Seed(a => a.Assign(Holder, Now)); // currently held
+        var handler = new SendAssetToRepairHandler(_assets, _audit, _uow, _clock);
+
+        await handler.HandleAsync(new AssetTransitionCommand(asset.Id, ItAdmin));
+
+        var entry = Assert.Single(_audit.Entries, e => e.Action == AuditAction.AssetSentToRepair);
+        Assert.Equal(Holder, entry.AffectedUserId); // taken from its holder — recorded
+    }
+
+    [Fact]
+    public async Task Retire_WhenAssigned_RecordsPriorHolder()
+    {
+        var asset = Seed(a => a.Assign(Holder, Now));
+        var handler = new RetireAssetHandler(_assets, _audit, _uow, _clock);
+
+        await handler.HandleAsync(new AssetTransitionCommand(asset.Id, ItAdmin));
+
+        var entry = Assert.Single(_audit.Entries, e => e.Action == AuditAction.AssetRetired);
+        Assert.Equal(Holder, entry.AffectedUserId);
     }
 
     [Fact]

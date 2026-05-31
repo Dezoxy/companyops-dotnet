@@ -23,7 +23,8 @@ public sealed class AssignAssetHandler(
         var now = timeProvider.GetUtcNow();
         var fromStatus = asset.Status;
         asset.Assign(command.UserId, now);
-        auditLogger.Add(AuditLog.ForAsset(AuditAction.AssetAssigned, asset.Id, command.ActorId, fromStatus, asset.Status, now));
+        // The audit records who held it: the assignee (command.UserId), distinct from the actor (IT Admin).
+        auditLogger.Add(AuditLog.ForAsset(AuditAction.AssetAssigned, asset.Id, command.ActorId, fromStatus, asset.Status, now, command.UserId));
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return AssetDto.FromDomain(asset);

@@ -1,3 +1,4 @@
+using CompanyOps.Domain.Assets;
 using CompanyOps.Domain.Auditing;
 using CompanyOps.Domain.Common;
 using CompanyOps.Domain.Requests;
@@ -9,6 +10,8 @@ public class AuditLogTests
     private static readonly DateTimeOffset Now = new(2026, 5, 30, 12, 0, 0, TimeSpan.Zero);
     private static readonly Guid Actor = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid RequestId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+    private static readonly Guid AssetId = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+    private static readonly Guid Holder = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
     [Fact]
     public void ForRequest_RecordsActionActorTargetAndStatuses()
@@ -46,6 +49,24 @@ public class AuditLogTests
     {
         Assert.Throws<DomainException>(
             () => AuditLog.ForRequest(AuditAction.RequestCreated, Guid.Empty, Actor, null, RequestStatus.Draft, Now));
+    }
+
+    [Fact]
+    public void ForAsset_RecordsAffectedUser_WhenProvided()
+    {
+        var entry = AuditLog.ForAsset(AuditAction.AssetAssigned, AssetId, Actor, AssetStatus.InStock, AssetStatus.Assigned, Now, Holder);
+
+        Assert.Equal("Asset", entry.TargetType);
+        Assert.Equal(AssetId, entry.TargetId);
+        Assert.Equal(Holder, entry.AffectedUserId); // who held it
+    }
+
+    [Fact]
+    public void ForAsset_AffectedUserIsNull_WhenOmitted()
+    {
+        var entry = AuditLog.ForAsset(AuditAction.AssetReturnedFromRepair, AssetId, Actor, AssetStatus.InRepair, AssetStatus.InStock, Now);
+
+        Assert.Null(entry.AffectedUserId); // no holder concerned
     }
 
     [Fact]
