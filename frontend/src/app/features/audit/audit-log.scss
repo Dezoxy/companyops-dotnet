@@ -16,29 +16,15 @@
   }
 }
 
-.head-actions {
-  display: flex;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
 .panel {
   padding: 8px 16px 16px;
 }
 
 .filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: center;
   padding-top: 8px;
-
-  .search {
-    flex: 1 1 280px;
-  }
 }
 
-.requests-table {
+.audit-table {
   width: 100%;
   background: transparent;
 }
@@ -49,15 +35,10 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
-// The domain has no human request number yet, so show the real id, truncated (full value in
-// the tooltip). Replaced by a server-issued friendly id in a later phase.
-.id-cell {
-  display: inline-block;
-  max-width: 96px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  vertical-align: middle;
+.note {
+  margin: 16px 0 0;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
 }
 
 .state {

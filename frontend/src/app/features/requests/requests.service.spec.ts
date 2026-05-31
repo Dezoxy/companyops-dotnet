@@ -87,4 +87,37 @@ describe('RequestsService', () => {
     httpMock.expectOne('/api/requests/abcdef12-3456-7890-abcd-ef1234567890').flush(dto());
     expect(result).toBe('New laptop');
   });
+
+  it('create POSTs the input and maps the response', () => {
+    let result: string | undefined;
+    service.create({ title: 'New laptop', type: 'Procurement', description: null }).subscribe((r) => (result = r.id));
+    const req = httpMock.expectOne('/api/requests');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ title: 'New laptop', type: 'Procurement', description: null });
+    req.flush(dto());
+    expect(result).toBe('abcdef12-3456-7890-abcd-ef1234567890');
+  });
+
+  it('submit POSTs to the submit endpoint', () => {
+    service.submit('r1').subscribe();
+    const req = httpMock.expectOne('/api/requests/r1/submit');
+    expect(req.request.method).toBe('POST');
+    req.flush(dto());
+  });
+
+  it('approve POSTs the note to the approve endpoint', () => {
+    service.approve('r1', 'looks good').subscribe();
+    const req = httpMock.expectOne('/api/requests/r1/approve');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ note: 'looks good' });
+    req.flush(dto());
+  });
+
+  it('reject POSTs the reason to the reject endpoint', () => {
+    service.reject('r1', 'over budget').subscribe();
+    const req = httpMock.expectOne('/api/requests/r1/reject');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ reason: 'over budget' });
+    req.flush(dto());
+  });
 });

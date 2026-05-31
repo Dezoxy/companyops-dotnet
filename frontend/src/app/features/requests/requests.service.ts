@@ -7,6 +7,7 @@ import {
   APPROVER_ROLE_LABEL,
   ApprovalStepDto,
   ApprovalStepVm,
+  CreateRequestInput,
   REQUEST_STATUS_META,
   REQUEST_TYPE_LABEL,
   RequestDto,
@@ -92,5 +93,27 @@ export class RequestsService {
   /** Fetch a single request by id (used by the detail screen). */
   getById(id: string): Observable<RequestVm> {
     return this.http.get<RequestDto>(`${this.baseUrl}/${id}`).pipe(map(mapRequest));
+  }
+
+  /** Create a Draft request. Requester + department are derived server-side from the JWT. */
+  create(input: CreateRequestInput): Observable<RequestVm> {
+    return this.http.post<RequestDto>(this.baseUrl, input).pipe(map(mapRequest));
+  }
+
+  /** Submit a Draft request for approval (the domain enforces submit-own + the stage). */
+  submit(id: string): Observable<RequestVm> {
+    return this.http.post<RequestDto>(`${this.baseUrl}/${id}/submit`, {}).pipe(map(mapRequest));
+  }
+
+  /** Approve the current step — the actor's role + the configured chain select which step. */
+  approve(id: string, note?: string): Observable<RequestVm> {
+    return this.http
+      .post<RequestDto>(`${this.baseUrl}/${id}/approve`, { note: note ?? null })
+      .pipe(map(mapRequest));
+  }
+
+  /** Reject the current step with a required reason. */
+  reject(id: string, reason: string): Observable<RequestVm> {
+    return this.http.post<RequestDto>(`${this.baseUrl}/${id}/reject`, { reason }).pipe(map(mapRequest));
   }
 }

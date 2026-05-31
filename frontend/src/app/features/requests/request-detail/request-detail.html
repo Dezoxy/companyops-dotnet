@@ -33,6 +33,27 @@
           <app-status-chip [label]="r.statusMeta.label" [tone]="r.statusMeta.tone" />
         </div>
         <p class="meta">{{ r.typeLabel }} · Created {{ r.createdAt | date: 'medium' }}</p>
+
+        @if (canSubmit() || canDecide()) {
+          <div class="detail-actions">
+            @if (canSubmit()) {
+              <button mat-flat-button [disabled]="acting()" (click)="submit()">
+                <mat-icon>send</mat-icon>
+                Submit for approval
+              </button>
+            }
+            @if (canDecide()) {
+              <button mat-stroked-button [disabled]="acting()" (click)="decide('reject')">
+                <mat-icon>close</mat-icon>
+                Reject
+              </button>
+              <button mat-flat-button [disabled]="acting()" (click)="decide('approve')">
+                <mat-icon>check</mat-icon>
+                Approve
+              </button>
+            }
+          </div>
+        }
       </header>
 
       <div class="content">
