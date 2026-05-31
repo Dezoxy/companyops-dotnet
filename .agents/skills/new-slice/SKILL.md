@@ -10,7 +10,7 @@ four layers so the developer fills in *logic*, not *plumbing*. This is the backe
 counterpart to `new-angular-feature`.
 
 **Read first:** `AGENTS.md` (conventions + non-negotiables) and the per-layer
-`src/CompanyOps.*/AGENTS.md`. **Reference shapes:** the `CreateRequest` slice (the
+`src/CompanyOps.*/CLAUDE.md`. **Reference shapes:** the `CreateRequest` slice (the
 simplest end-to-end) and the `ApproveRequest` slice (shows audit + an outbox event on
 a transition) — match their style, XML-doc tone, and file layout.
 
@@ -24,7 +24,7 @@ in `AGENTS.md`); if a slice needs a later-phase concern, stop and flag it.
 - **Action name** — PascalCase, not CRUD: `SubmitRequest`, `ApproveRequest`,
   `RejectRequest`, `FulfillRequest`, `CancelRequest`; queries like `GetRequestById`.
 - **Aggregate + transition** (commands) — which status → status move, and the invariant
-  that makes it illegal. The valid path is in `src/CompanyOps.Domain/AGENTS.md`.
+  that makes it illegal. The valid path is in `src/CompanyOps.Domain/CLAUDE.md`.
 - **Authorization** — which role policy gates the endpoint, and any resource scope
   (department / own) the Domain must enforce. Source of truth: `docs/security.md`.
 - **Async follow-on?** — does the transition need out-of-band work (notify, call an

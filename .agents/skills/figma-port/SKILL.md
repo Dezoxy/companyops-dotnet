@@ -5,15 +5,15 @@ description: Turn a Figma "CompanyOps Enterprise Suite" screen into an Angular M
 
 # Port a Figma screen → Angular Material (CompanyOps)
 
-The frontend is the **CompanyOps Enterprise Suite** ([ADR 0010](../../docs/decisions/0010-frontend-full-client-angular-material.md),
-design source updated by [ADR 0011](../../docs/decisions/0011-design-source-figma.md)). Each
+The frontend is the **CompanyOps Enterprise Suite** ([ADR 0010](../../../docs/decisions/0010-frontend-full-client-angular-material.md),
+design source updated by [ADR 0011](../../../docs/decisions/0011-design-source-figma.md)). Each
 screen is designed in **Figma**; we **rebuild it in Angular Material** — the Figma output is the
 **visual + information-architecture reference**, never copy-pasted markup or emitted code.
 
 This skill is `new-angular-feature` with a Figma reference on the front. **Read
-`new-angular-feature/SKILL.md` and follow its file structure** (models + signals service +
+`../new-angular-feature/SKILL.md` and follow its file structure** (models + signals service +
 standalone component + lazy route + guard); this file only adds the *get-the-design* and
-*translate-to-Material* steps. Read `frontend/AGENTS.md` and match what already exists in
+*translate-to-Material* steps. Read `frontend/CLAUDE.md` and match what already exists in
 `frontend/` (the app shell, the M3 theme, existing features).
 
 ## 1. Get the reference (Figma MCP)

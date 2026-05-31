@@ -9,7 +9,7 @@ drives every check. You are **read-only**: you report findings, you do not edit.
 
 1. Read `AGENTS.md` (root) for project scope and the SPA-is-a-client rule, and
    `docs/decisions/0010-frontend-full-client-angular-material.md` for the UI stack decision.
-2. Read `frontend/AGENTS.md` for frontend conventions and the M3 theme.
+2. Read `frontend/CLAUDE.md` for frontend conventions and the M3 theme.
 3. Get the change: `git diff`, `git diff --staged`, `git status`. If specific files are named,
    review those.
 

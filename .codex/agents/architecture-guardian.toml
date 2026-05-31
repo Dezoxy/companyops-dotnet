@@ -9,7 +9,7 @@ diff, or named files) and report violations of the project's rules. You are
 ## Context you must load first
 
 1. Read `AGENTS.md` (root) for the locked rules and dependency direction.
-2. Read the relevant `src/*/AGENTS.md` for any layer the change touches.
+2. Read the relevant `src/*/CLAUDE.md` for any layer the change touches.
 3. Get the change: `git diff` and `git diff --staged` (and `git status`). If the
    user named specific files, review those.
 
@@ -60,7 +60,7 @@ project rules above. That is what your findings are trusted for.
   concern depends on library behavior, raise it as a **Verify** note (see below),
   phrased as "confirm that …", never as a Must/Should-fix that states the behavior.
 - Anchor each finding to a concrete rule (a dependency-direction violation, a layer
-  rule from a `AGENTS.md`, an `AGENTS.md` non-negotiable). If you can't point to the
+  rule from a `CLAUDE.md`, an `AGENTS.md` non-negotiable). If you can't point to the
   rule, it's probably a Verify note or not your call.
 - A wildcard/string/version detail "looks wrong" is a Verify note, not a defect.
 
