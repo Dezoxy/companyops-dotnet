@@ -3,7 +3,8 @@
 Security model, authorization rules, and threat model for CompanyOps. This is a
 living document: sections marked **TODO** are filled in as the relevant phase
 lands. The authorization matrix below is the source of truth that code reviews
-and the (future) `security-guardian` check against.
+and the (future) `security-guardian` check against. Deferred hardening (the **TODO**s
+below) is indexed and tiered in [future-improvements.md](future-improvements.md).
 
 ## Principles
 
@@ -224,8 +225,12 @@ attempt count, error text) — **never the event payload**. Read-only — no mut
 
 ## Input validation
 
-- All input validated at the Application boundary (FluentValidation). TODO: wire
-  global model-validation + problem-details responses in the API (Phase 1–3).
+- Input is validated at the **Application / Domain boundary**: Domain factories and aggregate
+  methods reject invalid input by throwing `DomainException`, mapped to an RFC 7807 **400** by
+  `DomainExceptionHandler` (`ConflictException` → 409, `MissingClaimException` → 403). This is the
+  AGENTS.md "FluentValidation **or equivalent**" — the equivalent: the rules live in one place (the
+  Domain) instead of being duplicated in a validator layer. ProblemDetails is wired
+  (`AddProblemDetails` + the `IExceptionHandler`s in the API).
 
 ## Transport & headers
 
