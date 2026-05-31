@@ -1,0 +1,123 @@
+<a mat-button routerLink="/assets" class="back">
+  <mat-icon>arrow_back</mat-icon>
+  Assets
+</a>
+
+@switch (status()) {
+  @case ('loading') {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @case ('notfound') {
+    <div class="state">
+      <mat-icon class="state-icon">search_off</mat-icon>
+      <p>This asset doesn't exist.</p>
+      <a mat-stroked-button routerLink="/assets">Back to assets</a>
+    </div>
+  }
+
+  @case ('error') {
+    <div class="state">
+      <mat-icon class="state-icon">error_outline</mat-icon>
+      <p>Couldn't load this asset.</p>
+      <button mat-stroked-button (click)="load()">Try again</button>
+    </div>
+  }
+
+  @case ('loaded') {
+    @if (asset(); as a) {
+      <header class="detail-head">
+        <div class="eyebrow mono">{{ a.tag }}</div>
+        <div class="title-row">
+          <h1>{{ a.name }}</h1>
+          <app-status-chip [label]="a.statusMeta.label" [tone]="a.statusMeta.tone" />
+        </div>
+        <p class="meta">{{ a.typeLabel }} · Registered {{ a.createdAt | date: 'medium' }}</p>
+
+        @if (hasActions()) {
+          <div class="detail-actions">
+            @if (canAssign()) {
+              <button mat-flat-button [disabled]="acting()" (click)="assign()">
+                <mat-icon>person_add</mat-icon>
+                Assign
+              </button>
+            }
+            @if (canReclaim()) {
+              <button mat-stroked-button [disabled]="acting()" (click)="reclaim()">
+                <mat-icon>undo</mat-icon>
+                Reclaim
+              </button>
+            }
+            @if (canRepair()) {
+              <button mat-stroked-button [disabled]="acting()" (click)="sendToRepair()">
+                <mat-icon>build</mat-icon>
+                Send to repair
+              </button>
+            }
+            @if (canReturn()) {
+              <button mat-stroked-button [disabled]="acting()" (click)="returnFromRepair()">
+                <mat-icon>check</mat-icon>
+                Return to stock
+              </button>
+            }
+            @if (canRetire()) {
+              <button mat-stroked-button [disabled]="acting()" (click)="retire()">
+                <mat-icon>archive</mat-icon>
+                Retire
+              </button>
+            }
+          </div>
+        }
+      </header>
+
+      <div class="content">
+        <mat-card appearance="outlined">
+          <mat-card-header><mat-card-title>Details</mat-card-title></mat-card-header>
+          <mat-card-content>
+            <dl class="meta-list">
+              <dt>Type</dt>
+              <dd>{{ a.typeLabel }}</dd>
+              <dt>Assigned to</dt>
+              <dd>
+                @if (a.assignedToId) {
+                  <span class="mono">{{ a.assignedToId }}</span>
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </dd>
+              <dt>Registered</dt>
+              <dd>{{ a.createdAt | date: 'medium' }}</dd>
+            </dl>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card appearance="outlined">
+          <mat-card-header><mat-card-title>History</mat-card-title></mat-card-header>
+          <mat-card-content>
+            @if (historyError()) {
+              <p class="muted">Couldn't load history.</p>
+            } @else if (history().length === 0) {
+              <p class="muted">No history yet.</p>
+            } @else {
+              <ol class="timeline">
+                @for (entry of history(); track entry.id) {
+                  <li class="event">
+                    <div class="event-head">
+                      <span class="event-action">{{ entry.actionLabel }}</span>
+                      @if (entry.fromStatus || entry.toStatus) {
+                        <span class="muted small">{{ entry.fromStatus ?? '—' }} → {{ entry.toStatus ?? '—' }}</span>
+                      }
+                    </div>
+                    <div class="muted small">
+                      {{ entry.occurredAt | date: 'medium' }} · by <span class="mono">{{ entry.actorId }}</span>
+                    </div>
+                  </li>
+                }
+              </ol>
+            }
+          </mat-card-content>
+        </mat-card>
+      </div>
+    }
+  }
+}

@@ -28,5 +28,12 @@ export const routes: Routes = [
     canActivate: [roleGuard('Auditor')],
     loadComponent: () => import('./features/audit/audit-log').then((m) => m.AuditLog),
   },
+  // Asset console: reads admit IT Admin + the read-only Auditor (docs/security.md); writes
+  // are IT-Admin-only and the API re-checks, so the UI hides write actions for the Auditor.
+  {
+    path: 'assets',
+    canActivate: [roleGuard('ItAdmin', 'Auditor')],
+    loadChildren: () => import('./features/assets/assets.routes').then((m) => m.ASSETS_ROUTES),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];
