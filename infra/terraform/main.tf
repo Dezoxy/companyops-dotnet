@@ -25,23 +25,25 @@ resource "azurerm_public_ip" "this" {
   sku                 = "Standard"
 }
 
-# Only SSH (locked to your CIDR) + the public web ports. Traefik is the sole ingress;
-# Postgres/RabbitMQ/Redis/Keycloak are never exposed to the NSG — they stay on the internal
-# Docker network behind this firewall.
+# Only SSH (locked to your CIDR, plus the CI runner's IP during a deploy) + the public web
+# ports. Traefik is the sole ingress; Postgres/RabbitMQ/Redis/Keycloak are never exposed to the
+# NSG — they stay on the internal Docker network behind this firewall.
 resource "azurerm_network_security_group" "this" {
   name                = "${var.prefix}-nsg"
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
 
   security_rule {
-    name                       = "ssh"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = var.allowed_ssh_cidr
+    name                   = "ssh"
+    priority               = 100
+    direction              = "Inbound"
+    access                 = "Allow"
+    protocol               = "Tcp"
+    source_port_range      = "*"
+    destination_port_range = "22"
+    # Your stable management CIDR + (when set) the release workflow's runner IP for the deploy.
+    # compact() drops ci_ssh_cidr when it's empty, so a local apply opens SSH to just your CIDR.
+    source_address_prefixes    = compact([var.allowed_ssh_cidr, var.ci_ssh_cidr])
     destination_address_prefix = "*"
   }
 

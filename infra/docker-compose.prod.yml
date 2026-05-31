@@ -4,8 +4,11 @@
 # bindings and throwaway secrets never leak in via Compose's append-merge.
 #
 # Secrets + domains come from an untracked .env (see .env.example); nothing here is committed
-# with a real value. Run on a VM provisioned by the Ansible playbook:
-#   docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+# with a real value. Images are prebuilt in CI and pulled from GHCR (ADR 0012) — set
+# GHCR_OWNER + COMPANYOPS_VERSION in .env. Run on a VM provisioned by the Ansible playbook:
+#   docker login ghcr.io
+#   docker compose -f docker-compose.prod.yml --env-file .env pull
+#   docker compose -f docker-compose.prod.yml --env-file .env up -d
 #
 # Real TLS needs APP_DOMAIN / KEYCLOAK_DOMAIN to resolve to this host's public IP (ACME
 # tls-alpn-01 over :443). Locally the stack boots with Traefik's self-signed default cert.
@@ -113,13 +116,10 @@ services:
       - companyops-redis:/data
     restart: unless-stopped
 
-  # One-shot: applies EF migrations then exits. Also builds the shared companyops-api:local
-  # image the api service reuses. api/worker wait for it to complete.
+  # One-shot: applies EF migrations then exits. Uses the same API image as the api service
+  # (the --migrate entrypoint). api/worker wait for it to complete.
   migrator:
-    build:
-      context: ..
-      dockerfile: src/CompanyOps.Api/Dockerfile
-    image: companyops-api:local
+    image: ghcr.io/${GHCR_OWNER:?set GHCR_OWNER in .env}/companyops-api:${COMPANYOPS_VERSION:?set COMPANYOPS_VERSION in .env}
     container_name: companyops-migrator
     command: ["--migrate"]
     environment:
@@ -132,7 +132,7 @@ services:
     restart: "no"
 
   api:
-    image: companyops-api:local # built by the migrator service
+    image: ghcr.io/${GHCR_OWNER}/companyops-api:${COMPANYOPS_VERSION}
     container_name: companyops-api
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -169,10 +169,7 @@ services:
     restart: unless-stopped
 
   worker:
-    build:
-      context: ..
-      dockerfile: src/CompanyOps.Worker/Dockerfile
-    image: companyops-worker:local
+    image: ghcr.io/${GHCR_OWNER}/companyops-worker:${COMPANYOPS_VERSION}
     container_name: companyops-worker
     environment:
       DOTNET_ENVIRONMENT: Production
@@ -194,10 +191,7 @@ services:
 
   # Stands in for the real Finance/Inventory systems (no real integrations in this project).
   fakeexternals:
-    build:
-      context: ..
-      dockerfile: src/CompanyOps.FakeExternals/Dockerfile
-    image: companyops-fakeexternals:local
+    image: ghcr.io/${GHCR_OWNER}/companyops-fakeexternals:${COMPANYOPS_VERSION}
     container_name: companyops-fakeexternals
     environment:
       ASPNETCORE_ENVIRONMENT: Production

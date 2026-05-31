@@ -40,6 +40,8 @@ infra/terraform/.terraform/
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+# Terraform remote-state backend coordinates (names the state storage account); .example is committed.
+infra/terraform/backend.hcl
 infra/ansible/inventory.ini
 infra/ansible/.vault_pass
 infra/ansible/group_vars/all.yml
