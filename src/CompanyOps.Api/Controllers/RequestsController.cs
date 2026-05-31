@@ -184,14 +184,16 @@ public sealed class RequestsController : ControllerBase
         [FromServices] AddCommentHandler handler,
         CancellationToken cancellationToken)
     {
-        // The author comes from the JWT principal, never the body.
-        var result = await handler.HandleAsync(new AddCommentCommand(id, User.GetUserId(), body.Body), cancellationToken);
+        // The author + the read scope come from the JWT principal, never the body. You can only
+        // comment on a request you're entitled to see (out of scope → 404), the same scope as the reads.
+        var (requesterId, departmentId) = ReadScope();
+        var result = await handler.HandleAsync(new AddCommentCommand(id, User.GetUserId(), body.Body, requesterId, departmentId), cancellationToken);
         return result is null ? NotFound() : CreatedAtAction(nameof(GetComments), new { id }, result);
     }
 
-    // Any authenticated principal may read the thread, including the Auditor (read-only).
-    // Explicit [Authorize] (redundant with the class-level one) so narrowing the class
-    // default can never silently expose this read.
+    // Any authenticated principal may read the thread of a request in their read scope, including
+    // the Auditor (read-only, global scope). Explicit [Authorize] (redundant with the class-level
+    // one) so narrowing the class default can never silently expose this read.
     [HttpGet("{id:guid}/comments")]
     [Authorize]
     [ProducesResponseType(typeof(IReadOnlyList<CommentDto>), StatusCodes.Status200OK)]
@@ -201,7 +203,8 @@ public sealed class RequestsController : ControllerBase
         [FromServices] ListCommentsHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.HandleAsync(new ListCommentsQuery(id), cancellationToken);
+        var (requesterId, departmentId) = ReadScope();
+        var result = await handler.HandleAsync(new ListCommentsQuery(id, requesterId, departmentId), cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }
 }
