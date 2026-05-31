@@ -93,8 +93,14 @@ services:
       - traefik.http.routers.kc.entrypoints=websecure
       - traefik.http.routers.kc.tls.certresolver=le
       - traefik.http.services.kc.loadbalancer.server.port=8080
-      # HSTS + hardening headers on the login/token pages too (where users enter credentials).
-      - traefik.http.routers.kc.middlewares=sec-headers
+      # HSTS + hardening on the login/token pages, but a kc-specific middleware WITHOUT frameDeny:
+      # Keycloak sets its own X-Frame-Options: SAMEORIGIN for the admin/account console's same-origin
+      # status iframe — forcing DENY here breaks the console ("somethingWentWrong"). Keep HSTS/nosniff/referrer.
+      - traefik.http.routers.kc.middlewares=sec-headers-kc
+      - traefik.http.middlewares.sec-headers-kc.headers.stsSeconds=31536000
+      - traefik.http.middlewares.sec-headers-kc.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.sec-headers-kc.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.sec-headers-kc.headers.referrerPolicy=no-referrer
     restart: unless-stopped
 
   rabbitmq:
