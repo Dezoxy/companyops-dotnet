@@ -191,8 +191,14 @@ jobs:
           ANSIBLE_HOST_KEY_CHECKING: "false"
           PUBLIC_IP: ${{ steps.tf.outputs.public_ip }}
         run: |
+          # The playbook targets `hosts: companyops`, so the VM must be in that group — a bare
+          # `-i "<ip>,"` puts it ungrouped and the play silently matches 0 hosts. Write a grouped
+          # inventory (matches the documented manual inventory.ini), and fail loudly if it's empty.
+          printf '[companyops]\n%s\n' "${PUBLIC_IP}" > "${RUNNER_TEMP}/inventory.ini"
+          ansible companyops -i "${RUNNER_TEMP}/inventory.ini" --list-hosts | grep -q "${PUBLIC_IP}" \
+            || { echo "::error::no hosts matched the 'companyops' group — inventory is wrong"; exit 1; }
           ansible-playbook playbook.yml \
-            -i "${PUBLIC_IP}," \
+            -i "${RUNNER_TEMP}/inventory.ini" \
             -u companyops \
             --private-key "${RUNNER_TEMP}/deploy_key" \
             -e "@${RUNNER_TEMP}/deploy-vars.yml"
