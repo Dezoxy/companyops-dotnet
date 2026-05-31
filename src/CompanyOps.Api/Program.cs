@@ -42,6 +42,8 @@ builder.Services.AddOpenApi();
 // Map domain rule violations to RFC 7807 problem responses.
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
+// A valid-but-insufficient principal (missing sub/department) → 403, not a leaked 500.
+builder.Services.AddExceptionHandler<MissingClaimExceptionHandler>();
 
 // TimeProvider.System makes "now" injectable and testable (no custom clock port).
 builder.Services.AddSingleton(TimeProvider.System);
