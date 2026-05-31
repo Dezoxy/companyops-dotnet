@@ -9,14 +9,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
   },
-  // Core workflow screens land in Phase 14; placeholders keep the (guarded) shell navigable.
   {
     path: 'requests',
-    title: 'Requests · CompanyOps',
-    data: { title: 'Requests' },
     canActivate: [authGuard],
-    loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.Placeholder),
+    loadChildren: () => import('./features/requests/requests.routes').then((m) => m.REQUESTS_ROUTES),
   },
+  // Approvals + Audit land in Phase 14b; placeholders keep the (guarded) shell navigable.
   // approve/reject = Manager/Finance per docs/security.md; IT Admin *fulfils* (its own console,
   // Phase 17), so it is intentionally not an approvals actor.
   {

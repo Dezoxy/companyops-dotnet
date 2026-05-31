@@ -1,0 +1,90 @@
+<a mat-button routerLink="/requests" class="back">
+  <mat-icon>arrow_back</mat-icon>
+  Requests
+</a>
+
+@switch (status()) {
+  @case ('loading') {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @case ('notfound') {
+    <div class="state">
+      <mat-icon class="state-icon">search_off</mat-icon>
+      <p>This request doesn't exist.</p>
+      <a mat-stroked-button routerLink="/requests">Back to requests</a>
+    </div>
+  }
+
+  @case ('error') {
+    <div class="state">
+      <mat-icon class="state-icon">error_outline</mat-icon>
+      <p>Couldn't load this request.</p>
+      <button mat-stroked-button (click)="load()">Try again</button>
+    </div>
+  }
+
+  @case ('loaded') {
+    @if (request(); as r) {
+      <header class="detail-head">
+        <div class="eyebrow mono">{{ r.id }}</div>
+        <div class="title-row">
+          <h1>{{ r.title }}</h1>
+          <app-status-chip [label]="r.statusMeta.label" [tone]="r.statusMeta.tone" />
+        </div>
+        <p class="meta">{{ r.typeLabel }} · Created {{ r.createdAt | date: 'medium' }}</p>
+      </header>
+
+      <div class="content">
+        @if (r.description) {
+          <mat-card appearance="outlined">
+            <mat-card-header><mat-card-title>Description</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <p class="description">{{ r.description }}</p>
+            </mat-card-content>
+          </mat-card>
+        }
+
+        <mat-card appearance="outlined">
+          <mat-card-header><mat-card-title>Approval timeline</mat-card-title></mat-card-header>
+          <mat-card-content>
+            @if (r.approvalSteps.length === 0) {
+              <p class="muted">No approval steps yet — this request hasn't been submitted.</p>
+            } @else {
+              <ol class="timeline">
+                @for (step of r.approvalSteps; track step.order) {
+                  <li class="step" [class.current]="step.isCurrent">
+                    <span
+                      class="dot"
+                      [style.background-color]="'var(--app-tone-' + step.decisionMeta.tone + '-fg)'"
+                    ></span>
+                    <div class="step-body">
+                      <div class="step-head">
+                        <span class="step-role">{{ step.roleLabel }}</span>
+                        <app-status-chip [label]="step.decisionMeta.label" [tone]="step.decisionMeta.tone" />
+                        @if (step.scope === 'Department') {
+                          <span class="muted small">· Department-scoped</span>
+                        }
+                        @if (!step.isRequired) {
+                          <span class="muted small">· Optional</span>
+                        }
+                      </div>
+                      @if (step.decidedAt) {
+                        <div class="muted small">Decided {{ step.decidedAt | date: 'medium' }}</div>
+                      } @else if (step.isCurrent) {
+                        <div class="muted small">Awaiting decision</div>
+                      }
+                      @if (step.note) {
+                        <p class="note">{{ step.note }}</p>
+                      }
+                    </div>
+                  </li>
+                }
+              </ol>
+            }
+          </mat-card-content>
+        </mat-card>
+      </div>
+    }
+  }
+}
