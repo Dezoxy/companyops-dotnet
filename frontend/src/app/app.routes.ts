@@ -22,6 +22,14 @@ export const routes: Routes = [
     canActivate: [roleGuard('Manager', 'Finance')],
     loadComponent: () => import('./features/approvals/approvals').then((m) => m.Approvals),
   },
+  // IT-Admin fulfilment console: the work queue of approved requests awaiting fulfillment.
+  // Fulfilling is IT-Admin-only (FulfillRequests) and the API re-checks, so this gate is UX.
+  {
+    path: 'fulfilment',
+    title: 'Fulfilment · CompanyOps',
+    canActivate: [roleGuard('ItAdmin')],
+    loadComponent: () => import('./features/fulfilment/fulfilment').then((m) => m.Fulfilment),
+  },
   {
     path: 'audit',
     title: 'Audit log · CompanyOps',
