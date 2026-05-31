@@ -5,8 +5,8 @@ HTTP and use cases — it contains no business logic.
 
 Belongs here:
 - Endpoint definitions (controllers or minimal APIs) that map to **business
-  actions**, not CRUD: `POST /requests/{id}/approve-manager`,
-  `POST /requests/{id}/fulfill`, etc.
+  actions**, not CRUD: `POST /requests/{id}/approve`, `POST /requests/{id}/fulfill`,
+  etc. (one step-driven `/approve` — the actor's role + the chain pick the step, ADR 0006).
 - DI composition root (register Application + Infrastructure services).
 - Authentication (JWT/OIDC via Keycloak) and **authorization enforcement**:
   role-based + policy-based. E.g. only Manager can approve their department's

@@ -18,11 +18,14 @@ public enum RequestStatus
     Submitted = 1,
     Approved = 2,
 
-    // Not reachable through a public transition yet — Fulfill goes Approved → Completed
-    // synchronously in Phase 2. This state becomes meaningful when the Phase 5 worker
-    // performs fulfillment asynchronously (ADR 0005).
+    // Reserved — not currently reached. Fulfillment is synchronous (Approved → Completed); the
+    // async worker handles external integration (ADR 0008), not this status. It becomes
+    // meaningful only if fulfillment itself is made asynchronous.
     InFulfillment = 3,
     Completed = 4,
     Rejected = 5,
+
+    // Reserved — no Cancel transition is built yet (tracked in docs/security.md). Status has a
+    // private setter, so only a (future) Domain Cancel method could ever set this.
     Cancelled = 6,
 }

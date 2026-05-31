@@ -32,7 +32,7 @@ function vm(status: RequestStatus): RequestVm {
 describe('Dashboard', () => {
   it('counts requests by status into the stat cards', async () => {
     const service = {
-      requests: signal([vm('Submitted'), vm('Submitted'), vm('Completed')]),
+      requests: signal([vm('Submitted'), vm('Submitted'), vm('Completed'), vm('Rejected')]),
       loading: signal(false),
       error: signal(false),
       loadAll: () => undefined,
@@ -49,7 +49,7 @@ describe('Dashboard', () => {
     const values = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll('.stat-value'),
     ).map((el) => el.textContent?.trim());
-    // Order: Awaiting approval (Submitted), Approved, In fulfilment, Completed
-    expect(values).toEqual(['2', '0', '0', '1']);
+    // Order: Awaiting approval (Submitted), Approved, Rejected, Completed
+    expect(values).toEqual(['2', '0', '1', '1']);
   });
 });
