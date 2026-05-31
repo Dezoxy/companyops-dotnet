@@ -8,6 +8,9 @@ internal sealed class AssetRepository(AppDbContext dbContext) : IAssetRepository
 {
     public void Add(Asset asset) => dbContext.Assets.Add(asset);
 
+    public Task<bool> TagExistsAsync(string tag, CancellationToken cancellationToken = default) =>
+        dbContext.Assets.AsNoTracking().AnyAsync(a => a.Tag == tag, cancellationToken);
+
     public Task<Asset?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         dbContext.Assets.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
 

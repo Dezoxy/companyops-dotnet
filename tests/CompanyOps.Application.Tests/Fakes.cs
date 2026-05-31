@@ -55,6 +55,9 @@ internal sealed class FakeAssetRepository : IAssetRepository
 
     public void Add(Asset asset) => _store[asset.Id] = asset;
 
+    public Task<bool> TagExistsAsync(string tag, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_store.Values.Any(a => a.Tag == tag));
+
     public Task<Asset?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_store.GetValueOrDefault(id));
 

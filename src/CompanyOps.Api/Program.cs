@@ -46,6 +46,8 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 // A valid-but-insufficient principal (missing sub/department) → 403, not a leaked 500.
 builder.Services.AddExceptionHandler<MissingClaimExceptionHandler>();
+// A clash with existing state (e.g. a duplicate asset tag) → 409, not a leaked 500.
+builder.Services.AddExceptionHandler<ConflictExceptionHandler>();
 
 // TimeProvider.System makes "now" injectable and testable (no custom clock port).
 builder.Services.AddSingleton(TimeProvider.System);

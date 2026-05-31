@@ -105,7 +105,11 @@ Every lifecycle transition is audited via `AuditLog.ForAsset` (target type `"Ass
 asset's history, also surfaced in `GET /audit-logs`. Each custody change also records **who
 held it** (`AffectedUserId` — the assignee on assign, the prior holder on reclaim / send-to-
 repair / retire, captured before the transition clears it), surfaced in the asset history.
-Open follow-up: a 409 (not 500) on a duplicate tag.
+A duplicate tag returns **409 Conflict** (`ConflictException` → `ConflictExceptionHandler`): the
+handler pre-checks the normalized tag, and the unique index on the column is the integrity
+backstop. (A truly concurrent duplicate registration would still hit the index and surface as a
+500 — negligible for manual IT registration; fully closing it means translating the unique-
+violation at the persistence seam, which is left out to avoid changing the Worker's save path.)
 
 There is a **second path to `Asset.Assign`** (Phase 16c): when IT Admin fulfils an
 **AssetLifecycle** request, the assignment happens through the request flow rather than the

@@ -56,6 +56,18 @@ public sealed class AssetConsoleTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task Register_DuplicateTag_Returns409()
+    {
+        var client = await ItAdminAsync();
+        var first = await client.PostAsJsonAsync("/assets", new { tag = "AST-DUP-1", name = "First", type = "Laptop" });
+        first.EnsureSuccessStatusCode();
+
+        var conflict = await client.PostAsJsonAsync("/assets", new { tag = "AST-DUP-1", name = "Second", type = "Laptop" });
+
+        Assert.Equal(HttpStatusCode.Conflict, conflict.StatusCode); // the unique tag is taken — 409, not a leaked 500
+    }
+
+    [Fact]
     public async Task Assign_AsManager_Returns403()
     {
         var id = await RegisterAssetAsync("AST-AUTHZ-1");

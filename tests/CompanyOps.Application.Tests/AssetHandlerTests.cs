@@ -1,4 +1,5 @@
 using CompanyOps.Application.Assets;
+using CompanyOps.Application.Common;
 using CompanyOps.Domain.Assets;
 using CompanyOps.Domain.Auditing;
 using Xunit;
@@ -41,6 +42,30 @@ public class AssetHandlerTests
         Assert.Equal(AssetStatus.InStock, stored.Status);
         Assert.Equal(1, _uow.SaveCount);
         Assert.Contains(_audit.Entries, e => e.Action == AuditAction.AssetRegistered && e.TargetId == stored.Id);
+    }
+
+    [Fact]
+    public async Task Register_DuplicateTag_ThrowsConflict_AndDoesNotSaveOrAudit()
+    {
+        Seed(); // an asset already tagged "AST-1"
+        var handler = new RegisterAssetHandler(_assets, _audit, _uow, _clock);
+
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            handler.HandleAsync(new RegisterAssetCommand("AST-1", "Another laptop", AssetType.Laptop, ItAdmin)));
+
+        Assert.Equal(0, _uow.SaveCount); // nothing persisted
+        Assert.Empty(_audit.Entries);    // no AssetRegistered entry for the rejected tag
+    }
+
+    [Fact]
+    public async Task Register_DuplicateTag_IgnoringSurroundingWhitespace_ThrowsConflict()
+    {
+        Seed(); // "AST-1"
+        var handler = new RegisterAssetHandler(_assets, _audit, _uow, _clock);
+
+        // Register normalizes the tag (trim); the uniqueness check runs on the normalized value.
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            handler.HandleAsync(new RegisterAssetCommand("  AST-1  ", "Dup", AssetType.Laptop, ItAdmin)));
     }
 
     [Fact]
