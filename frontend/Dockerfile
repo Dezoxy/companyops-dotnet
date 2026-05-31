@@ -13,7 +13,7 @@ RUN npm install --no-audit --no-fund
 COPY . .
 RUN npm run build -- --configuration production
 
-FROM nginx:1.27-alpine AS final
+FROM nginx:1.31-alpine AS final
 # The application builder emits browser assets under dist/<project>/browser.
 COPY --from=build /src/dist/companyops/browser /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
