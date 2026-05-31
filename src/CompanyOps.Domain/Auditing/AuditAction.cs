@@ -23,4 +23,8 @@ public enum AuditAction
     AssetSentToRepair = 10,
     AssetReturnedFromRepair = 11,
     AssetRetired = 12,
+
+    // Request cancellation. Appended (not slotted next to the other request actions) so existing
+    // stored values are preserved.
+    RequestCancelled = 13,
 }

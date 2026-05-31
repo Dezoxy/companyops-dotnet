@@ -101,6 +101,18 @@ describe('RequestDetail', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Submit for approval');
   });
 
+  it('shows Cancel for the owner of a submitted request', async () => {
+    const fixture = setup(() => of(vm({ status: 'Submitted', requesterId: 'me' })), auth('me', []));
+    await fixture.whenStable();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Cancel request');
+  });
+
+  it('hides Cancel for a request the user does not own', async () => {
+    const fixture = setup(() => of(vm({ status: 'Submitted', requesterId: 'someone-else' })), auth('me', []));
+    await fixture.whenStable();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Cancel request');
+  });
+
   it('shows Approve/Reject when the current step matches a role the user holds', async () => {
     const fixture = setup(() => of(vm({ status: 'Submitted', approvalSteps: [step('Manager')] })), auth('x', ['Manager']));
     await fixture.whenStable();

@@ -3,6 +3,7 @@ using CompanyOps.Application.Auditing.ListAuditLogs;
 using CompanyOps.Application.Integrations;
 using CompanyOps.Application.Reports;
 using CompanyOps.Application.Requests.ApproveRequest;
+using CompanyOps.Application.Requests.CancelRequest;
 using CompanyOps.Application.Requests.Comments.AddComment;
 using CompanyOps.Application.Requests.Comments.ListComments;
 using CompanyOps.Application.Requests.CreateRequest;
@@ -32,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<ApproveRequestHandler>();
         services.AddScoped<RejectRequestHandler>();
         services.AddScoped<FulfillRequestHandler>();
+        services.AddScoped<CancelRequestHandler>();
         services.AddScoped<AddCommentHandler>();
         services.AddScoped<ListCommentsHandler>();
         services.AddScoped<ListAuditLogsHandler>();

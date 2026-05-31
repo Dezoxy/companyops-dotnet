@@ -244,6 +244,33 @@ public class Request
     }
 
     /// <summary>
+    /// Cancel the request: <c>Draft | Submitted → Cancelled</c> (terminal). Only the requester may
+    /// cancel their own request, and only before approval completes — an approved, in-fulfilment,
+    /// completed, rejected, or already-cancelled request cannot be cancelled. Throws
+    /// <see cref="DomainException"/> otherwise.
+    /// </summary>
+    public void Cancel(Guid actorId, DateTimeOffset nowUtc)
+    {
+        if (actorId == Guid.Empty)
+        {
+            throw new DomainException("Cancelling must record who performed it.");
+        }
+
+        if (actorId != RequesterId)
+        {
+            throw new DomainException("Only the requester can cancel their own request.");
+        }
+
+        if (Status is not (RequestStatus.Draft or RequestStatus.Submitted))
+        {
+            throw new DomainException($"Only a draft or submitted request can be cancelled; this request is {Status}.");
+        }
+
+        _ = nowUtc; // the cancellation time is recorded on the audit entry (in the handler), not the aggregate
+        Status = RequestStatus.Cancelled;
+    }
+
+    /// <summary>
     /// Validates that <paramref name="approverId"/> — holding <paramref name="approverRoles"/> —
     /// may decide the current step, and returns that step. Throws otherwise. The actor passes when
     /// their role set <em>includes</em> the step's required role, so a user holding more than one

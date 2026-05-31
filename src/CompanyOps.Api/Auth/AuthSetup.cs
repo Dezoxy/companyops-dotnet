@@ -62,6 +62,7 @@ public static class AuthSetup
         services.AddAuthorizationBuilder()
             .AddPolicy(Policies.CreateRequests, p => p.RequireRole(Roles.Employee))
             .AddPolicy(Policies.SubmitRequests, p => p.RequireRole(Roles.Employee))
+            .AddPolicy(Policies.CancelRequests, p => p.RequireRole(Roles.Employee))
             .AddPolicy(Policies.DecideRequests, p => p.RequireRole(Roles.Manager, Roles.Finance))
             .AddPolicy(Policies.FulfillRequests, p => p.RequireRole(Roles.ItAdmin))
             // Any participant may comment; the read-only Auditor (Auditor-only) is excluded.

@@ -41,12 +41,18 @@
           · Created {{ r.createdAt | date: 'medium' }}
         </p>
 
-        @if (canSubmit() || canFulfill() || canDecide()) {
+        @if (canSubmit() || canFulfill() || canDecide() || canCancel()) {
           <div class="detail-actions">
             @if (canSubmit()) {
               <button mat-flat-button [disabled]="acting()" (click)="submit()">
                 <mat-icon>send</mat-icon>
                 Submit for approval
+              </button>
+            }
+            @if (canCancel()) {
+              <button mat-stroked-button [disabled]="acting()" (click)="cancel()">
+                <mat-icon>cancel</mat-icon>
+                Cancel request
               </button>
             }
             @if (canFulfill()) {

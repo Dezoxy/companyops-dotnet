@@ -64,7 +64,7 @@ their Employee role (roles compose — resolves the earlier Create TODO).
 | Finance step — `…/approve` | ✗ | ✗ | ✓ stage | ✗ | ✗ |
 | Reject — `…/reject` | ✗ | ✓ dept, stage | ✓ stage | ✗ | ✗ |
 | Fulfill — `…/fulfill` | ✗ | ✗ | ✗ | ✓ stage | ✗ |
-| Cancel — `…/cancel` (not yet built) | ✓ own, stage | TODO dept? | ✗ | ✗ | ✗ |
+| Cancel — `…/cancel` | ✓ own, Draft/Submitted | TODO dept? | ✗ | ✗ | ✗ |
 | View a request — `GET /requests/{id}` | ✓ (auth) | ✓ (auth) | ✓ | ✓ | ✓ read |
 | List requests — `GET /requests` | ✓ own | ✓ dept | ✓ all | ✓ all | ✓ all |
 | View audit log — `GET /audit-logs` | ✗ | ✗ | ✗ | ✓ read | ✓ read |

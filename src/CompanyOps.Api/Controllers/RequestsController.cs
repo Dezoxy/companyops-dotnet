@@ -2,6 +2,7 @@ using CompanyOps.Api.Auth;
 using CompanyOps.Api.Contracts;
 using CompanyOps.Application.Requests;
 using CompanyOps.Application.Requests.ApproveRequest;
+using CompanyOps.Application.Requests.CancelRequest;
 using CompanyOps.Application.Requests.Comments;
 using CompanyOps.Application.Requests.Comments.AddComment;
 using CompanyOps.Application.Requests.Comments.ListComments;
@@ -105,6 +106,20 @@ public sealed class RequestsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await handler.HandleAsync(new SubmitRequestCommand(id, User.GetUserId()), cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = Policies.CancelRequests)]
+    [ProducesResponseType(typeof(RequestDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RequestDto>> Cancel(
+        Guid id,
+        [FromServices] CancelRequestHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.HandleAsync(new CancelRequestCommand(id, User.GetUserId()), cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }
 
