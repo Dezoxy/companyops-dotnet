@@ -116,4 +116,9 @@ export class RequestsService {
   reject(id: string, reason: string): Observable<RequestVm> {
     return this.http.post<RequestDto>(`${this.baseUrl}/${id}/reject`, { reason }).pipe(map(mapRequest));
   }
+
+  /** Fulfil an approved request (IT Admin) — Approved → Completed. */
+  fulfill(id: string): Observable<RequestVm> {
+    return this.http.post<RequestDto>(`${this.baseUrl}/${id}/fulfill`, {}).pipe(map(mapRequest));
+  }
 }

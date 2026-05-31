@@ -41,6 +41,12 @@ not role-named endpoints (ADR 0006): the API policy admits Manager **or** Financ
 the Domain matches the actor's role to the current step. The Manager/Finance rows below
 are the *conceptual* steps that one endpoint serves.
 
+The chain is configured **per request type** ([ADR 0005](decisions/0005-configurable-approval-workflow.md)):
+**Procurement** = Manager (department) → Finance (global); **Helpdesk** = Manager (department) only
+(Phase 15). So a helpdesk request reaches Approved after a single manager sign-off, then IT Admin
+fulfils — the same `/approve` and `/fulfill` endpoints serve both flows; the type's chain selects
+the step.
+
 Anyone holding the **Employee** role may create requests; Managers/Finance create via
 their Employee role (roles compose — resolves the earlier Create TODO).
 

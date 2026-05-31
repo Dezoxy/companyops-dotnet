@@ -68,7 +68,8 @@ public class ApprovalWorkflowTests
     [Fact]
     public void Submit_ForRequestTypeWithNoConfiguredChain_ThrowsDomainException()
     {
-        var request = NewDraft(RequestType.Helpdesk);
+        // AssetLifecycle has no chain yet (lands in Phase 16); Helpdesk now does (Phase 15).
+        var request = NewDraft(RequestType.AssetLifecycle);
 
         var ex = Assert.Throws<DomainException>(() => request.Submit(Requester, Now));
         Assert.Contains("No approval chain", ex.Message);
@@ -91,6 +92,31 @@ public class ApprovalWorkflowTests
         var request = NewDraft();
 
         Assert.Throws<DomainException>(() => request.Submit(Guid.Empty, Now));
+    }
+
+    // --- Helpdesk chain (manager-only, Phase 15) ------------------------------
+
+    [Fact]
+    public void Submit_Helpdesk_MaterializesSingleManagerStep()
+    {
+        var request = NewDraft(RequestType.Helpdesk);
+
+        request.Submit(Requester, Now);
+
+        var step = Assert.Single(request.ApprovalSteps);
+        Assert.Equal(ApproverRole.Manager, step.RequiredRole);
+        Assert.Equal(ApprovalScope.Department, step.Scope);
+    }
+
+    [Fact]
+    public void Approve_Helpdesk_ByManager_ReachesApprovedInOneStep()
+    {
+        var request = NewDraft(RequestType.Helpdesk);
+        request.Submit(Requester, Now);
+
+        request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
+
+        Assert.Equal(RequestStatus.Approved, request.Status);
     }
 
     // --- Approve --------------------------------------------------------------

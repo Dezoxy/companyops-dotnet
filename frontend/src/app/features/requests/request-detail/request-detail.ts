@@ -12,7 +12,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { RequestsService } from '../requests.service';
-import { RequestVm } from '../requests.models';
+import { ApproverRole, RequestVm } from '../requests.models';
 import { StatusChip } from '../../../shared/status-chip/status-chip';
 import { AuthService } from '../../../core/auth/auth.service';
 import { DecisionDialog, DecisionDialogData, DecisionDialogResult } from '../decision-dialog/decision-dialog';
@@ -68,6 +68,12 @@ export class RequestDetail {
     return !!r && r.status === 'Submitted' && !!step && this.auth.hasRole(step.requiredRole);
   });
 
+  /** Fulfil is available to IT Admin once the request is Approved (helpdesk + procurement). */
+  protected readonly canFulfill = computed(() => {
+    const r = this.request();
+    return !!r && r.status === 'Approved' && this.auth.hasRole('ItAdmin' satisfies ApproverRole);
+  });
+
   constructor() {
     this.load();
   }
@@ -96,6 +102,14 @@ export class RequestDetail {
       return;
     }
     this.run(this.service.submit(r.id), 'Request submitted for approval.');
+  }
+
+  protected fulfill(): void {
+    const r = this.request();
+    if (!r || this.acting()) {
+      return;
+    }
+    this.run(this.service.fulfill(r.id), 'Request fulfilled.');
   }
 
   protected decide(action: 'approve' | 'reject'): void {

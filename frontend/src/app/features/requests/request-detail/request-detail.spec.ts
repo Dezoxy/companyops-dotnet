@@ -104,4 +104,22 @@ describe('RequestDetail', () => {
     await fixture.whenStable();
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Approve');
   });
+
+  it('shows Mark fulfilled for IT Admin on an approved request', async () => {
+    const fixture = setup(() => of(vm({ status: 'Approved' })), auth('x', ['ItAdmin']));
+    await fixture.whenStable();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Mark fulfilled');
+  });
+
+  it('hides Mark fulfilled for a non-IT-Admin on an approved request', async () => {
+    const fixture = setup(() => of(vm({ status: 'Approved' })), auth('x', ['Manager']));
+    await fixture.whenStable();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Mark fulfilled');
+  });
+
+  it('hides Mark fulfilled for IT Admin until the request is approved', async () => {
+    const fixture = setup(() => of(vm({ status: 'Submitted' })), auth('x', ['ItAdmin']));
+    await fixture.whenStable();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Mark fulfilled');
+  });
 });

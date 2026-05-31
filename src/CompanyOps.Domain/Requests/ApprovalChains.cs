@@ -11,9 +11,13 @@ namespace CompanyOps.Domain.Requests;
 /// </summary>
 public static class ApprovalChains
 {
-    // Procurement is the Phase 2 seed flow: the requester's manager approves
-    // (department-scoped), then central Finance signs off (global). Helpdesk and
-    // asset-lifecycle chains are added with their flows in Phases 13-14.
+    // Each request type's chain lives here — the engine materializes it on Submit:
+    //  - Procurement (Phase 2 seed): the requester's manager approves (department-scoped),
+    //    then central Finance signs off (global).
+    //  - Helpdesk (Phase 15): manager-only (department-scoped). Low-risk service/access
+    //    requests need one sign-off, then IT fulfils — a deliberately different shape from
+    //    procurement, which is the whole point of the configurable engine (ADR 0005).
+    // Asset-lifecycle (Phase 16) is added with its flow.
     private static readonly IReadOnlyDictionary<RequestType, IReadOnlyList<ApprovalStepDefinition>> Chains =
         new Dictionary<RequestType, IReadOnlyList<ApprovalStepDefinition>>
         {
@@ -21,6 +25,10 @@ public static class ApprovalChains
             [
                 new ApprovalStepDefinition(1, ApproverRole.Manager, ApprovalScope.Department, IsRequired: true),
                 new ApprovalStepDefinition(2, ApproverRole.Finance, ApprovalScope.Global, IsRequired: true),
+            ],
+            [RequestType.Helpdesk] =
+            [
+                new ApprovalStepDefinition(1, ApproverRole.Manager, ApprovalScope.Department, IsRequired: true),
             ],
         };
 
