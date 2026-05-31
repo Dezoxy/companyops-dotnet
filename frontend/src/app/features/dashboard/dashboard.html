@@ -1,18 +1,59 @@
 <header class="page-head">
-  <h1>Dashboard</h1>
-  <p>Overview of your requests and approvals.</p>
+  <div>
+    <h1>Dashboard</h1>
+    <p>Status of all requests across the workflow.</p>
+  </div>
+  <button mat-stroked-button (click)="refresh()" [disabled]="loading()">
+    <mat-icon>refresh</mat-icon>
+    Refresh
+  </button>
 </header>
 
-<section class="stat-grid">
-  @for (stat of stats; track stat.label) {
-    <mat-card appearance="outlined">
-      <mat-card-content class="stat">
-        <mat-icon class="stat-icon" aria-hidden="true">{{ stat.icon }}</mat-icon>
-        <div>
-          <div class="stat-value">{{ stat.value }}</div>
-          <div class="stat-label">{{ stat.label }}</div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  }
-</section>
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+@if (error()) {
+  <mat-card appearance="outlined" class="state">
+    <mat-icon class="state-icon">error_outline</mat-icon>
+    <p>Couldn't load dashboard data.</p>
+    <button mat-stroked-button (click)="refresh()">Try again</button>
+  </mat-card>
+} @else {
+  <section class="stat-grid">
+    @for (stat of stats(); track stat.label) {
+      <mat-card appearance="outlined">
+        <mat-card-content class="stat">
+          <mat-icon class="stat-icon" aria-hidden="true">{{ stat.icon }}</mat-icon>
+          <div>
+            <div class="stat-value">{{ stat.value }}</div>
+            <div class="stat-label">{{ stat.label }}</div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+  </section>
+
+  <mat-card appearance="outlined" class="recent">
+    <mat-card-header>
+      <mat-card-title>Recent requests</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      @if (recent().length === 0) {
+        <p class="muted">No requests yet.</p>
+      } @else {
+        <ul class="recent-list">
+          @for (request of recent(); track request.id) {
+            <li>
+              <a [routerLink]="['/requests', request.id]" class="recent-item">
+                <span class="recent-title">{{ request.title }}</span>
+                <app-status-chip [label]="request.statusMeta.label" [tone]="request.statusMeta.tone" />
+                <span class="recent-date muted">{{ request.createdAt | date: 'mediumDate' }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </mat-card-content>
+  </mat-card>
+}

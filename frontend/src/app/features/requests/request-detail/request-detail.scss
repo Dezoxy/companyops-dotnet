@@ -1,0 +1,139 @@
+.back {
+  margin-bottom: 8px;
+}
+
+.detail-head {
+  margin-bottom: 24px;
+
+  .eyebrow {
+    color: var(--mat-sys-on-surface-variant);
+    margin-bottom: 4px;
+  }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    h1 {
+      font: var(--mat-sys-headline-large);
+      margin: 0;
+    }
+  }
+
+  .meta {
+    color: var(--mat-sys-on-surface-variant);
+    margin: 8px 0 0;
+  }
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.description {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.small {
+  font: var(--mat-sys-body-small);
+}
+
+.mono {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+// --- Approval timeline ---
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 12px;
+  padding-bottom: 20px;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 16px;
+    bottom: 0;
+    width: 2px;
+    background: var(--mat-sys-outline-variant);
+  }
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 4px;
+  z-index: 1;
+}
+
+.step-body {
+  min-width: 0;
+}
+
+.step-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.step-role {
+  font: var(--mat-sys-title-small);
+}
+
+.step.current .step-role {
+  color: var(--mat-sys-primary);
+}
+
+.note {
+  margin: 6px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--mat-sys-surface-container);
+  font: var(--mat-sys-body-small);
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 56px 16px;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+
+  p {
+    margin: 0;
+  }
+}
+
+.state-icon {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  color: var(--mat-sys-outline);
+}

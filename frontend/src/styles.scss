@@ -52,6 +52,24 @@ html {
   --mat-sys-inverse-surface: #213145;
   --mat-sys-inverse-on-surface: #eaf1ff;
   --mat-sys-inverse-primary: #b4c5ff;
+
+  // --- App status palette (semantic chip colours) ---
+  // M3 only ships primary/secondary/tertiary/error roles; status UI needs success / warning /
+  // info too. Defined once here (the theme layer) and referenced via the shared status-chip —
+  // never hardcoded per component. fg = text, bg = soft background (the "medium text on
+  // low-opacity surface" look from the design).
+  // TODO(dark-mode): these are light-only (like the --mat-sys-* overrides above); add dark
+  // values in the prefers-color-scheme block when dark mode lands, or the chips won't adapt.
+  --app-tone-neutral-fg: #434655;
+  --app-tone-neutral-bg: #e6e8f0;
+  --app-tone-info-fg: #004ac6;
+  --app-tone-info-bg: #dbe6ff;
+  --app-tone-progress-fg: #8a5300;
+  --app-tone-progress-bg: #ffe6c4;
+  --app-tone-success-fg: #1f6d3b;
+  --app-tone-success-bg: #d3f0dd;
+  --app-tone-danger-fg: #93000a;
+  --app-tone-danger-bg: #ffdad6;
 }
 
 body {
@@ -63,6 +81,19 @@ body {
   font: var(--mat-sys-body-medium);
   margin: 0;
   height: 100%;
+}
+
+// Screen-reader-only utility: visually hidden but announced (e.g. empty action column headers).
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 // The design uses Material Symbols Outlined (configured as the default mat-icon font set).
