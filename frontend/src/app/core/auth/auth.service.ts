@@ -4,11 +4,13 @@ import { Observable } from 'rxjs';
 
 interface AuthState {
   readonly isAuthenticated: boolean;
+  readonly userId: string | null;
   readonly userName: string | null;
   readonly roles: readonly string[];
 }
 
 interface AccessTokenPayload {
+  readonly sub?: string;
   readonly preferred_username?: string;
   readonly realm_access?: { readonly roles?: string[] };
 }
@@ -23,9 +25,16 @@ interface AccessTokenPayload {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly oidc = inject(OidcSecurityService);
-  private readonly state = signal<AuthState>({ isAuthenticated: false, userName: null, roles: [] });
+  private readonly state = signal<AuthState>({
+    isAuthenticated: false,
+    userId: null,
+    userName: null,
+    roles: [],
+  });
 
   readonly isAuthenticated = computed(() => this.state().isAuthenticated);
+  /** The authenticated user's id (`sub`) — matches a request's RequesterId for "own" checks. */
+  readonly userId = computed(() => this.state().userId);
   readonly userName = computed(() => this.state().userName);
   readonly roles = computed(() => this.state().roles);
 
@@ -55,6 +64,7 @@ export class AuthService {
       : null;
     this.state.set({
       isAuthenticated,
+      userId: payload?.sub ?? null,
       userName: payload?.preferred_username ?? null,
       roles: payload?.realm_access?.roles ?? [],
     });

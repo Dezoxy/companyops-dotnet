@@ -14,22 +14,19 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadChildren: () => import('./features/requests/requests.routes').then((m) => m.REQUESTS_ROUTES),
   },
-  // Approvals + Audit land in Phase 14b; placeholders keep the (guarded) shell navigable.
   // approve/reject = Manager/Finance per docs/security.md; IT Admin *fulfils* (its own console,
   // Phase 17), so it is intentionally not an approvals actor.
   {
     path: 'approvals',
     title: 'Approvals · CompanyOps',
-    data: { title: 'Approvals' },
     canActivate: [roleGuard('Manager', 'Finance')],
-    loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.Placeholder),
+    loadComponent: () => import('./features/approvals/approvals').then((m) => m.Approvals),
   },
   {
     path: 'audit',
     title: 'Audit log · CompanyOps',
-    data: { title: 'Audit log' },
     canActivate: [roleGuard('Auditor')],
-    loadComponent: () => import('./shared/placeholder/placeholder').then((m) => m.Placeholder),
+    loadComponent: () => import('./features/audit/audit-log').then((m) => m.AuditLog),
   },
   { path: '**', redirectTo: 'dashboard' },
 ];

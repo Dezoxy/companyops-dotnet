@@ -46,6 +46,13 @@ export interface RequestDto {
   readonly approvalSteps: readonly ApprovalStepDto[];
 }
 
+/** Body for POST /requests (create). Requester + department come from the JWT, never the body. */
+export interface CreateRequestInput {
+  readonly title: string;
+  readonly description?: string | null;
+  readonly type: RequestType;
+}
+
 // --- Display metadata --------------------------------------------------------
 // Label + chip tone per enum value. Single source so the list, detail, and dashboard
 // render a status identically.

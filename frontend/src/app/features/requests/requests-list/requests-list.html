@@ -3,10 +3,16 @@
     <h1>Requests</h1>
     <p>Track and review requests across the workflow.</p>
   </div>
-  <button mat-stroked-button (click)="refresh()" [disabled]="loading()">
-    <mat-icon>refresh</mat-icon>
-    Refresh
-  </button>
+  <div class="head-actions">
+    <button mat-stroked-button (click)="refresh()" [disabled]="loading()">
+      <mat-icon>refresh</mat-icon>
+      Refresh
+    </button>
+    <a mat-flat-button routerLink="/requests/new">
+      <mat-icon>add</mat-icon>
+      New request
+    </a>
+  </div>
 </header>
 
 <mat-card appearance="outlined" class="panel">

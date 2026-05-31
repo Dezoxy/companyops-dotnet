@@ -1,0 +1,52 @@
+.back {
+  margin-bottom: 8px;
+}
+
+.page-head {
+  margin-bottom: 24px;
+
+  h1 {
+    font: var(--mat-sys-headline-large);
+    margin: 0;
+  }
+
+  p {
+    color: var(--mat-sys-on-surface-variant);
+    margin: 4px 0 0;
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 720px;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  mat-form-field {
+    width: 100%;
+  }
+}
+
+.error-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--mat-sys-error);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .spacer {
+    flex: 1 1 auto;
+  }
+}
