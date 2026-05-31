@@ -2,6 +2,9 @@ using CompanyOps.Api.Auth;
 using CompanyOps.Api.Contracts;
 using CompanyOps.Application.Requests;
 using CompanyOps.Application.Requests.ApproveRequest;
+using CompanyOps.Application.Requests.Comments;
+using CompanyOps.Application.Requests.Comments.AddComment;
+using CompanyOps.Application.Requests.Comments.ListComments;
 using CompanyOps.Application.Requests.CreateRequest;
 using CompanyOps.Application.Requests.FulfillRequest;
 using CompanyOps.Application.Requests.GetRequest;
@@ -130,6 +133,38 @@ public sealed class RequestsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await handler.HandleAsync(new FulfillRequestCommand(id, User.GetUserId()), cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpPost("{id:guid}/comments")]
+    [Authorize(Policy = Policies.CommentOnRequests)] // any participant; the read-only Auditor is excluded
+    [ProducesResponseType(typeof(CommentDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CommentDto>> AddComment(
+        Guid id,
+        [FromBody] AddCommentRequest body,
+        [FromServices] AddCommentHandler handler,
+        CancellationToken cancellationToken)
+    {
+        // The author comes from the JWT principal, never the body.
+        var result = await handler.HandleAsync(new AddCommentCommand(id, User.GetUserId(), body.Body), cancellationToken);
+        return result is null ? NotFound() : CreatedAtAction(nameof(GetComments), new { id }, result);
+    }
+
+    // Any authenticated principal may read the thread, including the Auditor (read-only).
+    // Explicit [Authorize] (redundant with the class-level one) so narrowing the class
+    // default can never silently expose this read.
+    [HttpGet("{id:guid}/comments")]
+    [Authorize]
+    [ProducesResponseType(typeof(IReadOnlyList<CommentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<CommentDto>>> GetComments(
+        Guid id,
+        [FromServices] ListCommentsHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.HandleAsync(new ListCommentsQuery(id), cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }
 }

@@ -1,0 +1,58 @@
+<mat-card appearance="outlined">
+  <mat-card-header><mat-card-title>Discussion</mat-card-title></mat-card-header>
+  <mat-card-content>
+    @if (loading()) {
+      <mat-progress-bar mode="indeterminate" />
+    } @else if (error()) {
+      <div class="state">
+        <mat-icon class="state-icon">error_outline</mat-icon>
+        <p>Couldn't load comments.</p>
+        <button mat-stroked-button (click)="load()">Try again</button>
+      </div>
+    } @else {
+      @if (comments().length === 0) {
+        <p class="muted">No comments yet — start the discussion.</p>
+      } @else {
+        <ul class="thread" role="list">
+          @for (comment of labelledComments(); track comment.id) {
+            <li class="comment">
+              <div class="comment-head">
+                <span class="author mono">{{ comment.authorLabel }}</span>
+                <span class="muted small">{{ comment.createdAt | date: 'medium' }}</span>
+              </div>
+              <p class="comment-body">{{ comment.body }}</p>
+            </li>
+          }
+        </ul>
+      }
+
+      <form class="add" (ngSubmit)="post()">
+        <mat-form-field appearance="outline" class="add-field">
+          <mat-label>Add a comment</mat-label>
+          <textarea
+            matInput
+            [formControl]="body"
+            rows="3"
+            maxlength="4000"
+            placeholder="Write a note for the thread…"
+          ></textarea>
+          @if (body.hasError('required') && body.touched) {
+            <mat-error>A comment can't be empty.</mat-error>
+          }
+          @if (body.hasError('maxlength')) {
+            <mat-error>Comments are limited to 4000 characters.</mat-error>
+          }
+        </mat-form-field>
+        <div class="add-actions">
+          @if (postError()) {
+            <span class="muted small">Couldn't post — try again.</span>
+          }
+          <button mat-flat-button type="submit" [disabled]="posting()">
+            <mat-icon>send</mat-icon>
+            Post
+          </button>
+        </div>
+      </form>
+    }
+  </mat-card-content>
+</mat-card>

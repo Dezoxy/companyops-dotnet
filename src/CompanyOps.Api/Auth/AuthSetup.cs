@@ -64,6 +64,8 @@ public static class AuthSetup
             .AddPolicy(Policies.SubmitRequests, p => p.RequireRole(Roles.Employee))
             .AddPolicy(Policies.DecideRequests, p => p.RequireRole(Roles.Manager, Roles.Finance))
             .AddPolicy(Policies.FulfillRequests, p => p.RequireRole(Roles.ItAdmin))
+            // Any participant may comment; the read-only Auditor (Auditor-only) is excluded.
+            .AddPolicy(Policies.CommentOnRequests, p => p.RequireRole(Roles.Employee, Roles.Manager, Roles.Finance, Roles.ItAdmin))
             .AddPolicy(Policies.ReadAuditLog, p => p.RequireRole(Roles.Auditor));
 
         return services;
