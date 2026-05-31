@@ -18,6 +18,8 @@ export type RequestStatus =
 export type ApproverRole = 'Manager' | 'Finance' | 'ItAdmin';
 export type ApprovalScope = 'Department' | 'Global';
 export type ApprovalDecision = 'Pending' | 'Approved' | 'Rejected';
+export type RequestPriority = 'Low' | 'Medium' | 'High' | 'Critical';
+export type RequestCategory = 'Incident' | 'ServiceRequest' | 'AccessRequest';
 
 // --- Raw API DTOs ------------------------------------------------------------
 // Mirror the server contracts (RequestDto / ApprovalStepDto). Mapped to the view
@@ -39,6 +41,8 @@ export interface RequestDto {
   readonly title: string;
   readonly description: string | null;
   readonly type: RequestType;
+  readonly priority: RequestPriority;
+  readonly category: RequestCategory | null;
   readonly status: RequestStatus;
   readonly requesterId: string;
   readonly departmentId: string;
@@ -51,6 +55,9 @@ export interface CreateRequestInput {
   readonly title: string;
   readonly description?: string | null;
   readonly type: RequestType;
+  readonly priority: RequestPriority;
+  /** Helpdesk-only; omit/null for other types. */
+  readonly category?: RequestCategory | null;
 }
 
 // --- Display metadata --------------------------------------------------------
@@ -77,6 +84,20 @@ export const REQUEST_TYPE_LABEL: Record<RequestType, string> = {
   Procurement: 'Procurement',
   Helpdesk: 'Helpdesk',
   AssetLifecycle: 'Asset lifecycle',
+};
+
+// Declaration order is the select order (ascending severity) — keep it, don't sort alphabetically.
+export const REQUEST_PRIORITY_META: Record<RequestPriority, ToneLabel> = {
+  Low: { label: 'Low', tone: 'neutral' },
+  Medium: { label: 'Medium', tone: 'info' },
+  High: { label: 'High', tone: 'progress' },
+  Critical: { label: 'Critical', tone: 'danger' },
+};
+
+export const REQUEST_CATEGORY_LABEL: Record<RequestCategory, string> = {
+  Incident: 'Incident',
+  ServiceRequest: 'Service request',
+  AccessRequest: 'Access request',
 };
 
 export const APPROVER_ROLE_LABEL: Record<ApproverRole, string> = {
@@ -110,6 +131,10 @@ export interface RequestVm {
   readonly description: string | null;
   readonly type: RequestType;
   readonly typeLabel: string;
+  readonly priority: RequestPriority;
+  readonly priorityMeta: ToneLabel;
+  readonly category: RequestCategory | null;
+  readonly categoryLabel: string | null;
   readonly status: RequestStatus;
   readonly statusMeta: ToneLabel;
   readonly requesterId: string;

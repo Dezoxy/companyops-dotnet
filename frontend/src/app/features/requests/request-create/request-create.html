@@ -37,6 +37,31 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
+        <mat-label>Priority</mat-label>
+        <mat-select formControlName="priority">
+          @for (option of priorities; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+        @if (form.controls.priority.hasError('required') && form.controls.priority.touched) {
+          <mat-error>Choose a priority.</mat-error>
+        }
+      </mat-form-field>
+
+      @if (isHelpdesk()) {
+        <mat-form-field appearance="outline">
+          <mat-label>Category</mat-label>
+          <mat-select formControlName="category">
+            <mat-option [value]="''">Unspecified</mat-option>
+            @for (option of categories; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>Applies to Helpdesk requests.</mat-hint>
+        </mat-form-field>
+      }
+
+      <mat-form-field appearance="outline">
         <mat-label>Description</mat-label>
         <textarea
           matInput

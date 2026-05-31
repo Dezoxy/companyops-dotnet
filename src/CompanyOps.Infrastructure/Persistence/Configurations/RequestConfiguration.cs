@@ -35,6 +35,16 @@ internal sealed class RequestConfiguration : IEntityTypeConfiguration<Request>
             .HasMaxLength(50)
             .IsRequired();
 
+        builder.Property(r => r.Priority)
+            .HasConversion<string>()
+            .HasMaxLength(50)
+            .IsRequired();
+
+        // Nullable: only helpdesk requests carry a category (enforced in the Domain).
+        builder.Property(r => r.Category)
+            .HasConversion<string>()
+            .HasMaxLength(50);
+
         builder.Property(r => r.RequesterId)
             .IsRequired();
 

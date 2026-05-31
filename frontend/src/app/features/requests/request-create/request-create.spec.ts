@@ -14,6 +14,10 @@ function vm(): RequestVm {
     description: null,
     type: 'Procurement',
     typeLabel: 'Procurement',
+    priority: 'Medium',
+    priorityMeta: { label: 'Medium', tone: 'info' },
+    category: null,
+    categoryLabel: null,
     status: 'Draft',
     statusMeta: { label: 'Draft', tone: 'neutral' },
     requesterId: 'r',
@@ -26,7 +30,9 @@ function vm(): RequestVm {
 // Narrow view over the component's protected members, so the test can drive it without `any`.
 interface CreateHarness {
   save(thenSubmit: boolean): void;
-  form: { setValue(value: { title: string; type: string; description: string }): void };
+  form: {
+    setValue(value: { title: string; type: string; priority: string; category: string; description: string }): void;
+  };
 }
 
 describe('RequestCreate', () => {
@@ -62,8 +68,15 @@ describe('RequestCreate', () => {
 
   it('creates with the entered values (empty description → null) when valid', () => {
     const component = setup().componentInstance as unknown as CreateHarness;
-    component.form.setValue({ title: 'Laptop', type: 'Procurement', description: '' });
+    component.form.setValue({ title: 'Laptop', type: 'Procurement', priority: 'Medium', category: '', description: '' });
     component.save(false);
-    expect(created).toEqual({ title: 'Laptop', type: 'Procurement', description: null });
+    expect(created).toEqual({ title: 'Laptop', type: 'Procurement', description: null, priority: 'Medium', category: null });
+  });
+
+  it('includes the category for a helpdesk request', () => {
+    const component = setup().componentInstance as unknown as CreateHarness;
+    component.form.setValue({ title: 'VPN', type: 'Helpdesk', priority: 'High', category: 'AccessRequest', description: '' });
+    component.save(false);
+    expect(created).toEqual({ title: 'VPN', type: 'Helpdesk', description: null, priority: 'High', category: 'AccessRequest' });
   });
 });

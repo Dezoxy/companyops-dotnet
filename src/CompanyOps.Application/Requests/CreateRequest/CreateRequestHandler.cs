@@ -27,6 +27,8 @@ public sealed class CreateRequestHandler(
             command.Title,
             command.Description,
             command.Type,
+            command.Priority ?? RequestPriority.Medium, // default lives in the app layer, not the API
+            command.Category,
             command.RequesterId,
             command.DepartmentId,
             now);

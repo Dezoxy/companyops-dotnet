@@ -13,4 +13,6 @@ namespace CompanyOps.Api.Contracts;
 public sealed record CreateRequestRequest(
     string Title,
     string? Description,
-    RequestType Type);
+    RequestType Type,
+    RequestPriority? Priority,
+    RequestCategory? Category);

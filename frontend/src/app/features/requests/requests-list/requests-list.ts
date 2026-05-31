@@ -51,7 +51,7 @@ export class RequestsList {
   protected readonly loading = this.service.loading;
   protected readonly error = this.service.error;
 
-  protected readonly columns = ['id', 'title', 'type', 'status', 'created', 'actions'];
+  protected readonly columns = ['id', 'title', 'type', 'priority', 'status', 'created', 'actions'];
 
   // Filter options for the dropdowns (label + value), built from the display metadata.
   protected readonly statusOptions = Object.entries(REQUEST_STATUS_META).map(([value, meta]) => ({

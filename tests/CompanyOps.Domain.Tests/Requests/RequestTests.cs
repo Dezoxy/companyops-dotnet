@@ -18,7 +18,7 @@ public class RequestTests
     [Fact]
     public void Create_WithValidInput_ReturnsDraftRequestWithFieldsSet()
     {
-        var request = Request.Create("New laptop", "MacBook Pro 14", RequestType.Procurement, Requester, Department, NowUtc);
+        var request = Request.Create("New laptop", "MacBook Pro 14", RequestType.Procurement, RequestPriority.Medium, null, Requester, Department, NowUtc);
 
         Assert.NotEqual(Guid.Empty, request.Id);
         Assert.Equal("New laptop", request.Title);
@@ -34,7 +34,7 @@ public class RequestTests
     [Fact]
     public void Create_TrimsTitleAndDescription()
     {
-        var request = Request.Create("  New laptop  ", "  spec  ", RequestType.Procurement, Requester, Department, NowUtc);
+        var request = Request.Create("  New laptop  ", "  spec  ", RequestType.Procurement, RequestPriority.Medium, null, Requester, Department, NowUtc);
 
         Assert.Equal("New laptop", request.Title);
         Assert.Equal("spec", request.Description);
@@ -43,7 +43,7 @@ public class RequestTests
     [Fact]
     public void Create_WithNullDescription_IsAllowed()
     {
-        var request = Request.Create("New laptop", null, RequestType.Procurement, Requester, Department, NowUtc);
+        var request = Request.Create("New laptop", null, RequestType.Procurement, RequestPriority.Medium, null, Requester, Department, NowUtc);
 
         Assert.Null(request.Description);
     }
@@ -55,7 +55,7 @@ public class RequestTests
     public void Create_WithMissingTitle_ThrowsDomainException(string? title)
     {
         var ex = Assert.Throws<DomainException>(
-            () => Request.Create(title!, null, RequestType.Procurement, Requester, Department, NowUtc));
+            () => Request.Create(title!, null, RequestType.Procurement, RequestPriority.Medium, null, Requester, Department, NowUtc));
 
         Assert.Equal("Request title is required.", ex.Message);
     }
@@ -66,7 +66,7 @@ public class RequestTests
         var tooLong = new string('a', Request.TitleMaxLength + 1);
 
         Assert.Throws<DomainException>(
-            () => Request.Create(tooLong, null, RequestType.Procurement, Requester, Department, NowUtc));
+            () => Request.Create(tooLong, null, RequestType.Procurement, RequestPriority.Medium, null, Requester, Department, NowUtc));
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class RequestTests
     {
         var atLimit = new string('a', Request.TitleMaxLength);
 
-        var request = Request.Create(atLimit, null, RequestType.Procurement, Requester, Department, NowUtc);
+        var request = Request.Create(atLimit, null, RequestType.Procurement, RequestPriority.Medium, null, Requester, Department, NowUtc);
 
         Assert.Equal(atLimit, request.Title);
     }
@@ -83,7 +83,7 @@ public class RequestTests
     public void Create_WithEmptyRequesterId_ThrowsDomainException()
     {
         var ex = Assert.Throws<DomainException>(
-            () => Request.Create("New laptop", null, RequestType.Procurement, Guid.Empty, Department, NowUtc));
+            () => Request.Create("New laptop", null, RequestType.Procurement, RequestPriority.Medium, null, Guid.Empty, Department, NowUtc));
 
         Assert.Equal("Request must have a requester.", ex.Message);
     }
@@ -92,8 +92,35 @@ public class RequestTests
     public void Create_WithEmptyDepartmentId_ThrowsDomainException()
     {
         var ex = Assert.Throws<DomainException>(
-            () => Request.Create("New laptop", null, RequestType.Procurement, Requester, Guid.Empty, NowUtc));
+            () => Request.Create("New laptop", null, RequestType.Procurement, RequestPriority.Medium, null, Requester, Guid.Empty, NowUtc));
 
         Assert.Equal("Request must belong to a department.", ex.Message);
+    }
+
+    [Fact]
+    public void Create_SetsPriority()
+    {
+        var request = Request.Create("New laptop", null, RequestType.Procurement, RequestPriority.High, null, Requester, Department, NowUtc);
+
+        Assert.Equal(RequestPriority.High, request.Priority);
+    }
+
+    [Fact]
+    public void Create_HelpdeskWithCategory_IsAllowed()
+    {
+        var request = Request.Create(
+            "VPN access", null, RequestType.Helpdesk, RequestPriority.Medium, RequestCategory.AccessRequest, Requester, Department, NowUtc);
+
+        Assert.Equal(RequestCategory.AccessRequest, request.Category);
+    }
+
+    [Fact]
+    public void Create_NonHelpdeskWithCategory_ThrowsDomainException()
+    {
+        var ex = Assert.Throws<DomainException>(
+            () => Request.Create(
+                "New laptop", null, RequestType.Procurement, RequestPriority.Medium, RequestCategory.Incident, Requester, Department, NowUtc));
+
+        Assert.Contains("category", ex.Message);
     }
 }

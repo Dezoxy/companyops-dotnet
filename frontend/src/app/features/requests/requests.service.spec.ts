@@ -11,6 +11,8 @@ function dto(overrides: Partial<RequestDto> = {}): RequestDto {
     title: 'New laptop',
     description: 'For onboarding',
     type: 'Procurement',
+    priority: 'Medium',
+    category: null,
     status: 'Submitted',
     requesterId: 'r-1',
     departmentId: 'd-1',
@@ -90,10 +92,12 @@ describe('RequestsService', () => {
 
   it('create POSTs the input and maps the response', () => {
     let result: string | undefined;
-    service.create({ title: 'New laptop', type: 'Procurement', description: null }).subscribe((r) => (result = r.id));
+    service
+      .create({ title: 'New laptop', type: 'Procurement', description: null, priority: 'Medium' })
+      .subscribe((r) => (result = r.id));
     const req = httpMock.expectOne('/api/requests');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ title: 'New laptop', type: 'Procurement', description: null });
+    expect(req.request.body).toEqual({ title: 'New laptop', type: 'Procurement', description: null, priority: 'Medium' });
     req.flush(dto());
     expect(result).toBe('abcdef12-3456-7890-abcd-ef1234567890');
   });

@@ -31,8 +31,15 @@
         <div class="title-row">
           <h1>{{ r.title }}</h1>
           <app-status-chip [label]="r.statusMeta.label" [tone]="r.statusMeta.tone" />
+          <app-status-chip [label]="r.priorityMeta.label + ' priority'" [tone]="r.priorityMeta.tone" />
         </div>
-        <p class="meta">{{ r.typeLabel }} · Created {{ r.createdAt | date: 'medium' }}</p>
+        <p class="meta">
+          {{ r.typeLabel }}
+          @if (r.categoryLabel) {
+            · {{ r.categoryLabel }}
+          }
+          · Created {{ r.createdAt | date: 'medium' }}
+        </p>
 
         @if (canSubmit() || canFulfill() || canDecide()) {
           <div class="detail-actions">
