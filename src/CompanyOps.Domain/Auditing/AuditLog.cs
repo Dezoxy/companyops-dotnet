@@ -1,3 +1,4 @@
+using CompanyOps.Domain.Assets;
 using CompanyOps.Domain.Common;
 using CompanyOps.Domain.Requests;
 
@@ -99,5 +100,38 @@ public sealed class AuditLog
         }
 
         return new AuditLog(Guid.NewGuid(), nowUtc, actorId, action, "Request", requestId, null, null);
+    }
+
+    /// <summary>
+    /// Record an action against an <see cref="Asset"/>. <paramref name="fromStatus"/> is the
+    /// status before the action (null for registration); <paramref name="toStatus"/> after.
+    /// </summary>
+    public static AuditLog ForAsset(
+        AuditAction action,
+        Guid assetId,
+        Guid actorId,
+        AssetStatus? fromStatus,
+        AssetStatus toStatus,
+        DateTimeOffset nowUtc)
+    {
+        if (actorId == Guid.Empty)
+        {
+            throw new DomainException("An audit entry must record the actor.");
+        }
+
+        if (assetId == Guid.Empty)
+        {
+            throw new DomainException("An audit entry must record the affected asset.");
+        }
+
+        return new AuditLog(
+            Guid.NewGuid(),
+            nowUtc,
+            actorId,
+            action,
+            "Asset",
+            assetId,
+            fromStatus?.ToString(),
+            toStatus.ToString());
     }
 }

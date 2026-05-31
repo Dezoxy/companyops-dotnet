@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<IRequestRepository, RequestRepository>();
         services.AddScoped<ICommentRepository, CommentRepository>();
+        services.AddScoped<IAssetRepository, AssetRepository>();
 
         // One AuditLogStore per scope, exposed as both the write and read ports.
         services.AddScoped<AuditLogStore>();

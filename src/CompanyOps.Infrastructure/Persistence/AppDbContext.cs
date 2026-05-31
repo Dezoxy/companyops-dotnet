@@ -1,4 +1,5 @@
 using CompanyOps.Application.Abstractions;
+using CompanyOps.Domain.Assets;
 using CompanyOps.Domain.Auditing;
 using CompanyOps.Domain.Requests;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Request> Requests => Set<Request>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Comment> Comments => Set<Comment>();
+    public DbSet<Asset> Assets => Set<Asset>();
 
     // OutboxMessage is internal infrastructure (ADR 0007) — no public DbSet; the model
     // registers it via OutboxMessageConfiguration, and the publisher/relay use Set<T>().

@@ -9,4 +9,7 @@ namespace CompanyOps.Application.Abstractions;
 public interface IAuditLogReader
 {
     Task<IReadOnlyList<AuditLog>> ListAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Audit entries for one target object (e.g. an asset's history), newest first.</summary>
+    Task<IReadOnlyList<AuditLog>> ListForTargetAsync(string targetType, Guid targetId, CancellationToken cancellationToken = default);
 }
