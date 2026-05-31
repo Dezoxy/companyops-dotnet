@@ -56,20 +56,23 @@ jobs:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
           set -euo pipefail
+          # name -> "dockerfile|context": the .NET images build from the repo root, the SPA from frontend/.
           declare -A images=(
-            [api]=src/CompanyOps.Api/Dockerfile
-            [worker]=src/CompanyOps.Worker/Dockerfile
-            [fakeexternals]=src/CompanyOps.FakeExternals/Dockerfile
+            [api]="src/CompanyOps.Api/Dockerfile|."
+            [worker]="src/CompanyOps.Worker/Dockerfile|."
+            [fakeexternals]="src/CompanyOps.FakeExternals/Dockerfile|."
+            [frontend]="frontend/Dockerfile|frontend"
           )
           for name in "${!images[@]}"; do
+            IFS='|' read -r dockerfile context <<< "${images[$name]}"
             repo="${REGISTRY}/${OWNER}/companyops-${name}"
             docker buildx build \
-              --file "${images[$name]}" \
+              --file "$dockerfile" \
               --tag "${repo}:${VERSION}" \
               --tag "${repo}:latest" \
               --cache-from "type=gha,scope=${name}" \
               --cache-to "type=gha,mode=max,scope=${name}" \
-              --push .
+              --push "$context"
           done
 
   deploy:

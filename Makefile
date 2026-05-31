@@ -82,8 +82,8 @@ prod-config: ## Validate the production Compose file (dummy env)
 	KC_ADMIN_USER=ci KC_ADMIN_PASSWORD=dummy \
 	$(COMPOSE_PROD) config -q && echo "prod compose: valid"
 
-shellcheck: ## ShellCheck the infra shell scripts
-	shellcheck infra/backup/*.sh infra/postgres/initdb/*.sh infra/terraform/*.sh
+shellcheck: ## ShellCheck the infra + container shell scripts
+	shellcheck infra/backup/*.sh infra/postgres/initdb/*.sh infra/terraform/*.sh frontend/docker-entrypoint.sh
 
 ansible-lint: ## Lint the Ansible playbook
 	cd infra/ansible && ansible-lint playbook.yml

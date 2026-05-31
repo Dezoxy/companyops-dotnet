@@ -5,7 +5,9 @@ Day-2 operations: [runbook.md](runbook.md) · backups: [backup-restore.md](backu
 
 > **What gets deployed:** the [`docker-compose.prod.yml`](../infra/docker-compose.prod.yml)
 > stack behind a **Traefik** edge that terminates TLS (Let's Encrypt) and is the only public
-> ingress. The API and Keycloak sit behind it; Postgres, RabbitMQ, and Redis stay internal.
+> ingress. The **Angular SPA** is the site root at `APP_DOMAIN`; the **API** is same-origin under
+> `APP_DOMAIN/api/*` (Traefik strips `/api`); **Keycloak** is at `KEYCLOAK_DOMAIN`. Postgres,
+> RabbitMQ, and Redis stay internal.
 >
 > **Two layers, two scopes:** the Compose stack and the **Ansible** playbook are
 > cloud-agnostic (any Ubuntu 24.04 VM). **Terraform** is the Azure provisioner — swap it for
@@ -27,7 +29,7 @@ Day-2 operations: [runbook.md](runbook.md) · backups: [backup-restore.md](backu
 
 ```
 git tag v1.2.3 && gh release create v1.2.3   ─┐
-   └─► build & push  ghcr.io/<owner>/companyops-{api,worker,fakeexternals}:1.2.3
+   └─► build & push  ghcr.io/<owner>/companyops-{api,worker,fakeexternals,frontend}:1.2.3
    └─► (production environment approval)
    └─► terraform apply   → Azure VM + network (OIDC auth, remote state)
    └─► ansible-playbook  → VM: docker login ghcr, compose pull :1.2.3, up -d (migrator runs first)
@@ -183,10 +185,11 @@ brings the stack up (`docker compose -f docker-compose.prod.yml pull` then `up -
 ## 5. Verify
 
 ```bash
-curl -s https://APP_DOMAIN/health            # Healthy
-curl -s https://APP_DOMAIN/health/ready      # Healthy (DB + RabbitMQ)
-curl -sI http://APP_DOMAIN/health            # 301 -> https (edge redirect)
-curl -s https://KEYCLOAK_DOMAIN/realms/companyops/.well-known/openid-configuration | jq .issuer
+curl -sI https://APP_DOMAIN/                 # 200 text/html — the SPA loads
+curl -s  https://APP_DOMAIN/api/health       # Healthy            (API under /api, prefix stripped)
+curl -s  https://APP_DOMAIN/api/health/ready # Healthy (DB + RabbitMQ)
+curl -sI http://APP_DOMAIN/api/health        # 301 -> https       (edge redirect)
+curl -s  https://KEYCLOAK_DOMAIN/realms/companyops/.well-known/openid-configuration | jq .issuer
 ```
 
 The issuer must be `https://KEYCLOAK_DOMAIN/realms/companyops`. **Create real users** in the
@@ -219,7 +222,7 @@ Postgres volume persists; for a data rollback, restore a dump per
 ## Images & registry
 
 The stack **pulls prebuilt images from GHCR** ([ADR 0012](decisions/0012-release-driven-deployment.md))
-— `ghcr.io/<owner>/companyops-{api,worker,fakeexternals}:<version>`, built by the release
+— `ghcr.io/<owner>/companyops-{api,worker,fakeexternals,frontend}:<version>`, built by the release
 workflow. The VM only pulls, so a small VM (no build headroom) is enough. If the packages are
 **private**, set `ghcr_pull_username` + `ghcr_pull_token` (a `read:packages` token) so the
 playbook can `docker login ghcr.io`; **public** packages need no token.
