@@ -222,9 +222,16 @@ attempt count, error text) — **never the event payload**. Read-only — no mut
   `RequireHttpsMetadata`) into explicit config flags so a stray environment value can't
   silently drop a protection.
 
-## Rate limiting — TODO (enterprise-optional)
+## Rate limiting
 
-- Consider per-user/IP limits on auth and write endpoints.
+- A global rate limit (`RateLimitingSetup`) guards against floods: a fixed window **partitioned by
+  the authenticated user (`sub`)**, falling back to client IP for anonymous callers; health probes
+  are exempt. Over-limit requests get **429 + `Retry-After`**. It runs after authentication (so the
+  partition keys on the user) and before authorization/endpoints. Limits are config-bound
+  (`RateLimiting:PermitLimit` / `:WindowSeconds`, default 120/60s) and tunable per environment.
+- Enterprise-optional refinements (not done): a tighter limit on the auth/write endpoints
+  specifically, true exponential backoff, and a distributed limiter store for multi-instance
+  deployments (the current limiter is per-instance/in-memory).
 
 ## Backup encryption & recovery
 
@@ -243,8 +250,8 @@ API ↔ external mock services (Finance/Inventory).
 | **S**poofing | Forged/replayed JWT | OIDC validation (sig/iss/aud/exp), short tokens | ✓ P3 (token lifetime tuning TODO) |
 | **T**ampering | Altering another dept's request (IDOR) | Resource-scoped authz on loaded aggregate | ✓ P3 (Domain dept-scope) |
 | **R**epudiation | "I didn't approve that" | Append-only audit log w/ actor + old→new | ✓ P4 (source IP TODO) |
-| **I**nfo disclosure | Leaking entities/PII via API | DTO mapping, least-data responses, authz on reads | partial: DTOs ✓; read scoping TODO |
-| **D**oS | Flooding write/auth endpoints | Rate limiting, timeouts on external calls | TODO P5/opt |
+| **I**nfo disclosure | Leaking entities/PII via API | DTO mapping, least-data responses, authz on reads | DTOs ✓; list read-scoping ✓ (GET-by-id TODO) |
+| **D**oS | Flooding write/auth endpoints | Rate limiting, timeouts on external calls | ✓ (per-user/IP rate limit + external-call timeouts/retries) |
 | **E**oP | Auditor or Employee performing privileged action | Policies + domain invariants, deny-by-default | ✓ P3 |
 | Supply chain | Vulnerable NuGet/npm dep, leaked secret | gitleaks + native secret scanning/push protection + `dotnet list --vulnerable` + Dependabot + CodeQL | ✓ P9 |
 

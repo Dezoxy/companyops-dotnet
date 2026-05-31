@@ -3,6 +3,7 @@ using CompanyOps.Api.Auth;
 using CompanyOps.Api.Cors;
 using CompanyOps.Api.ErrorHandling;
 using CompanyOps.Api.Observability;
+using CompanyOps.Api.RateLimiting;
 using CompanyOps.Application;
 using CompanyOps.Infrastructure;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -51,6 +52,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddKeycloakAuthentication(builder.Configuration, builder.Environment.IsDevelopment());
 builder.Services.AddCompanyOpsAuthorization();
 builder.Services.AddCompanyOpsCors(builder.Configuration);
+builder.Services.AddCompanyOpsRateLimiting(builder.Configuration);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -113,6 +115,8 @@ if (app.Configuration.GetValue<bool>("Security:EnableHttpsRedirection"))
 app.UseCors(CorsSetup.PolicyName);
 
 app.UseAuthentication();
+// After authentication (so the limit partitions on the user) but before authorization/endpoints.
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapControllers();

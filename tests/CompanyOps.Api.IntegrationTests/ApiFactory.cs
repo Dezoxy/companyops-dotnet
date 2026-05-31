@@ -70,6 +70,7 @@ public sealed class ApiFactory : WebApplicationFactory<CompanyOps.Api.ApiHost>, 
     {
         builder.UseEnvironment("Development"); // RequireHttpsMetadata=false against the http Keycloak
         builder.UseSetting("Cors:AllowedOrigins:0", "http://localhost:4200"); // owned by the test, not appsettings
+        builder.UseSetting("RateLimiting:PermitLimit", "100000"); // suite isn't rate-limited; RateLimitingTests sets its own low limit
         builder.UseSetting("ConnectionStrings:CompanyOps", _postgres.GetConnectionString());
         builder.UseSetting("Keycloak:Authority", $"{KeycloakBaseUrl}/realms/companyops");
         builder.UseSetting("Keycloak:Audience", "companyops-api");
