@@ -1,5 +1,14 @@
 # Copy to group_vars/all.yml and encrypt it:  ansible-vault encrypt group_vars/all.yml
 # group_vars/all.yml is gitignored — never commit these in plaintext.
+
+# --- Container images (ADR 0012): prebuilt by the release workflow, pulled from GHCR ---
+ghcr_owner: dezoxy # lowercase GitHub owner that owns the packages
+companyops_version: "1.0.0" # release version to deploy (the tag without the leading 'v')
+# GHCR pull auth — only needed if the packages are PRIVATE. Leave the token empty for public
+# packages (the playbook then skips `docker login`).
+ghcr_pull_username: "" # a GitHub username/bot with read:packages
+ghcr_pull_token: "" # a token with read:packages (keep this vault-encrypted)
+
 app_domain: app.example.com
 keycloak_domain: auth.example.com
 acme_email: admin@example.com

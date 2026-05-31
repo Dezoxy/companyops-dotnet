@@ -1,0 +1,186 @@
+# Release-driven deployment (ADR 0012). Publishing a GitHub Release (tag vX.Y.Z) builds the
+# images, pushes them to GHCR, applies the Terraform (Azure infra), and runs the Ansible
+# playbook to pull + roll the stack forward on the VM. No manual steps on a normal release.
+#
+# One-time setup (only you can do it — see docs/deployment.md): the Azure OIDC app + federated
+# credential, the Terraform state storage account (infra/terraform/bootstrap-state.sh), the
+# GitHub Actions secrets/variables below, and the two DNS A records.
+#
+# All ${{ }} values are config (vars), secrets, or values this workflow computes itself — no
+# untrusted event input reaches a run: block; everything is passed via env: per hardening guidance.
+name: release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch: # manual re-deploy of the latest release if needed
+
+permissions:
+  contents: read
+  packages: write # push images to GHCR
+  id-token: write # Azure OIDC (no stored cloud credential)
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-push:
+    name: build & push images
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      owner: ${{ steps.meta.outputs.owner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version + owner
+        id: meta
+        run: |
+          # Release tag vX.Y.Z -> X.Y.Z; workflow_dispatch -> "latest". Owner lowercased for GHCR.
+          ref="${GITHUB_REF_NAME}"
+          if [ "${GITHUB_EVENT_NAME}" = "release" ]; then version="${ref#v}"; else version="latest"; fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push (api, worker, fakeexternals)
+        env:
+          OWNER: ${{ steps.meta.outputs.owner }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          declare -A images=(
+            [api]=src/CompanyOps.Api/Dockerfile
+            [worker]=src/CompanyOps.Worker/Dockerfile
+            [fakeexternals]=src/CompanyOps.FakeExternals/Dockerfile
+          )
+          for name in "${!images[@]}"; do
+            repo="${REGISTRY}/${OWNER}/companyops-${name}"
+            docker buildx build \
+              --file "${images[$name]}" \
+              --tag "${repo}:${VERSION}" \
+              --tag "${repo}:latest" \
+              --cache-from "type=gha,scope=${name}" \
+              --cache-to "type=gha,mode=max,scope=${name}" \
+              --push .
+          done
+
+  deploy:
+    name: provision & deploy (Azure)
+    needs: build-push
+    runs-on: ubuntu-latest
+    environment: production # protected env → manual approval gate before touching prod
+    env:
+      # Terraform azurerm provider + backend auth via OIDC — no stored cloud secret.
+      ARM_USE_OIDC: "true"
+      ARM_USE_AZUREAD: "true"
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Detect this runner's public IP
+        id: ip
+        run: echo "cidr=$(curl -fsS https://api.ipify.org)/32" >> "$GITHUB_OUTPUT"
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform init (remote state)
+        working-directory: infra/terraform
+        env:
+          TFSTATE_RG: ${{ vars.TFSTATE_RESOURCE_GROUP }}
+          TFSTATE_SA: ${{ vars.TFSTATE_STORAGE_ACCOUNT }}
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${TFSTATE_RG}" \
+            -backend-config="storage_account_name=${TFSTATE_SA}" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=prod.terraform.tfstate" \
+            -backend-config="use_azuread_auth=true"
+
+      - name: Terraform apply
+        id: tf
+        working-directory: infra/terraform
+        env:
+          SSH_PUBLIC_KEY: ${{ secrets.VM_SSH_PUBLIC_KEY }}
+          ALLOWED_SSH_CIDR: ${{ vars.ALLOWED_SSH_CIDR }}
+          CI_SSH_CIDR: ${{ steps.ip.outputs.cidr }}
+        run: |
+          terraform apply -auto-approve -input=false \
+            -var="ssh_public_key=${SSH_PUBLIC_KEY}" \
+            -var="allowed_ssh_cidr=${ALLOWED_SSH_CIDR}" \
+            -var="ci_ssh_cidr=${CI_SSH_CIDR}"
+          echo "public_ip=$(terraform output -raw public_ip)" >> "$GITHUB_OUTPUT"
+
+      - name: Install Ansible + collections
+        run: |
+          pipx install --include-deps ansible-core
+          ansible-galaxy collection install -r infra/ansible/requirements.yml
+
+      - name: Write the deploy SSH key
+        env:
+          SSH_KEY: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+        run: |
+          install -m 600 /dev/null "${RUNNER_TEMP}/deploy_key"
+          printf '%s\n' "$SSH_KEY" > "${RUNNER_TEMP}/deploy_key"
+
+      - name: Render deploy vars (secrets kept off the command line)
+        env:
+          GHCR_OWNER: ${{ needs.build-push.outputs.owner }}
+          COMPANYOPS_VERSION: ${{ needs.build-push.outputs.version }}
+          GHCR_PULL_USERNAME: ${{ github.actor }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          APP_DOMAIN: ${{ vars.APP_DOMAIN }}
+          KEYCLOAK_DOMAIN: ${{ vars.KEYCLOAK_DOMAIN }}
+          ACME_EMAIL: ${{ vars.ACME_EMAIL }}
+          KC_ADMIN_USER: ${{ vars.KC_ADMIN_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          KC_DB_PASSWORD: ${{ secrets.KC_DB_PASSWORD }}
+          RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
+          KC_ADMIN_PASSWORD: ${{ secrets.KC_ADMIN_PASSWORD }}
+          REPO_REF: ${{ github.ref_name }}
+        run: |
+          install -m 600 /dev/null "${RUNNER_TEMP}/deploy-vars.yml"
+          cat > "${RUNNER_TEMP}/deploy-vars.yml" <<EOF
+          repo_ref: "${REPO_REF}"
+          ghcr_owner: "${GHCR_OWNER}"
+          companyops_version: "${COMPANYOPS_VERSION}"
+          ghcr_pull_username: "${GHCR_PULL_USERNAME}"
+          ghcr_pull_token: "${GHCR_PULL_TOKEN}"
+          app_domain: "${APP_DOMAIN}"
+          keycloak_domain: "${KEYCLOAK_DOMAIN}"
+          acme_email: "${ACME_EMAIL}"
+          kc_admin_user: "${KC_ADMIN_USER}"
+          postgres_password: "${POSTGRES_PASSWORD}"
+          kc_db_password: "${KC_DB_PASSWORD}"
+          rabbitmq_password: "${RABBITMQ_PASSWORD}"
+          kc_admin_password: "${KC_ADMIN_PASSWORD}"
+          EOF
+
+      - name: Ansible deploy
+        working-directory: infra/ansible
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "false"
+          PUBLIC_IP: ${{ steps.tf.outputs.public_ip }}
+        run: |
+          ansible-playbook playbook.yml \
+            -i "${PUBLIC_IP}," \
+            -u companyops \
+            --private-key "${RUNNER_TEMP}/deploy_key" \
+            -e "@${RUNNER_TEMP}/deploy-vars.yml"

@@ -79,8 +79,11 @@ Postgres + RabbitMQ). How to run, observe, and recover it:
 ## Deployment
 
 Production runs behind a **Traefik** TLS edge ([ADR 0009](docs/decisions/0009-deployment-topology-edge.md)),
-deployed to a Linux VM via **Terraform** (provision) + **Ansible** (configure, deploy,
-schedule backups). Full runbook: [docs/deployment.md](docs/deployment.md).
+on a Linux VM provisioned by **Terraform** and configured/deployed by **Ansible**. Deployment is
+**release-driven** ([ADR 0012](docs/decisions/0012-release-driven-deployment.md)): publishing a
+GitHub Release builds + pushes images to **GHCR**, applies Terraform (OIDC, remote state), and
+runs Ansible to pull the version and roll the stack forward. Full runbook + one-time setup:
+[docs/deployment.md](docs/deployment.md).
 
 ## Status
 

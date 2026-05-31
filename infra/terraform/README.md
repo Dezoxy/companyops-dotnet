@@ -1,16 +1,23 @@
 # Terraform — VM provisioning (example)
 
 Provisions the Linux VM that the [Ansible playbook](../ansible) configures and deploys to.
-This is an **example** target (Azure, EU region); it is **not applied by CI**. The Compose
-stack and Ansible playbook are cloud-agnostic — they run on *any* Ubuntu VM — so you can
-also skip Terraform entirely and point Ansible at a VM you created by hand (or a homelab VM).
+Azure, EU region. The release workflow applies this from CI on a published release, using
+remote state + OIDC ([ADR 0012](../../docs/decisions/0012-release-driven-deployment.md)); you
+can also apply it by hand (below). The Compose stack and Ansible playbook are cloud-agnostic —
+they run on *any* Ubuntu VM — so you can also skip Terraform entirely and point Ansible at a VM
+you created by hand (or a homelab VM).
 
 ## Use it
 
+State lives in Azure Storage (remote backend) so CI and humans share one locked state — create
+it once with `bootstrap-state.sh`, then `init` against it:
+
 ```bash
 cd infra/terraform
+./bootstrap-state.sh                           # one-time: creates the state storage, prints the values
+cp backend.hcl.example backend.hcl             # paste the printed values (gitignored)
 cp terraform.tfvars.example terraform.tfvars   # fill in ssh_public_key + allowed_ssh_cidr
-terraform init
+terraform init -backend-config=backend.hcl
 terraform plan
 terraform apply
 terraform output public_ip      # -> set DNS A records, then run Ansible

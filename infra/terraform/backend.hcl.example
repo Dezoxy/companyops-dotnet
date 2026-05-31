@@ -1,0 +1,12 @@
+# Copy to backend.hcl (gitignored) and fill in. These name the Azure Storage blob that holds
+# Terraform remote state — created once by bootstrap-state.sh. Then:
+#   terraform init -backend-config=backend.hcl
+#
+# use_azuread_auth keeps state access on Entra/RBAC (no storage account keys): grant the
+# identity (your user locally, the CI app in Actions) "Storage Blob Data Contributor" on the
+# storage account. CI adds OIDC via the ARM_USE_OIDC env var (set in the release workflow).
+resource_group_name  = "companyops-tfstate"
+storage_account_name = "companyopstfstateXXXX" # globally unique; 3-24 lowercase alphanumerics
+container_name       = "tfstate"
+key                  = "prod.terraform.tfstate"
+use_azuread_auth     = true
