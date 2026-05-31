@@ -67,7 +67,7 @@ their Employee role (roles compose — resolves the earlier Create TODO).
 | Cancel — `…/cancel` (not yet built) | ✓ own, stage | TODO dept? | ✗ | ✗ | ✗ |
 | View a request — `GET /requests/{id}` | ✓ (auth) | ✓ (auth) | ✓ | ✓ | ✓ read |
 | List requests — `GET /requests` | ✓ (auth) | ✓ (auth) | ✓ | ✓ | ✓ read |
-| View audit log — `GET /audit-logs` | ✗ | ✗ | ✗ | TODO | ✓ read |
+| View audit log — `GET /audit-logs` | ✗ | ✗ | ✗ | ✓ read | ✓ read |
 
 > **Read scoping is a known gap (Phase 3):** `GET` endpoints currently require
 > authentication but are not yet narrowed to own/department — any authenticated role
@@ -166,7 +166,7 @@ attempt count, error text) — **never the event payload**. Read-only — no mut
 - **Append-only `AuditLog`** (Domain entity, factory only, no mutators). Written as a
   side effect of each business action via the `IAuditLogger` port, **enlisted in the
   same transaction** as the state change — no approved-but-unaudited request. No
-  write/update/delete API path; reads go through `GET /audit-logs` (Auditor).
+  write/update/delete API path; reads go through `GET /audit-logs` (Auditor + IT Admin).
 - Records who (`ActorId` = `sub`) / what (`AuditAction`) / when / old→new status /
   affected object (`TargetType`+`TargetId`) for create, submit, approve, reject, fulfill.
 - Worker-driven outcomes (budget committed / asset reserved, Phase 6) have no human

@@ -186,6 +186,16 @@ public sealed class AuthorizationTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task GetAuditLogs_AsItAdmin_Returns200()
+    {
+        var itAdmin = factory.CreateClientWithToken(await factory.GetTokenAsync("itadmin.user"));
+
+        var response = await itAdmin.GetAsync("/audit-logs");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode); // operators read the trail (ReadAuditLog: Auditor + IT Admin)
+    }
+
+    [Fact]
     public async Task GetAuditLogs_AsAuditor_Returns200_AndRecordsTheFlow()
     {
         var id = await CreateSubmittedRequestAsync();
