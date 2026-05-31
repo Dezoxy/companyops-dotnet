@@ -36,10 +36,12 @@ Tear down: `terraform destroy`.
 
 ## Cost / residency
 
-A `Standard_B2s` in an EU region (`germanywestcentral`, `westeurope`, `swedencentral`) is a
-small, low-cost burstable VM and keeps data in the EU (GDPR). For a cheaper, equally-EU
-option outside the hyperscalers, a Hetzner Cloud `cx22` is a fraction of the price — swap the
-provider block and the VM/network resources; the Ansible side is unchanged.
+The default `Standard_B2as_v2` (2 vCPU / 8 GB, AMD burstable) in an EU region
+(`germanywestcentral`, `westeurope`, `swedencentral`) is a small, low-cost VM that keeps data in
+the EU (GDPR). (`Standard_B2s` is a touch cheaper, but it has hit `SkuNotAvailable` capacity
+restrictions in `germanywestcentral` — hence the AMD default.) For a cheaper, equally-EU option
+outside the hyperscalers, a Hetzner Cloud `cx22` is a fraction of the price — swap the provider
+block and the VM/network resources; the Ansible side is unchanged.
 
 ## AWS equivalent
 
