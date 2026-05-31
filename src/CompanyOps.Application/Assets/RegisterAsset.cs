@@ -1,4 +1,5 @@
 using CompanyOps.Application.Abstractions;
+using CompanyOps.Application.Common;
 using CompanyOps.Domain.Assets;
 using CompanyOps.Domain.Auditing;
 
@@ -17,7 +18,15 @@ public sealed class RegisterAssetHandler(
     {
         var now = timeProvider.GetUtcNow();
 
+        // Order matters: Register validates + normalizes the tag (trim) — so we check uniqueness
+        // against the normalized value — but the conflict check runs before Add, so a rejected
+        // duplicate is never enlisted/persisted. A clean 409 instead of a unique-index 500.
         var asset = Asset.Register(command.Tag, command.Name, command.Type, now);
+        if (await assets.TagExistsAsync(asset.Tag, cancellationToken))
+        {
+            throw new ConflictException($"An asset with tag '{asset.Tag}' already exists.");
+        }
+
         assets.Add(asset);
         auditLogger.Add(AuditLog.ForAsset(AuditAction.AssetRegistered, asset.Id, command.ActorId, null, asset.Status, now));
         await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -56,6 +56,7 @@ public sealed class AssetsController : ControllerBase
     [Authorize(Policy = Policies.ManageAssets)]
     [ProducesResponseType(typeof(AssetDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)] // tag already in use
     public async Task<ActionResult<AssetDto>> Register(
         [FromBody] RegisterAssetRequest body,
         [FromServices] RegisterAssetHandler handler,

@@ -11,6 +11,10 @@ public interface IAssetRepository
 {
     void Add(Asset asset);
 
+    /// <summary>True if an asset already carries this (already-normalized) tag — the uniqueness
+    /// pre-check for registration. The unique index on the column is the integrity backstop.</summary>
+    Task<bool> TagExistsAsync(string tag, CancellationToken cancellationToken = default);
+
     /// <summary>Read-only load (no change tracking) for queries.</summary>
     Task<Asset?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
