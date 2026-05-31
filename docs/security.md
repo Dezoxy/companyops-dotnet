@@ -66,12 +66,15 @@ their Employee role (roles compose — resolves the earlier Create TODO).
 | Fulfill — `…/fulfill` | ✗ | ✗ | ✗ | ✓ stage | ✗ |
 | Cancel — `…/cancel` (not yet built) | ✓ own, stage | TODO dept? | ✗ | ✗ | ✗ |
 | View a request — `GET /requests/{id}` | ✓ (auth) | ✓ (auth) | ✓ | ✓ | ✓ read |
-| List requests — `GET /requests` | ✓ (auth) | ✓ (auth) | ✓ | ✓ | ✓ read |
+| List requests — `GET /requests` | ✓ own | ✓ dept | ✓ all | ✓ all | ✓ all |
 | View audit log — `GET /audit-logs` | ✗ | ✗ | ✗ | ✓ read | ✓ read |
 
-> **Read scoping is a known gap (Phase 3):** `GET` endpoints currently require
-> authentication but are not yet narrowed to own/department — any authenticated role
-> sees all requests. Row-level read scoping is a tracked follow-up.
+> **Read scoping:** `GET /requests` is scoped to the caller, mirroring who can act on what — an
+> Employee sees only their own, a Manager their department, and Finance / IT Admin / Auditor see
+> all (Finance approves the global step; IT fulfils any; Auditor oversees). The scope is derived
+> from the principal in the Api and applied in the repository query. **Remaining follow-up:**
+> `GET /requests/{id}` is still authentication-only — a GUID isn't enumerable, but an out-of-scope
+> id should return 404 rather than the record.
 
 ### Asset console (Phase 16)
 

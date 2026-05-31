@@ -1,3 +1,8 @@
 namespace CompanyOps.Application.Requests.ListRequests;
 
-public sealed record ListRequestsQuery;
+/// <summary>
+/// Read scope for the request list. At most one filter is set (the Api derives it from the
+/// caller's role): <see cref="RequesterId"/> → the caller's own requests; <see cref="DepartmentId"/>
+/// → that department; both null → all.
+/// </summary>
+public sealed record ListRequestsQuery(Guid? RequesterId = null, Guid? DepartmentId = null);

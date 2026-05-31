@@ -19,9 +19,25 @@ internal sealed class RequestRepository(AppDbContext dbContext) : IRequestReposi
         dbContext.Requests
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
-    public async Task<IReadOnlyList<Request>> ListAsync(CancellationToken cancellationToken = default) =>
-        await dbContext.Requests
-            .AsNoTracking()
+    public async Task<IReadOnlyList<Request>> ListAsync(
+        Guid? requesterId,
+        Guid? departmentId,
+        CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.Requests.AsNoTracking();
+
+        if (requesterId is { } requester)
+        {
+            query = query.Where(r => r.RequesterId == requester);
+        }
+
+        if (departmentId is { } department)
+        {
+            query = query.Where(r => r.DepartmentId == department);
+        }
+
+        return await query
             .OrderByDescending(r => r.CreatedAtUtc)
             .ToListAsync(cancellationToken);
+    }
 }
