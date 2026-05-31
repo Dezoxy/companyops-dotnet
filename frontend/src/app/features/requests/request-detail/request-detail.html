@@ -79,6 +79,20 @@
           </mat-card>
         }
 
+        @if (r.fulfilledAssetId) {
+          <mat-card appearance="outlined">
+            <mat-card-header><mat-card-title>Fulfilment</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <p class="muted small">Assigned asset</p>
+              @if (canViewAssets()) {
+                <a [routerLink]="['/assets', r.fulfilledAssetId]" class="mono">{{ r.fulfilledAssetId }}</a>
+              } @else {
+                <span class="mono">{{ r.fulfilledAssetId }}</span>
+              }
+            </mat-card-content>
+          </mat-card>
+        }
+
         <mat-card appearance="outlined">
           <mat-card-header><mat-card-title>Approval timeline</mat-card-title></mat-card-header>
           <mat-card-content>

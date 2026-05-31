@@ -24,6 +24,7 @@ function vm(title: string): RequestVm {
     requesterId: 'r',
     departmentId: 'd',
     createdAt: new Date('2026-05-01T00:00:00Z'),
+    fulfilledAssetId: null,
     approvalSteps: [],
   };
 }

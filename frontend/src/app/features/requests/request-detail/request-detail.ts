@@ -16,6 +16,7 @@ import { ApproverRole, RequestVm } from '../requests.models';
 import { StatusChip } from '../../../shared/status-chip/status-chip';
 import { AuthService } from '../../../core/auth/auth.service';
 import { DecisionDialog, DecisionDialogData, DecisionDialogResult } from '../decision-dialog/decision-dialog';
+import { FulfilAssetDialog } from '../fulfil-asset-dialog';
 import { CommentThread } from '../comments/comment-thread';
 
 type LoadState = 'loading' | 'loaded' | 'notfound' | 'error';
@@ -70,11 +71,15 @@ export class RequestDetail {
     return !!r && r.status === 'Submitted' && !!step && this.auth.hasRole(step.requiredRole);
   });
 
-  /** Fulfil is available to IT Admin once the request is Approved (helpdesk + procurement). */
+  /** Fulfil is available to IT Admin once the request is Approved (all flows). */
   protected readonly canFulfill = computed(() => {
     const r = this.request();
     return !!r && r.status === 'Approved' && this.auth.hasRole('ItAdmin' satisfies ApproverRole);
   });
+
+  /** Only IT Admin / Auditor can open the asset console, so only they get a link to the
+   *  assigned asset; others see its id as text (the /assets route is role-guarded). */
+  protected readonly canViewAssets = computed(() => this.auth.hasRole('ItAdmin') || this.auth.hasRole('Auditor'));
 
   constructor() {
     this.load();
@@ -109,6 +114,21 @@ export class RequestDetail {
   protected fulfill(): void {
     const r = this.request();
     if (!r || this.acting()) {
+      return;
+    }
+    // An asset-lifecycle request is fulfilled by assigning a concrete in-stock asset — let IT
+    // pick it first. Other types complete with no asset.
+    if (r.type === 'AssetLifecycle') {
+      this.dialog
+        .open<FulfilAssetDialog, void, string>(FulfilAssetDialog, { width: '480px' })
+        .afterClosed()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((assetId) => {
+          if (!assetId) {
+            return;
+          }
+          this.run(this.service.fulfill(r.id, assetId), 'Request fulfilled — asset assigned.');
+        });
       return;
     }
     this.run(this.service.fulfill(r.id), 'Request fulfilled.');

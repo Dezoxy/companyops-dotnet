@@ -54,6 +54,10 @@ internal sealed class RequestConfiguration : IEntityTypeConfiguration<Request>
         builder.Property(r => r.CreatedAtUtc)
             .IsRequired();
 
+        // The asset assigned at fulfillment (asset-lifecycle requests only); null otherwise.
+        // A loose id link across aggregates — no FK/navigation, and no index until a query needs one.
+        builder.Property(r => r.FulfilledAssetId);
+
         builder.HasIndex(r => r.RequesterId);
         builder.HasIndex(r => r.DepartmentId);
         builder.HasIndex(r => r.Status);

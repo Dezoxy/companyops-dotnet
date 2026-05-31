@@ -43,9 +43,15 @@ are the *conceptual* steps that one endpoint serves.
 
 The chain is configured **per request type** ([ADR 0005](decisions/0005-configurable-approval-workflow.md)):
 **Procurement** = Manager (department) → Finance (global); **Helpdesk** = Manager (department) only
-(Phase 15). So a helpdesk request reaches Approved after a single manager sign-off, then IT Admin
-fulfils — the same `/approve` and `/fulfill` endpoints serve both flows; the type's chain selects
-the step.
+(Phase 15); **AssetLifecycle** = Manager (department) only (Phase 16). So a helpdesk or asset-lifecycle
+request reaches Approved after a single manager sign-off, then IT Admin fulfils — the same `/approve`
+and `/fulfill` endpoints serve every flow; the type's chain selects the step.
+
+The fulfillment **action** differs by type (the action, not the authorization — IT Admin fulfils all
+flows). An **AssetLifecycle** fulfillment additionally assigns a concrete in-stock asset to the
+requester (`Asset.Assign`, recorded as the request's `FulfilledAssetId`) — a real internal transition
+in the same transaction. IT names the asset in the `…/fulfill` body (`assignedAssetId`); the Domain
+rejects a fulfillment that names no asset for this type, or names one for any other type.
 
 Anyone holding the **Employee** role may create requests; Managers/Finance create via
 their Employee role (roles compose — resolves the earlier Create TODO).
@@ -84,6 +90,12 @@ Every lifecycle transition is audited via `AuditLog.ForAsset` (target type `"Ass
 asset's history, also surfaced in `GET /audit-logs`. Open follow-ups: capturing the affected
 holder's id on assign/reclaim audit entries ("who held it"), and a 409 (not 500) on a
 duplicate tag.
+
+There is a **second path to `Asset.Assign`** (Phase 16c): when IT Admin fulfils an
+**AssetLifecycle** request, the assignment happens through the request flow rather than the
+console. It is still IT-Admin-only — gated by `FulfillRequests`, not `ManageAssets` — and the
+employee who raised the request never gains a write path to `/assets`. Both paths converge on the
+same Domain transition and audit entry.
 
 **Hard invariants (must always hold):**
 - Auditor has **no** mutating path anywhere.
