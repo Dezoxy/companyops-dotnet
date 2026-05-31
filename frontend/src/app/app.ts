@@ -47,6 +47,7 @@ export class App {
     { label: 'Fulfilment', icon: 'assignment_turned_in', path: '/fulfilment', requiredRoles: ['ItAdmin'] },
     { label: 'Assets', icon: 'inventory_2', path: '/assets', requiredRoles: ['ItAdmin', 'Auditor'] },
     { label: 'Reports', icon: 'insights', path: '/reports', requiredRoles: ['Manager', 'Finance', 'ItAdmin', 'Auditor'] },
+    { label: 'Integrations', icon: 'hub', path: '/integrations', requiredRoles: ['ItAdmin', 'Auditor'] },
     { label: 'Audit log', icon: 'history', path: '/audit', requiredRoles: ['Auditor'] },
   ];
 

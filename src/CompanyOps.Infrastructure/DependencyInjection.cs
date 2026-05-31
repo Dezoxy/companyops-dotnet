@@ -28,6 +28,7 @@ public static class DependencyInjection
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IAssetRepository, AssetRepository>();
         services.AddScoped<IReportingStore, ReportingStore>();
+        services.AddScoped<IIntegrationStatusStore, IntegrationStatusStore>();
 
         // One AuditLogStore per scope, exposed as both the write and read ports.
         services.AddScoped<AuditLogStore>();

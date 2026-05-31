@@ -115,6 +115,21 @@ department-scoped: a Manager sees org-wide counts, not just their department. De
 reporting is a deliberate enterprise-optional follow-up (it would mirror the per-step department
 check already applied to approvals). Read-only — no mutation, no audit entry.
 
+### Integrations status (Phase 19)
+
+A read-only operational view of the async pipeline (the transactional outbox + the Worker's
+processed-message markers, ADR 0007/0008): outbox counts (pending / published / failed), how many
+messages the Worker has consumed, and the most recent messages with their relay status.
+
+| Action (endpoint) | Employee | Manager | Finance | IT Admin | Auditor |
+|---|---|---|---|---|---|
+| Integration status — `GET /integrations/status` | ✗ | ✗ | ✗ | ✓ read | ✓ read |
+
+Gated by `ReadIntegrations` (IT Admin + Auditor) — this is plumbing/observability for operators and
+oversight, not a business view, so the business roles (Employee / Manager / Finance) are excluded
+(narrower than `ReadReports`). The response carries only message metadata (type, status, timestamps,
+attempt count, error text) — **never the event payload**. Read-only — no mutation, no audit entry.
+
 **Hard invariants (must always hold):**
 - Auditor has **no** mutating path anywhere.
 - Manager actions are **department-scoped** — a manager cannot act on another

@@ -44,6 +44,14 @@ export const routes: Routes = [
     canActivate: [roleGuard('Manager', 'Finance', 'ItAdmin', 'Auditor')],
     loadComponent: () => import('./features/reports/reports').then((m) => m.Reports),
   },
+  // Integrations: operational status of the async pipeline. The API enforces ReadIntegrations
+  // (IT Admin + Auditor — operators + oversight); this gate is UX.
+  {
+    path: 'integrations',
+    title: 'Integrations · CompanyOps',
+    canActivate: [roleGuard('ItAdmin', 'Auditor')],
+    loadComponent: () => import('./features/integrations/integrations').then((m) => m.Integrations),
+  },
   // Asset console: reads admit IT Admin + the read-only Auditor (docs/security.md); writes
   // are IT-Admin-only and the API re-checks, so the UI hides write actions for the Auditor.
   {

@@ -70,7 +70,9 @@ public static class AuthSetup
             .AddPolicy(Policies.ManageAssets, p => p.RequireRole(Roles.ItAdmin))
             .AddPolicy(Policies.ReadAssets, p => p.RequireRole(Roles.ItAdmin, Roles.Auditor))
             // Aggregate analytics for the oversight roles; plain Employees are excluded.
-            .AddPolicy(Policies.ReadReports, p => p.RequireRole(Roles.Manager, Roles.Finance, Roles.ItAdmin, Roles.Auditor));
+            .AddPolicy(Policies.ReadReports, p => p.RequireRole(Roles.Manager, Roles.Finance, Roles.ItAdmin, Roles.Auditor))
+            // Operational integration status is for operators (IT Admin) + oversight (Auditor) only.
+            .AddPolicy(Policies.ReadIntegrations, p => p.RequireRole(Roles.ItAdmin, Roles.Auditor));
 
         return services;
     }
