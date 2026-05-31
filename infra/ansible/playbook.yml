@@ -96,6 +96,11 @@
         repo: "{{ repo_url }}"
         dest: "{{ app_dir }}"
         version: "{{ repo_ref }}"
+        # force: reset to repo_ref even if tracked files were modified in place. The "Pin the realm
+        # redirect URIs" task below edits a tracked file (realm-companyops.prod.json), so without
+        # this a re-run fails with "Local modifications exist". The untracked rendered .env is kept
+        # (force resets tracked files only); the realm is re-pinned right after.
+        force: true
 
     - name: Render the production .env (secrets from vault)
       ansible.builtin.template:
