@@ -244,21 +244,26 @@ public class Request
     }
 
     /// <summary>
-    /// Cancel the request: <c>Draft | Submitted → Cancelled</c> (terminal). Only the requester may
-    /// cancel their own request, and only before approval completes — an approved, in-fulfilment,
-    /// completed, rejected, or already-cancelled request cannot be cancelled. Throws
-    /// <see cref="DomainException"/> otherwise.
+    /// Cancel (withdraw) the request: <c>Draft | Submitted → Cancelled</c> (terminal), and only
+    /// before approval completes — an approved, in-fulfilment, completed, rejected, or already-
+    /// cancelled request cannot be cancelled. Allowed for the <b>requester</b> (their own request)
+    /// or a <b>manager of the request's department</b> (oversight); Finance / IT Admin / Auditor
+    /// cannot. This is distinct from <see cref="Reject"/>: reject is an approver's decision on the
+    /// merits (with a reason, recorded against the step), whereas cancel withdraws a request that
+    /// has not yet been decided. Throws <see cref="DomainException"/> otherwise.
     /// </summary>
-    public void Cancel(Guid actorId, DateTimeOffset nowUtc)
+    public void Cancel(Guid actorId, IReadOnlyCollection<ApproverRole> actorRoles, Guid actorDepartmentId, DateTimeOffset nowUtc)
     {
         if (actorId == Guid.Empty)
         {
             throw new DomainException("Cancelling must record who performed it.");
         }
 
-        if (actorId != RequesterId)
+        var isRequester = actorId == RequesterId;
+        var isDepartmentManager = actorRoles.Contains(ApproverRole.Manager) && actorDepartmentId == DepartmentId;
+        if (!isRequester && !isDepartmentManager)
         {
-            throw new DomainException("Only the requester can cancel their own request.");
+            throw new DomainException("Only the requester or a manager of the request's department can cancel it.");
         }
 
         if (Status is not (RequestStatus.Draft or RequestStatus.Submitted))

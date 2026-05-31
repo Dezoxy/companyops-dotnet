@@ -5,8 +5,8 @@ namespace CompanyOps.Application.Requests.CancelRequest;
 
 /// <summary>
 /// Handles <see cref="CancelRequestCommand"/>: load the aggregate, call the domain cancel (which
-/// enforces requester-only + Draft/Submitted), persist, return the updated read model. Returns
-/// <c>null</c> when the request does not exist.
+/// enforces requester-or-department-manager + Draft/Submitted), persist, return the updated read
+/// model. Returns <c>null</c> when the request does not exist.
 /// </summary>
 public sealed class CancelRequestHandler(
     IRequestRepository requests,
@@ -25,7 +25,7 @@ public sealed class CancelRequestHandler(
         var now = timeProvider.GetUtcNow();
         var fromStatus = request.Status;
 
-        request.Cancel(command.ActorId, now);
+        request.Cancel(command.ActorId, command.ActorRoles, command.ActorDepartmentId, now);
         auditLogger.Add(AuditLog.ForRequest(AuditAction.RequestCancelled, request.Id, command.ActorId, fromStatus, request.Status, now));
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

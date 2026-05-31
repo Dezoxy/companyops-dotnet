@@ -322,14 +322,26 @@ public sealed class AuthorizationTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task Cancel_AnotherUsersRequest_Returns400()
+    public async Task Cancel_DepartmentRequest_AsDepartmentManager_Returns200_Cancelled()
     {
-        var id = await CreateDraftRequestAsync(); // employee.eng's request
-        var manager = factory.CreateClientWithToken(await factory.GetTokenAsync("manager.eng")); // holds Employee role → passes the policy
+        var id = await CreateDraftRequestAsync(); // employee.eng's request, Engineering department
+        var manager = factory.CreateClientWithToken(await factory.GetTokenAsync("manager.eng")); // Engineering manager
 
         var response = await manager.PostAsync($"/requests/{id}/cancel", content: null);
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode); // the Domain rejects: only the requester can cancel
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode); // department oversight: a manager may cancel their dept's request
+        Assert.Equal("Cancelled", (await response.Content.ReadFromJsonAsync<RequestResponse>())!.Status);
+    }
+
+    [Fact]
+    public async Task Cancel_ByManagerOfAnotherDepartment_Returns400()
+    {
+        var id = await CreateDraftRequestAsync(); // employee.eng's request, Engineering department
+        var manager = factory.CreateClientWithToken(await factory.GetTokenAsync("manager.sales")); // Sales manager → passes the policy
+
+        var response = await manager.PostAsync($"/requests/{id}/cancel", content: null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode); // the Domain rejects: not the requester, not this department's manager
     }
 
     [Fact]
@@ -345,6 +357,30 @@ public sealed class AuthorizationTests(ApiFactory factory)
         var response = await employee.PostAsync($"/requests/{id}/cancel", content: null);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode); // only a Draft/Submitted request can be cancelled
+    }
+
+    [Fact]
+    public async Task Cancel_AsAuditor_Returns403()
+    {
+        var id = await CreateDraftRequestAsync();
+        var auditor = factory.CreateClientWithToken(await factory.GetTokenAsync("auditor.user")); // no Employee/Manager role
+
+        var response = await auditor.PostAsync($"/requests/{id}/cancel", content: null);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode); // read-only role: stopped at the policy, never reaches the Domain
+    }
+
+    [Fact]
+    public async Task Cancel_AnotherUsersRequest_AsFinance_Returns400()
+    {
+        var id = await CreateDraftRequestAsync(); // employee.eng's request
+        var finance = factory.CreateClientWithToken(await factory.GetTokenAsync("finance.user")); // holds Employee → passes the policy
+
+        var response = await finance.PostAsync($"/requests/{id}/cancel", content: null);
+
+        // Finance reaches the endpoint via its Employee role but is neither the requester nor a
+        // department manager, so the Domain rejects it — 400, not a policy 403.
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     private async Task<Guid> CreateDraftRequestAsync()

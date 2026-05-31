@@ -62,7 +62,9 @@ public static class AuthSetup
         services.AddAuthorizationBuilder()
             .AddPolicy(Policies.CreateRequests, p => p.RequireRole(Roles.Employee))
             .AddPolicy(Policies.SubmitRequests, p => p.RequireRole(Roles.Employee))
-            .AddPolicy(Policies.CancelRequests, p => p.RequireRole(Roles.Employee))
+            // Requester (Employee) or a department Manager may reach /cancel; the Domain enforces
+            // the fine-grained rule (own request, or manager of the request's department).
+            .AddPolicy(Policies.CancelRequests, p => p.RequireRole(Roles.Employee, Roles.Manager))
             .AddPolicy(Policies.DecideRequests, p => p.RequireRole(Roles.Manager, Roles.Finance))
             .AddPolicy(Policies.FulfillRequests, p => p.RequireRole(Roles.ItAdmin))
             // Any participant may comment; the read-only Auditor (Auditor-only) is excluded.
