@@ -66,7 +66,7 @@ public static class AuthSetup
             .AddPolicy(Policies.FulfillRequests, p => p.RequireRole(Roles.ItAdmin))
             // Any participant may comment; the read-only Auditor (Auditor-only) is excluded.
             .AddPolicy(Policies.CommentOnRequests, p => p.RequireRole(Roles.Employee, Roles.Manager, Roles.Finance, Roles.ItAdmin))
-            .AddPolicy(Policies.ReadAuditLog, p => p.RequireRole(Roles.Auditor))
+            .AddPolicy(Policies.ReadAuditLog, p => p.RequireRole(Roles.Auditor, Roles.ItAdmin))
             .AddPolicy(Policies.ManageAssets, p => p.RequireRole(Roles.ItAdmin))
             .AddPolicy(Policies.ReadAssets, p => p.RequireRole(Roles.ItAdmin, Roles.Auditor))
             // Aggregate analytics for the oversight roles; plain Employees are excluded.

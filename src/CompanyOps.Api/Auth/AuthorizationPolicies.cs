@@ -31,7 +31,8 @@ internal static class Policies
     /// <summary>Comment on a request — any participant (everyone except the read-only Auditor).</summary>
     public const string CommentOnRequests = "CommentOnRequests";
 
-    /// <summary>Read the audit trail — Auditor (matrix lists IT Admin as a TODO).</summary>
+    /// <summary>Read the audit trail — the read-only Auditor and IT Admin (operators need the
+    /// trail for the systems and assets they manage).</summary>
     public const string ReadAuditLog = "ReadAuditLog";
 
     /// <summary>Manage the asset inventory and its lifecycle (write) — IT Admin.</summary>
