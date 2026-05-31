@@ -10,13 +10,20 @@ namespace CompanyOps.Worker;
 /// Consumes integration events (RequestApproved / RequestFulfilled) and dispatches each
 /// to <see cref="IntegrationEventProcessor"/> in its own DI scope. Manual ack: success
 /// acks; a malformed message dead-letters immediately; a transient failure (e.g. the
-/// external system being down) requeues, bounded by the queue's delivery limit.
+/// external system being down) requeues after a short delay — bounded by the queue's
+/// delivery limit, the delay just keeps a persistently-failing message from hot-looping
+/// through those retries.
 /// </summary>
 public sealed class IntegrationEventConsumer(
     RabbitMqConnection connection,
     IServiceScopeFactory scopeFactory,
     ILogger<IntegrationEventConsumer> logger) : BackgroundService
 {
+    // Pace redelivery of a transiently-failing message so it doesn't burn the queue's delivery
+    // limit in a tight loop. A fixed delay is enough for the "dependency briefly down" case;
+    // true exponential backoff (off the broker's x-delivery-count) is a possible refinement.
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(5);
+
     private IChannel? _channel;
     private CancellationToken _stoppingToken;
 
@@ -72,7 +79,20 @@ public sealed class IntegrationEventConsumer(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to handle message {MessageId}; requeuing for retry.", messageId);
+            logger.LogError(ex, "Failed to handle message {MessageId}; requeuing for retry after {Delay}.", messageId, RetryDelay);
+
+            // Hold before requeueing so a persistently-down dependency doesn't hot-loop the
+            // message through the delivery limit. On shutdown, leave it unacked — the broker
+            // redelivers it on the next connection.
+            try
+            {
+                await Task.Delay(RetryDelay, _stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
             await _channel!.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: true);
         }
     }
