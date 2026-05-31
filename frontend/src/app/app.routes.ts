@@ -59,5 +59,12 @@ export const routes: Routes = [
     canActivate: [roleGuard('ItAdmin', 'Auditor')],
     loadChildren: () => import('./features/assets/assets.routes').then((m) => m.ASSETS_ROUTES),
   },
+  // Settings & profile: any authenticated user manages their own UI prefs + sees their profile.
+  {
+    path: 'settings',
+    title: 'Settings · CompanyOps',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

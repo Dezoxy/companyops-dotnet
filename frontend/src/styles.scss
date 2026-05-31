@@ -17,65 +17,67 @@ html {
     )
   );
 
-  // --- Precision Enterprise brand tokens (Slate & Cobalt) ---
-  --mat-sys-primary: #004ac6;
-  --mat-sys-on-primary: #ffffff;
-  --mat-sys-primary-container: #2563eb;
-  --mat-sys-on-primary-container: #eeefff;
-  --mat-sys-secondary: #3755c3;
-  --mat-sys-on-secondary: #ffffff;
-  --mat-sys-secondary-container: #708cfd;
-  --mat-sys-on-secondary-container: #00217a;
-  --mat-sys-tertiary: #4d556b;
-  --mat-sys-on-tertiary: #ffffff;
-  --mat-sys-tertiary-container: #656d84;
-  --mat-sys-on-tertiary-container: #eef0ff;
-  --mat-sys-error: #ba1a1a;
-  --mat-sys-on-error: #ffffff;
-  --mat-sys-error-container: #ffdad6;
-  --mat-sys-on-error-container: #93000a;
-  --mat-sys-surface: #f8f9ff;
-  --mat-sys-on-surface: #0b1c30;
-  --mat-sys-on-surface-variant: #434655;
-  --mat-sys-surface-variant: #d3e4fe;
-  --mat-sys-surface-container-lowest: #ffffff;
-  --mat-sys-surface-container-low: #eff4ff;
-  --mat-sys-surface-container: #e5eeff;
-  --mat-sys-surface-container-high: #dce9ff;
-  --mat-sys-surface-container-highest: #d3e4fe;
-  --mat-sys-surface-dim: #cbdbf5;
-  --mat-sys-surface-bright: #f8f9ff;
-  --mat-sys-background: #f8f9ff;
-  --mat-sys-on-background: #0b1c30;
-  --mat-sys-outline: #737686;
-  --mat-sys-outline-variant: #c3c6d7;
-  --mat-sys-inverse-surface: #213145;
-  --mat-sys-inverse-on-surface: #eaf1ff;
-  --mat-sys-inverse-primary: #b4c5ff;
+  // Light & dark resolve from the root's `color-scheme` (set by ThemeService) via `light-dark()`.
+  // Default below is `light dark`, so a 'system'-preference user gets their OS scheme immediately.
+  color-scheme: light dark;
+
+  // --- Precision Enterprise brand tokens (Slate & Cobalt) — light-dark(light, dark) ---
+  // The light values are the design source (ADR 0010). Dark is a derived M3 counterpart (the
+  // design deferred dark mode — Phase 20 lands a coherent dark scheme, not a Figma-exact one).
+  --mat-sys-primary: light-dark(#004ac6, #b4c5ff);
+  --mat-sys-on-primary: light-dark(#ffffff, #002d70);
+  --mat-sys-primary-container: light-dark(#2563eb, #1b4ba6);
+  --mat-sys-on-primary-container: light-dark(#eeefff, #dbe1ff);
+  --mat-sys-secondary: light-dark(#3755c3, #bcc4ff);
+  --mat-sys-on-secondary: light-dark(#ffffff, #052a86);
+  --mat-sys-secondary-container: light-dark(#708cfd, #1f41a5);
+  --mat-sys-on-secondary-container: light-dark(#00217a, #dde1ff);
+  --mat-sys-tertiary: light-dark(#4d556b, #b6bdd6);
+  --mat-sys-on-tertiary: light-dark(#ffffff, #1f2738);
+  --mat-sys-tertiary-container: light-dark(#656d84, #353d52);
+  --mat-sys-on-tertiary-container: light-dark(#eef0ff, #d2d9f3);
+  --mat-sys-error: light-dark(#ba1a1a, #ffb4ab);
+  --mat-sys-on-error: light-dark(#ffffff, #690005);
+  --mat-sys-error-container: light-dark(#ffdad6, #93000a);
+  --mat-sys-on-error-container: light-dark(#93000a, #ffdad6);
+  --mat-sys-surface: light-dark(#f8f9ff, #111722);
+  --mat-sys-on-surface: light-dark(#0b1c30, #dfe2ed);
+  --mat-sys-on-surface-variant: light-dark(#434655, #c3c6d7);
+  --mat-sys-surface-variant: light-dark(#d3e4fe, #434655);
+  --mat-sys-surface-container-lowest: light-dark(#ffffff, #0b111b);
+  --mat-sys-surface-container-low: light-dark(#eff4ff, #181f2a);
+  --mat-sys-surface-container: light-dark(#e5eeff, #1c232f);
+  --mat-sys-surface-container-high: light-dark(#dce9ff, #262d3a);
+  --mat-sys-surface-container-highest: light-dark(#d3e4fe, #313845);
+  --mat-sys-surface-dim: light-dark(#cbdbf5, #111722);
+  --mat-sys-surface-bright: light-dark(#f8f9ff, #374050);
+  --mat-sys-background: light-dark(#f8f9ff, #111722);
+  --mat-sys-on-background: light-dark(#0b1c30, #dfe2ed);
+  --mat-sys-outline: light-dark(#737686, #8d90a0);
+  --mat-sys-outline-variant: light-dark(#c3c6d7, #434655);
+  --mat-sys-inverse-surface: light-dark(#213145, #dfe2ed);
+  --mat-sys-inverse-on-surface: light-dark(#eaf1ff, #2d3038);
+  --mat-sys-inverse-primary: light-dark(#b4c5ff, #004ac6);
 
   // --- App status palette (semantic chip colours) ---
-  // M3 only ships primary/secondary/tertiary/error roles; status UI needs success / warning /
+  // M3 only ships primary/secondary/tertiary/error roles; status UI needs success / progress /
   // info too. Defined once here (the theme layer) and referenced via the shared status-chip —
-  // never hardcoded per component. fg = text, bg = soft background (the "medium text on
-  // low-opacity surface" look from the design).
-  // TODO(dark-mode): these are light-only (like the --mat-sys-* overrides above); add dark
-  // values in the prefers-color-scheme block when dark mode lands, or the chips won't adapt.
-  --app-tone-neutral-fg: #434655;
-  --app-tone-neutral-bg: #e6e8f0;
-  --app-tone-info-fg: #004ac6;
-  --app-tone-info-bg: #dbe6ff;
-  --app-tone-progress-fg: #8a5300;
-  --app-tone-progress-bg: #ffe6c4;
-  --app-tone-success-fg: #1f6d3b;
-  --app-tone-success-bg: #d3f0dd;
-  --app-tone-danger-fg: #93000a;
-  --app-tone-danger-bg: #ffdad6;
+  // never hardcoded per component. fg = text, bg = soft background. Light & dark via light-dark().
+  --app-tone-neutral-fg: light-dark(#434655, #c3c6d7);
+  --app-tone-neutral-bg: light-dark(#e6e8f0, #2b303c);
+  --app-tone-info-fg: light-dark(#004ac6, #adc6ff);
+  --app-tone-info-bg: light-dark(#dbe6ff, #1a3055);
+  --app-tone-progress-fg: light-dark(#8a5300, #ffb95c);
+  --app-tone-progress-bg: light-dark(#ffe6c4, #3b2c08);
+  --app-tone-success-fg: light-dark(#1f6d3b, #8fd9a3);
+  --app-tone-success-bg: light-dark(#d3f0dd, #123822);
+  --app-tone-danger-fg: light-dark(#93000a, #ffb4ab);
+  --app-tone-danger-bg: light-dark(#ffdad6, #5a0a0a);
 }
 
 body {
-  // TODO(dark-mode): mat.theme() also generates dark tokens; add a prefers-color-scheme block
-  // with dark --mat-sys-* overrides and switch this to `light dark` when dark mode lands.
-  color-scheme: light;
+  // Inherit `color-scheme` from <html> (set by ThemeService) so the light-dark() tokens resolve
+  // to the same scheme here — don't pin it, or body would stay light while the app goes dark.
   background-color: var(--mat-sys-surface);
   color: var(--mat-sys-on-surface);
   font: var(--mat-sys-body-medium);

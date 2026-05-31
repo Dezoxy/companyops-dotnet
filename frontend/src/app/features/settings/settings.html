@@ -1,0 +1,62 @@
+<header class="page-head">
+  <div>
+    <h1>Settings</h1>
+    <p>Your profile and app preferences.</p>
+  </div>
+</header>
+
+<div class="settings-grid">
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Profile</mat-card-title>
+      <mat-card-subtitle>From your sign-in — managed in Keycloak.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <dl class="profile">
+        <dt>Name</dt>
+        <dd>{{ userName() ?? '—' }}</dd>
+        @if (email()) {
+          <dt>Email</dt>
+          <dd>{{ email() }}</dd>
+        }
+        <dt>Roles</dt>
+        <dd class="roles">
+          @for (role of roles(); track role) {
+            <app-status-chip [label]="role" tone="neutral" />
+          } @empty {
+            <span class="muted">No roles</span>
+          }
+        </dd>
+        <dt>User ID</dt>
+        <dd class="mono">{{ userId() ?? '—' }}</dd>
+      </dl>
+
+      <a mat-stroked-button [href]="accountUrl" target="_blank" rel="noopener noreferrer">
+        <mat-icon>open_in_new</mat-icon>
+        Manage account in Keycloak
+      </a>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Appearance</mat-card-title>
+      <mat-card-subtitle>Saved on this device.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <p class="field-label">Theme</p>
+      <mat-button-toggle-group
+        [value]="preference()"
+        aria-label="Theme preference"
+        hideSingleSelectionIndicator
+      >
+        @for (option of themeOptions; track option.value) {
+          <mat-button-toggle [value]="option.value" (click)="setTheme(option.value)">
+            <mat-icon>{{ option.icon }}</mat-icon>
+            {{ option.label }}
+          </mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </mat-card-content>
+  </mat-card>
+</div>

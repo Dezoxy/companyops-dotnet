@@ -13,6 +13,7 @@ import { authInterceptor, provideAuth } from 'angular-auth-oidc-client';
 import { routes } from './app.routes';
 import { authConfig } from './core/auth/auth.config';
 import { AuthService } from './core/auth/auth.service';
+import { ThemeService } from './core/theme/theme.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,6 +25,12 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch(), withInterceptors([authInterceptor()])),
     // Process the OIDC redirect + restore the session before routes/guards run.
     provideAppInitializer(() => inject(AuthService).init()),
+    // Construct ThemeService during app init so the saved theme is applied as the app starts.
+    // (The static `color-scheme: light dark` in styles.scss already covers the 'system' default;
+    //  a fully flash-free explicit override would need an inline script in index.html.)
+    provideAppInitializer(() => {
+      inject(ThemeService);
+    }),
     // The design uses Material Symbols Outlined; make it the default mat-icon font set.
     { provide: MAT_ICON_DEFAULT_OPTIONS, useValue: { fontSet: 'material-symbols-outlined' } },
   ],

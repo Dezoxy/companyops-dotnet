@@ -6,12 +6,14 @@ interface AuthState {
   readonly isAuthenticated: boolean;
   readonly userId: string | null;
   readonly userName: string | null;
+  readonly email: string | null;
   readonly roles: readonly string[];
 }
 
 interface AccessTokenPayload {
   readonly sub?: string;
   readonly preferred_username?: string;
+  readonly email?: string;
   readonly realm_access?: { readonly roles?: string[] };
 }
 
@@ -29,6 +31,7 @@ export class AuthService {
     isAuthenticated: false,
     userId: null,
     userName: null,
+    email: null,
     roles: [],
   });
 
@@ -36,6 +39,7 @@ export class AuthService {
   /** The authenticated user's id (`sub`) — matches a request's RequesterId for "own" checks. */
   readonly userId = computed(() => this.state().userId);
   readonly userName = computed(() => this.state().userName);
+  readonly email = computed(() => this.state().email);
   readonly roles = computed(() => this.state().roles);
 
   /** Track the live session and process any redirect callback. Awaited at app start. */
@@ -66,6 +70,7 @@ export class AuthService {
       isAuthenticated,
       userId: payload?.sub ?? null,
       userName: payload?.preferred_username ?? null,
+      email: payload?.email ?? null,
       roles: payload?.realm_access?.roles ?? [],
     });
   }
