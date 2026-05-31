@@ -7,12 +7,13 @@ namespace CompanyOps.Application.Requests.RejectRequest;
 /// matches approval (role + department scope); a rejection is terminal.
 /// </summary>
 /// <remarks>
-/// The approver identity is the pre-auth bridge — from Phase 3 it comes from the
-/// authenticated principal, not the body.
+/// The approver identity comes from the authenticated principal, not the body.
+/// <paramref name="ApproverRoles"/> is the actor's full set of approver-capable roles; the Domain
+/// matches the current step's required role against the set (same eligibility as approval).
 /// </remarks>
 public sealed record RejectRequestCommand(
     Guid RequestId,
     Guid ApproverId,
-    ApproverRole ApproverRole,
+    IReadOnlyCollection<ApproverRole> ApproverRoles,
     Guid ApproverDepartmentId,
     string Reason);

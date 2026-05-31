@@ -28,7 +28,7 @@ public sealed class ApproveRequestHandler(
         var now = timeProvider.GetUtcNow();
         var fromStatus = request.Status;
 
-        request.Approve(command.ApproverId, command.ApproverRole, command.ApproverDepartmentId, now, command.Note);
+        request.Approve(command.ApproverId, command.ApproverRoles, command.ApproverDepartmentId, now, command.Note);
         auditLogger.Add(AuditLog.ForRequest(AuditAction.RequestApproved, request.Id, command.ApproverId, fromStatus, request.Status, now));
 
         // The final required approval moved the request to Approved — emit the event

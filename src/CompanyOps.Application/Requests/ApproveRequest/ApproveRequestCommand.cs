@@ -8,13 +8,15 @@ namespace CompanyOps.Application.Requests.ApproveRequest;
 /// determine which step is decided.
 /// </summary>
 /// <remarks>
-/// The approver identity (<paramref name="ApproverId"/>, <paramref name="ApproverRole"/>,
-/// <paramref name="ApproverDepartmentId"/>) is supplied by the caller as the pre-auth
-/// bridge — from Phase 3 it comes from the authenticated principal, not the body.
+/// The approver identity (<paramref name="ApproverId"/>, <paramref name="ApproverRoles"/>,
+/// <paramref name="ApproverDepartmentId"/>) comes from the authenticated principal, not the body.
+/// <paramref name="ApproverRoles"/> is the actor's full set of approver-capable roles; the Domain
+/// matches the current step's required role against the set, so a user holding more than one
+/// approver role isn't mis-assigned to the wrong step.
 /// </remarks>
 public sealed record ApproveRequestCommand(
     Guid RequestId,
     Guid ApproverId,
-    ApproverRole ApproverRole,
+    IReadOnlyCollection<ApproverRole> ApproverRoles,
     Guid ApproverDepartmentId,
     string? Note);
