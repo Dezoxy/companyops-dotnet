@@ -10,9 +10,15 @@ namespace CompanyOps.Infrastructure.Persistence;
 /// (via the shared unit of work); <see cref="ListAsync"/> is a read-only query. No update
 /// or delete path is exposed — the log is append-only.
 /// </summary>
-internal sealed class AuditLogStore(AppDbContext dbContext) : IAuditLogger, IAuditLogReader
+internal sealed class AuditLogStore(AppDbContext dbContext, IAuditContext auditContext) : IAuditLogger, IAuditLogReader
 {
-    public void Add(AuditLog entry) => dbContext.AuditLogs.Add(entry);
+    public void Add(AuditLog entry)
+    {
+        // Stamp the originating request's IP (null off an HTTP request, e.g. the Worker) before
+        // it's enlisted — so provenance is recorded in the same transaction as the change.
+        entry.StampSource(auditContext.SourceIp);
+        dbContext.AuditLogs.Add(entry);
+    }
 
     // Cap the read so an unbounded, ever-growing table can't be pulled in one request.
     // Cursor/limit pagination is the proper follow-up (see ListAuditLogsQuery).

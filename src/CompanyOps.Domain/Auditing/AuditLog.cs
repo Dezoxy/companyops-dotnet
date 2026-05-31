@@ -6,9 +6,10 @@ namespace CompanyOps.Domain.Auditing;
 
 /// <summary>
 /// An append-only record of a meaningful state change: who / what / when / old→new /
-/// affected object (AGENTS.md non-negotiable). There is no mutator and no factory that
-/// changes an existing entry — once written, an audit record is immutable. Created via
-/// the <see cref="ForRequest"/> factory and persisted through the <c>IAuditLogger</c> port.
+/// affected object (AGENTS.md non-negotiable). Its content is fixed at creation — the only
+/// post-construction write is the writer stamping the source IP once (<see cref="StampSource"/>);
+/// there is no path to change a persisted entry. Created via the <see cref="ForRequest"/> factory
+/// and persisted through the <c>IAuditLogger</c> port.
 /// </summary>
 public sealed class AuditLog
 {
@@ -24,6 +25,13 @@ public sealed class AuditLog
     /// <summary>Old → new status of the target, as readable names. Null where not applicable (e.g. creation).</summary>
     public string? FromStatus { get; private set; }
     public string? ToStatus { get; private set; }
+
+    /// <summary>
+    /// Source IP of the HTTP request that triggered the action; null for actions with no HTTP
+    /// origin (e.g. the Worker's external-integration outcomes). Stamped by the audit writer at
+    /// persist time via <see cref="StampSource"/> — the Application handlers don't carry it.
+    /// </summary>
+    public string? SourceIp { get; private set; }
 
     // Required by EF Core's materializer; not for application use.
     private AuditLog()
@@ -134,4 +142,11 @@ public sealed class AuditLog
             fromStatus?.ToString(),
             toStatus.ToString());
     }
+
+    /// <summary>
+    /// Stamp the originating request's source IP. Called once by the audit writer at persist time
+    /// (the IP is request-context metadata the Application handlers don't carry). Write-once:
+    /// ignored if already set, preserving the entry's immutability once recorded.
+    /// </summary>
+    public void StampSource(string? sourceIp) => SourceIp ??= sourceIp;
 }

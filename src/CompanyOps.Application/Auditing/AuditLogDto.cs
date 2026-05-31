@@ -11,7 +11,8 @@ public sealed record AuditLogDto(
     string TargetType,
     Guid TargetId,
     string? FromStatus,
-    string? ToStatus)
+    string? ToStatus,
+    string? SourceIp)
 {
     public static AuditLogDto FromDomain(AuditLog log) => new(
         log.Id,
@@ -21,5 +22,6 @@ public sealed record AuditLogDto(
         log.TargetType,
         log.TargetId,
         log.FromStatus,
-        log.ToStatus);
+        log.ToStatus,
+        log.SourceIp);
 }
