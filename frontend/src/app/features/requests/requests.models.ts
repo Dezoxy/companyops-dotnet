@@ -47,6 +47,8 @@ export interface RequestDto {
   readonly requesterId: string;
   readonly departmentId: string;
   readonly createdAtUtc: string;
+  /** Set once an asset-lifecycle request is fulfilled: the asset assigned to the requester. */
+  readonly fulfilledAssetId: string | null;
   readonly approvalSteps: readonly ApprovalStepDto[];
 }
 
@@ -140,5 +142,7 @@ export interface RequestVm {
   readonly requesterId: string;
   readonly departmentId: string;
   readonly createdAt: Date;
+  /** The asset assigned when an asset-lifecycle request was fulfilled; null otherwise. */
+  readonly fulfilledAssetId: string | null;
   readonly approvalSteps: readonly ApprovalStepVm[];
 }

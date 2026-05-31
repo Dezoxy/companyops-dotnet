@@ -17,6 +17,7 @@ public sealed record RequestDto(
     Guid RequesterId,
     Guid DepartmentId,
     DateTimeOffset CreatedAtUtc,
+    Guid? FulfilledAssetId,
     IReadOnlyList<ApprovalStepDto> ApprovalSteps)
 {
     public static RequestDto FromDomain(Request request) => new(
@@ -30,5 +31,6 @@ public sealed record RequestDto(
         request.RequesterId,
         request.DepartmentId,
         request.CreatedAtUtc,
+        request.FulfilledAssetId,
         [.. request.ApprovalSteps.Select(ApprovalStepDto.FromDomain)]);
 }

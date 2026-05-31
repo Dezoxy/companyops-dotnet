@@ -55,6 +55,7 @@ function vm(overrides: Partial<RequestVm> = {}): RequestVm {
     requesterId: 'r',
     departmentId: 'd',
     createdAt: new Date('2026-05-01T00:00:00Z'),
+    fulfilledAssetId: null,
     approvalSteps: [],
     ...overrides,
   };
@@ -130,5 +131,25 @@ describe('RequestDetail', () => {
     const fixture = setup(() => of(vm({ status: 'Submitted' })), auth('x', ['ItAdmin']));
     await fixture.whenStable();
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Mark fulfilled');
+  });
+
+  it('links the assigned asset to the console for IT Admin once fulfilled', async () => {
+    const fixture = setup(
+      () => of(vm({ type: 'AssetLifecycle', status: 'Completed', fulfilledAssetId: 'asset-1' })),
+      auth('x', ['ItAdmin']),
+    );
+    await fixture.whenStable();
+    expect((fixture.nativeElement as HTMLElement).querySelector('a[href="/assets/asset-1"]')).not.toBeNull();
+  });
+
+  it('shows the assigned asset as plain text (no console link) for the requester', async () => {
+    const fixture = setup(
+      () => of(vm({ type: 'AssetLifecycle', status: 'Completed', fulfilledAssetId: 'asset-1' })),
+      auth('x', ['Employee']),
+    );
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('a[href="/assets/asset-1"]')).toBeNull();
+    expect(el.textContent).toContain('asset-1');
   });
 });

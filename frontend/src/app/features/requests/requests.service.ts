@@ -53,6 +53,7 @@ export function mapRequest(dto: RequestDto): RequestVm {
     requesterId: dto.requesterId,
     departmentId: dto.departmentId,
     createdAt: new Date(dto.createdAtUtc),
+    fulfilledAssetId: dto.fulfilledAssetId,
     approvalSteps: steps.map((s) => mapApprovalStep(s, s.order === currentOrder)),
   };
 }
@@ -123,8 +124,11 @@ export class RequestsService {
     return this.http.post<RequestDto>(`${this.baseUrl}/${id}/reject`, { reason }).pipe(map(mapRequest));
   }
 
-  /** Fulfil an approved request (IT Admin) — Approved → Completed. */
-  fulfill(id: string): Observable<RequestVm> {
-    return this.http.post<RequestDto>(`${this.baseUrl}/${id}/fulfill`, {}).pipe(map(mapRequest));
+  /** Fulfil an approved request (IT Admin) — Approved → Completed. An asset-lifecycle request is
+   *  fulfilled by naming the in-stock asset to assign to the requester; other types send no asset. */
+  fulfill(id: string, assignedAssetId?: string): Observable<RequestVm> {
+    return this.http
+      .post<RequestDto>(`${this.baseUrl}/${id}/fulfill`, { assignedAssetId: assignedAssetId ?? null })
+      .pipe(map(mapRequest));
   }
 }

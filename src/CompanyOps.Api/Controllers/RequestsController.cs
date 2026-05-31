@@ -13,6 +13,7 @@ using CompanyOps.Application.Requests.RejectRequest;
 using CompanyOps.Application.Requests.SubmitRequest;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace CompanyOps.Api.Controllers;
 
@@ -130,9 +131,12 @@ public sealed class RequestsController : ControllerBase
     public async Task<ActionResult<RequestDto>> Fulfill(
         Guid id,
         [FromServices] FulfillRequestHandler handler,
+        // Optional: only asset-lifecycle fulfillment carries a body; helpdesk/procurement POST none.
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] FulfillRequestBody? body,
         CancellationToken cancellationToken)
     {
-        var result = await handler.HandleAsync(new FulfillRequestCommand(id, User.GetUserId()), cancellationToken);
+        var command = new FulfillRequestCommand(id, User.GetUserId(), body?.AssignedAssetId);
+        var result = await handler.HandleAsync(command, cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }
 

@@ -17,6 +17,7 @@ function dto(overrides: Partial<RequestDto> = {}): RequestDto {
     requesterId: 'r-1',
     departmentId: 'd-1',
     createdAtUtc: '2026-05-01T10:00:00Z',
+    fulfilledAssetId: null,
     approvalSteps: [
       { order: 2, requiredRole: 'Finance', scope: 'Global', isRequired: true, decision: 'Pending', decidedById: null, decidedAtUtc: null, note: null },
       { order: 1, requiredRole: 'Manager', scope: 'Department', isRequired: true, decision: 'Approved', decidedById: 'm-1', decidedAtUtc: '2026-05-02T10:00:00Z', note: 'Looks good' },
@@ -46,6 +47,11 @@ describe('mapRequest', () => {
     const manager = mapRequest(dto()).approvalSteps[0];
     expect(manager.decidedAt).toEqual(new Date('2026-05-02T10:00:00Z'));
     expect(manager.roleLabel).toBe('Manager');
+  });
+
+  it('passes the fulfilled asset link through', () => {
+    expect(mapRequest(dto({ fulfilledAssetId: 'asset-9' })).fulfilledAssetId).toBe('asset-9');
+    expect(mapRequest(dto()).fulfilledAssetId).toBeNull();
   });
 });
 
@@ -123,5 +129,20 @@ describe('RequestsService', () => {
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ reason: 'over budget' });
     req.flush(dto());
+  });
+
+  it('fulfill POSTs a null asset id for non-asset requests', () => {
+    service.fulfill('r1').subscribe();
+    const req = httpMock.expectOne('/api/requests/r1/fulfill');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ assignedAssetId: null });
+    req.flush(dto());
+  });
+
+  it('fulfill POSTs the chosen asset id for an asset-lifecycle request', () => {
+    service.fulfill('r1', 'asset-7').subscribe();
+    const req = httpMock.expectOne('/api/requests/r1/fulfill');
+    expect(req.request.body).toEqual({ assignedAssetId: 'asset-7' });
+    req.flush(dto({ fulfilledAssetId: 'asset-7' }));
   });
 });

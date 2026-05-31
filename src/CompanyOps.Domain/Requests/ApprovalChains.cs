@@ -17,7 +17,9 @@ public static class ApprovalChains
     //  - Helpdesk (Phase 15): manager-only (department-scoped). Low-risk service/access
     //    requests need one sign-off, then IT fulfils — a deliberately different shape from
     //    procurement, which is the whole point of the configurable engine (ADR 0005).
-    // Asset-lifecycle (Phase 16) is added with its flow.
+    //  - AssetLifecycle (Phase 16): manager-only (department-scoped), same shape as helpdesk.
+    //    No Finance step — it assigns existing in-stock inventory, not a purchase. IT fulfils by
+    //    assigning a concrete asset to the requester (see FulfillRequestHandler).
     private static readonly IReadOnlyDictionary<RequestType, IReadOnlyList<ApprovalStepDefinition>> Chains =
         new Dictionary<RequestType, IReadOnlyList<ApprovalStepDefinition>>
         {
@@ -27,6 +29,10 @@ public static class ApprovalChains
                 new ApprovalStepDefinition(2, ApproverRole.Finance, ApprovalScope.Global, IsRequired: true),
             ],
             [RequestType.Helpdesk] =
+            [
+                new ApprovalStepDefinition(1, ApproverRole.Manager, ApprovalScope.Department, IsRequired: true),
+            ],
+            [RequestType.AssetLifecycle] =
             [
                 new ApprovalStepDefinition(1, ApproverRole.Manager, ApprovalScope.Department, IsRequired: true),
             ],

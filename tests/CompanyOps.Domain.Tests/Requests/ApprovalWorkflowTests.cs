@@ -17,6 +17,7 @@ public class ApprovalWorkflowTests
     private static readonly Guid OtherDepartment = Guid.Parse("33333333-3333-3333-3333-333333333333");
     private static readonly Guid ManagerId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid FinanceId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+    private static readonly Guid ItAdminId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
 
     private static Request NewDraft(RequestType type = RequestType.Procurement) =>
         Request.Create("New laptop", "spec", type, RequestPriority.Medium, null, Requester, Department, Now);
@@ -25,6 +26,15 @@ public class ApprovalWorkflowTests
     {
         var request = NewDraft();
         request.Submit(Requester, Now);
+        return request;
+    }
+
+    // An asset-lifecycle request advanced to Approved — its chain is manager-only.
+    private static Request NewApprovedAsset()
+    {
+        var request = NewDraft(RequestType.AssetLifecycle);
+        request.Submit(Requester, Now);
+        request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
         return request;
     }
 
@@ -68,8 +78,9 @@ public class ApprovalWorkflowTests
     [Fact]
     public void Submit_ForRequestTypeWithNoConfiguredChain_ThrowsDomainException()
     {
-        // AssetLifecycle has no chain yet (lands in Phase 16); Helpdesk now does (Phase 15).
-        var request = NewDraft(RequestType.AssetLifecycle);
+        // Every real type now has a chain (Procurement/Helpdesk/AssetLifecycle); an unknown
+        // type must still fail loud on submit rather than silently auto-approve.
+        var request = NewDraft((RequestType)999);
 
         var ex = Assert.Throws<DomainException>(() => request.Submit(Requester, Now));
         Assert.Contains("No approval chain", ex.Message);
@@ -252,7 +263,7 @@ public class ApprovalWorkflowTests
         request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
         request.Approve(FinanceId, ApproverRole.Finance, OtherDepartment, Now);
 
-        request.Fulfill(FinanceId, Now);
+        request.Fulfill(FinanceId, null, Now);
 
         Assert.Equal(RequestStatus.Completed, request.Status);
     }
@@ -263,7 +274,7 @@ public class ApprovalWorkflowTests
         var request = NewSubmitted();
         request.Approve(ManagerId, ApproverRole.Manager, Department, Now); // still Submitted
 
-        Assert.Throws<DomainException>(() => request.Fulfill(FinanceId, Now));
+        Assert.Throws<DomainException>(() => request.Fulfill(FinanceId, null, Now));
     }
 
     [Fact]
@@ -273,6 +284,38 @@ public class ApprovalWorkflowTests
         request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
         request.Approve(FinanceId, ApproverRole.Finance, OtherDepartment, Now);
 
-        Assert.Throws<DomainException>(() => request.Fulfill(Guid.Empty, Now));
+        Assert.Throws<DomainException>(() => request.Fulfill(Guid.Empty, null, Now));
+    }
+
+    [Fact]
+    public void Fulfill_AssetLifecycleWithAsset_CompletesAndRecordsTheAssetLink()
+    {
+        var request = NewApprovedAsset();
+        var assetId = Guid.NewGuid();
+
+        request.Fulfill(ItAdminId, assetId, Now);
+
+        Assert.Equal(RequestStatus.Completed, request.Status);
+        Assert.Equal(assetId, request.FulfilledAssetId);
+    }
+
+    [Fact]
+    public void Fulfill_AssetLifecycleWithoutAsset_ThrowsDomainException()
+    {
+        var request = NewApprovedAsset();
+
+        // The asset-lifecycle fulfillment action is "assign an asset" — it must name one.
+        Assert.Throws<DomainException>(() => request.Fulfill(ItAdminId, null, Now));
+    }
+
+    [Fact]
+    public void Fulfill_NonAssetLifecycleWithAsset_ThrowsDomainException()
+    {
+        var request = NewSubmitted();
+        request.Approve(ManagerId, ApproverRole.Manager, Department, Now);
+        request.Approve(FinanceId, ApproverRole.Finance, OtherDepartment, Now); // procurement → Approved
+
+        // A procurement request is not fulfilled by assigning an asset; a stray id is rejected.
+        Assert.Throws<DomainException>(() => request.Fulfill(ItAdminId, Guid.NewGuid(), Now));
     }
 }

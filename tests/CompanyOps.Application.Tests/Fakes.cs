@@ -1,5 +1,6 @@
 using CompanyOps.Application.Abstractions;
 using CompanyOps.Application.IntegrationEvents;
+using CompanyOps.Domain.Assets;
 using CompanyOps.Domain.Auditing;
 using CompanyOps.Domain.Requests;
 
@@ -26,6 +27,25 @@ internal sealed class FakeRequestRepository : IRequestRepository
 
     public Task<IReadOnlyList<Request>> ListAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<Request>>([.. _store.Values]);
+}
+
+internal sealed class FakeAssetRepository : IAssetRepository
+{
+    private readonly Dictionary<Guid, Asset> _store = [];
+
+    public void Seed(Asset asset) => _store[asset.Id] = asset;
+    public IReadOnlyDictionary<Guid, Asset> Store => _store;
+
+    public void Add(Asset asset) => _store[asset.Id] = asset;
+
+    public Task<Asset?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_store.GetValueOrDefault(id));
+
+    public Task<Asset?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_store.GetValueOrDefault(id));
+
+    public Task<IReadOnlyList<Asset>> ListAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<Asset>>([.. _store.Values]);
 }
 
 internal sealed class FakeUnitOfWork : IUnitOfWork

@@ -33,6 +33,13 @@ public class Request
     public Guid DepartmentId { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
+    /// <summary>
+    /// The asset assigned to the requester when an <see cref="RequestType.AssetLifecycle"/>
+    /// request was fulfilled; null for every other type and until fulfillment. This is the
+    /// request → asset link (by id across aggregates, not a navigation).
+    /// </summary>
+    public Guid? FulfilledAssetId { get; private set; }
+
     /// <summary>The materialized approval chain, in order. Empty until the request is submitted.</summary>
     public IReadOnlyList<ApprovalStep> ApprovalSteps => _approvalSteps.AsReadOnly();
 
@@ -198,11 +205,15 @@ public class Request
     }
 
     /// <summary>
-    /// Fulfill an approved request: <c>Approved → Completed</c>. Synchronous for now;
-    /// the <see cref="RequestStatus.InFulfillment"/> state becomes meaningful when the
-    /// Phase 5 worker performs fulfillment asynchronously.
+    /// Fulfill an approved request: <c>Approved → Completed</c>. The fulfillment action is
+    /// selected by the request type (ADR 0005): an <see cref="RequestType.AssetLifecycle"/>
+    /// request is fulfilled by assigning a concrete asset to the requester, so it must name
+    /// the asset (<paramref name="assignedAssetId"/>); every other type completes without one.
+    /// The caller (handler) performs the asset's own transition and records the link here.
+    /// Synchronous for now; <see cref="RequestStatus.InFulfillment"/> becomes meaningful if a
+    /// worker performs fulfillment asynchronously.
     /// </summary>
-    public void Fulfill(Guid actorId, DateTimeOffset nowUtc)
+    public void Fulfill(Guid actorId, Guid? assignedAssetId, DateTimeOffset nowUtc)
     {
         if (actorId == Guid.Empty)
         {
@@ -214,7 +225,21 @@ public class Request
             throw new DomainException($"Only an approved request can be fulfilled; this request is {Status}.");
         }
 
-        _ = nowUtc; // reserved for the fulfillment timestamp when audit lands (Phase 4)
+        if (Type == RequestType.AssetLifecycle)
+        {
+            if (assignedAssetId is null || assignedAssetId == Guid.Empty)
+            {
+                throw new DomainException("Fulfilling an asset-lifecycle request requires the asset being assigned.");
+            }
+
+            FulfilledAssetId = assignedAssetId;
+        }
+        else if (assignedAssetId is not null)
+        {
+            throw new DomainException($"A {Type} request is not fulfilled by assigning an asset.");
+        }
+
+        _ = nowUtc; // the fulfillment time is recorded on the audit entry (in the handler), not the aggregate
         Status = RequestStatus.Completed;
     }
 

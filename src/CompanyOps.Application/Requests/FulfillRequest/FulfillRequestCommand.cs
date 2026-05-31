@@ -5,7 +5,10 @@ namespace CompanyOps.Application.Requests.FulfillRequest;
 /// worker takes this over asynchronously.
 /// </summary>
 /// <remarks>
-/// <paramref name="ActorId"/> records who fulfilled it — the pre-auth bridge, replaced
-/// by the authenticated principal in Phase 3.
+/// <paramref name="ActorId"/> records who fulfilled it — derived from the authenticated
+/// principal in the Api, never the request body.
+/// <paramref name="AssignedAssetId"/> is the in-stock asset IT assigns to the requester when
+/// fulfilling an asset-lifecycle request; it must be null for every other type (enforced in
+/// the Domain).
 /// </remarks>
-public sealed record FulfillRequestCommand(Guid RequestId, Guid ActorId);
+public sealed record FulfillRequestCommand(Guid RequestId, Guid ActorId, Guid? AssignedAssetId = null);
