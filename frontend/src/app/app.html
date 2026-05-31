@@ -44,6 +44,10 @@
         </button>
         <mat-menu #accountMenu="matMenu">
           <div class="account-name">{{ auth.userName() }}</div>
+          <a mat-menu-item routerLink="/settings">
+            <mat-icon>settings</mat-icon>
+            <span>Settings</span>
+          </a>
           <button mat-menu-item (click)="auth.logout()">
             <mat-icon>logout</mat-icon>
             <span>Sign out</span>
