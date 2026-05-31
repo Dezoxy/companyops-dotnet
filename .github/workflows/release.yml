@@ -124,11 +124,20 @@ jobs:
           SSH_PUBLIC_KEY: ${{ secrets.VM_SSH_PUBLIC_KEY }}
           ALLOWED_SSH_CIDR: ${{ vars.ALLOWED_SSH_CIDR }}
           CI_SSH_CIDR: ${{ steps.ip.outputs.cidr }}
+          # Optional overrides — set the VM_LOCATION / VM_SIZE repo variables to flip region or
+          # size without a code change (e.g. when a region hits SkuNotAvailable capacity limits).
+          # Empty (unset) → Terraform uses its defaults (westeurope / Standard_B2as_v2).
+          VM_LOCATION: ${{ vars.VM_LOCATION }}
+          VM_SIZE: ${{ vars.VM_SIZE }}
         run: |
+          extra=()
+          [ -n "${VM_LOCATION}" ] && extra+=(-var "location=${VM_LOCATION}")
+          [ -n "${VM_SIZE}" ] && extra+=(-var "vm_size=${VM_SIZE}")
           terraform apply -auto-approve -input=false \
             -var="ssh_public_key=${SSH_PUBLIC_KEY}" \
             -var="allowed_ssh_cidr=${ALLOWED_SSH_CIDR}" \
-            -var="ci_ssh_cidr=${CI_SSH_CIDR}"
+            -var="ci_ssh_cidr=${CI_SSH_CIDR}" \
+            "${extra[@]}"
           echo "public_ip=$(terraform output -raw public_ip)" >> "$GITHUB_OUTPUT"
 
       - name: Install Ansible + collections
