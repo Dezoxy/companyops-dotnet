@@ -102,9 +102,10 @@ asset (an intentional central-IT model).
 
 Reads use the `ReadAssets` policy (IT Admin + Auditor); writes use `ManageAssets` (IT Admin).
 Every lifecycle transition is audited via `AuditLog.ForAsset` (target type `"Asset"`) — the
-asset's history, also surfaced in `GET /audit-logs`. Open follow-ups: capturing the affected
-holder's id on assign/reclaim audit entries ("who held it"), and a 409 (not 500) on a
-duplicate tag.
+asset's history, also surfaced in `GET /audit-logs`. Each custody change also records **who
+held it** (`AffectedUserId` — the assignee on assign, the prior holder on reclaim / send-to-
+repair / retire, captured before the transition clears it), surfaced in the asset history.
+Open follow-up: a 409 (not 500) on a duplicate tag.
 
 There is a **second path to `Asset.Assign`** (Phase 16c): when IT Admin fulfils an
 **AssetLifecycle** request, the assignment happens through the request flow rather than the
@@ -183,10 +184,10 @@ attempt count, error text) — **never the event payload**. Read-only — no mut
   same transaction** as the state change — no approved-but-unaudited request. No
   write/update/delete API path; reads go through `GET /audit-logs` (Auditor + IT Admin).
 - Records who (`ActorId` = `sub`) / what (`AuditAction`) / when / old→new status /
-  affected object (`TargetType`+`TargetId`) / source IP for create, submit, approve, reject,
-  fulfill, cancel. The source IP is stamped by the audit writer from the request context (null for
-  Worker-driven outcomes, which have no HTTP request); behind the edge it's the real client IP
-  (ForwardedHeaders).
+  affected object (`TargetType`+`TargetId`) / affected holder (`AffectedUserId`, on asset
+  custody changes) / source IP for create, submit, approve, reject, fulfill, cancel. The source IP
+  is stamped by the audit writer from the request context (null for Worker-driven outcomes, which
+  have no HTTP request); behind the edge it's the real client IP (ForwardedHeaders).
 - Worker-driven outcomes (budget committed / asset reserved, Phase 6) have no human
   principal, so they record the **reserved system actor**
   `ffffffff-ffff-ffff-ffff-ffffffffffff` (`WellKnownActors.SystemWorker`) — never assign

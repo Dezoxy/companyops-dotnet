@@ -33,6 +33,14 @@ public sealed class AuditLog
     /// </summary>
     public string? SourceIp { get; private set; }
 
+    /// <summary>
+    /// The user the action affected beyond the actor — for an asset custody change, the assignee on
+    /// assign or the prior holder on reclaim / send-to-repair / retire. Null where not applicable.
+    /// Lets the asset history answer "who held it" without replaying the whole trail. Recorded at
+    /// creation by the factory (unlike <see cref="SourceIp"/>, which is request-context metadata).
+    /// </summary>
+    public Guid? AffectedUserId { get; private set; }
+
     // Required by EF Core's materializer; not for application use.
     private AuditLog()
     {
@@ -46,7 +54,8 @@ public sealed class AuditLog
         string targetType,
         Guid targetId,
         string? fromStatus,
-        string? toStatus)
+        string? toStatus,
+        Guid? affectedUserId = null)
     {
         Id = id;
         OccurredAtUtc = occurredAtUtc;
@@ -56,6 +65,7 @@ public sealed class AuditLog
         TargetId = targetId;
         FromStatus = fromStatus;
         ToStatus = toStatus;
+        AffectedUserId = affectedUserId;
     }
 
     /// <summary>
@@ -113,6 +123,8 @@ public sealed class AuditLog
     /// <summary>
     /// Record an action against an <see cref="Asset"/>. <paramref name="fromStatus"/> is the
     /// status before the action (null for registration); <paramref name="toStatus"/> after.
+    /// <paramref name="affectedUserId"/> is the holder the action concerns — the assignee on
+    /// assign, or the prior holder on reclaim / send-to-repair / retire — null where none.
     /// </summary>
     public static AuditLog ForAsset(
         AuditAction action,
@@ -120,7 +132,8 @@ public sealed class AuditLog
         Guid actorId,
         AssetStatus? fromStatus,
         AssetStatus toStatus,
-        DateTimeOffset nowUtc)
+        DateTimeOffset nowUtc,
+        Guid? affectedUserId = null)
     {
         if (actorId == Guid.Empty)
         {
@@ -140,7 +153,8 @@ public sealed class AuditLog
             "Asset",
             assetId,
             fromStatus?.ToString(),
-            toStatus.ToString());
+            toStatus.ToString(),
+            affectedUserId);
     }
 
     /// <summary>

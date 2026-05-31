@@ -84,18 +84,18 @@ public sealed class AssetConsoleTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task GetHistory_RecordsRegisterAndAssign()
+    public async Task GetHistory_RecordsRegisterAndAssign_SurfacingTheHolder()
     {
         var client = await ItAdminAsync();
         var id = await RegisterAssetAsync("AST-HIST-1");
-        await client.PostAsJsonAsync($"/assets/{id}/assign", new { userId = Guid.NewGuid() });
+        var holder = Guid.NewGuid();
+        await client.PostAsJsonAsync($"/assets/{id}/assign", new { userId = holder });
 
-        var actions = (await client.GetFromJsonAsync<List<AssetHistoryResponse>>($"/assets/{id}/history"))!
-            .Select(e => e.Action)
-            .ToList();
+        var history = (await client.GetFromJsonAsync<List<AssetHistoryResponse>>($"/assets/{id}/history"))!;
 
-        Assert.Contains("AssetRegistered", actions);
-        Assert.Contains("AssetAssigned", actions);
+        Assert.Contains(history, e => e.Action == "AssetRegistered");
+        var assigned = Assert.Single(history, e => e.Action == "AssetAssigned");
+        Assert.Equal(holder, assigned.AffectedUserId); // the history surfaces who held it, end-to-end through EF
     }
 
     [Fact]
@@ -117,5 +117,5 @@ public sealed class AssetConsoleTests(ApiFactory factory)
         Guid? AssignedToId,
         DateTimeOffset CreatedAtUtc);
 
-    private sealed record AssetHistoryResponse(string Action, string? FromStatus, string? ToStatus);
+    private sealed record AssetHistoryResponse(string Action, string? FromStatus, string? ToStatus, Guid? AffectedUserId);
 }

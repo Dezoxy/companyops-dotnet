@@ -54,7 +54,8 @@ public sealed class FulfillRequestHandler(
 
             var assetFrom = asset.Status;
             asset.Assign(request.RequesterId, now); // throws if the asset is not in stock
-            auditLogger.Add(AuditLog.ForAsset(AuditAction.AssetAssigned, asset.Id, command.ActorId, assetFrom, asset.Status, now));
+            // The holder is the requester the asset is assigned to (the actor is the fulfilling IT Admin).
+            auditLogger.Add(AuditLog.ForAsset(AuditAction.AssetAssigned, asset.Id, command.ActorId, assetFrom, asset.Status, now, request.RequesterId));
         }
         else
         {

@@ -22,8 +22,9 @@ public sealed class ReclaimAssetHandler(
 
         var now = timeProvider.GetUtcNow();
         var fromStatus = asset.Status;
+        var priorHolder = asset.AssignedToId; // who held it — captured before the transition clears it
         asset.Reclaim(now);
-        auditLogger.Add(AuditLog.ForAsset(AuditAction.AssetReclaimed, asset.Id, command.ActorId, fromStatus, asset.Status, now));
+        auditLogger.Add(AuditLog.ForAsset(AuditAction.AssetReclaimed, asset.Id, command.ActorId, fromStatus, asset.Status, now, priorHolder));
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return AssetDto.FromDomain(asset);
@@ -46,8 +47,9 @@ public sealed class SendAssetToRepairHandler(
 
         var now = timeProvider.GetUtcNow();
         var fromStatus = asset.Status;
+        var priorHolder = asset.AssignedToId; // null unless it was assigned — records who it was taken from
         asset.SendToRepair(now);
-        auditLogger.Add(AuditLog.ForAsset(AuditAction.AssetSentToRepair, asset.Id, command.ActorId, fromStatus, asset.Status, now));
+        auditLogger.Add(AuditLog.ForAsset(AuditAction.AssetSentToRepair, asset.Id, command.ActorId, fromStatus, asset.Status, now, priorHolder));
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return AssetDto.FromDomain(asset);
@@ -94,8 +96,9 @@ public sealed class RetireAssetHandler(
 
         var now = timeProvider.GetUtcNow();
         var fromStatus = asset.Status;
+        var priorHolder = asset.AssignedToId; // null unless it was assigned — records who it was taken from
         asset.Retire(now);
-        auditLogger.Add(AuditLog.ForAsset(AuditAction.AssetRetired, asset.Id, command.ActorId, fromStatus, asset.Status, now));
+        auditLogger.Add(AuditLog.ForAsset(AuditAction.AssetRetired, asset.Id, command.ActorId, fromStatus, asset.Status, now, priorHolder));
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return AssetDto.FromDomain(asset);
