@@ -61,25 +61,24 @@ public sealed class RequestsController : ControllerBase
         [FromServices] ListRequestsHandler handler,
         CancellationToken cancellationToken)
     {
-        // Read scope mirrors the authorization model (docs/security.md): the global/oversight
-        // roles see everything; a Manager sees their department (what they can act on); an
-        // Employee sees only their own. The API is the authority — the SPA renders what it gets.
-        ListRequestsQuery query;
+        var (requesterId, departmentId) = ReadScope();
+        var result = await handler.HandleAsync(new ListRequestsQuery(requesterId, departmentId), cancellationToken);
+        return Ok(result);
+    }
+
+    // Read scope from the principal's role (docs/security.md): the global/oversight roles see
+    // everything; a Manager sees their department (what they can act on); an Employee only their
+    // own. Shared by the list and the single-request read; the API is the authority.
+    private (Guid? RequesterId, Guid? DepartmentId) ReadScope()
+    {
         if (User.IsInRole(Roles.Finance) || User.IsInRole(Roles.ItAdmin) || User.IsInRole(Roles.Auditor))
         {
-            query = new ListRequestsQuery();
-        }
-        else if (User.IsInRole(Roles.Manager))
-        {
-            query = new ListRequestsQuery(DepartmentId: User.GetDepartmentId());
-        }
-        else
-        {
-            query = new ListRequestsQuery(RequesterId: User.GetUserId());
+            return (null, null);
         }
 
-        var result = await handler.HandleAsync(query, cancellationToken);
-        return Ok(result);
+        return User.IsInRole(Roles.Manager)
+            ? (null, User.GetDepartmentId())
+            : (User.GetUserId(), null);
     }
 
     [HttpGet("{id:guid}")]
@@ -90,7 +89,8 @@ public sealed class RequestsController : ControllerBase
         [FromServices] GetRequestByIdHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.HandleAsync(new GetRequestByIdQuery(id), cancellationToken);
+        var (requesterId, departmentId) = ReadScope();
+        var result = await handler.HandleAsync(new GetRequestByIdQuery(id, requesterId, departmentId), cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }
 

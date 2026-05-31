@@ -65,16 +65,17 @@ their Employee role (roles compose — resolves the earlier Create TODO).
 | Reject — `…/reject` | ✗ | ✓ dept, stage | ✓ stage | ✗ | ✗ |
 | Fulfill — `…/fulfill` | ✗ | ✗ | ✗ | ✓ stage | ✗ |
 | Cancel — `…/cancel` | ✓ own, Draft/Submitted | TODO dept? | ✗ | ✗ | ✗ |
-| View a request — `GET /requests/{id}` | ✓ (auth) | ✓ (auth) | ✓ | ✓ | ✓ read |
+| View a request — `GET /requests/{id}` | ✓ own | ✓ dept | ✓ all | ✓ all | ✓ all |
 | List requests — `GET /requests` | ✓ own | ✓ dept | ✓ all | ✓ all | ✓ all |
 | View audit log — `GET /audit-logs` | ✗ | ✗ | ✗ | ✓ read | ✓ read |
 
-> **Read scoping:** `GET /requests` is scoped to the caller, mirroring who can act on what — an
-> Employee sees only their own, a Manager their department, and Finance / IT Admin / Auditor see
-> all (Finance approves the global step; IT fulfils any; Auditor oversees). The scope is derived
-> from the principal in the Api and applied in the repository query. **Remaining follow-up:**
-> `GET /requests/{id}` is still authentication-only — a GUID isn't enumerable, but an out-of-scope
-> id should return 404 rather than the record.
+> **Read scoping:** both request reads — `GET /requests` (list) and `GET /requests/{id}` (single)
+> — are scoped to the caller, mirroring who can act on what: an Employee sees only their own, a
+> Manager their department, and Finance / IT Admin / Auditor see all (Finance approves the global
+> step; IT fulfils any; Auditor oversees). The Api derives the scope from the principal's role
+> (`RequestsController.ReadScope`); the list applies it in the repository query, the single read in
+> the handler. An out-of-scope single read returns **404, not 403** — a request's existence isn't
+> revealed to someone not entitled to see it.
 
 ### Asset console (Phase 16)
 
@@ -254,7 +255,7 @@ API ↔ external mock services (Finance/Inventory).
 | **S**poofing | Forged/replayed JWT | OIDC validation (sig/iss/aud/exp), short tokens | ✓ P3 (token lifetime tuning TODO) |
 | **T**ampering | Altering another dept's request (IDOR) | Resource-scoped authz on loaded aggregate | ✓ P3 (Domain dept-scope) |
 | **R**epudiation | "I didn't approve that" | Append-only audit log w/ actor + old→new + source IP | ✓ P4 |
-| **I**nfo disclosure | Leaking entities/PII via API | DTO mapping, least-data responses, authz on reads | DTOs ✓; list read-scoping ✓ (GET-by-id TODO) |
+| **I**nfo disclosure | Leaking entities/PII via API | DTO mapping, least-data responses, authz on reads | DTOs ✓; read-scoping ✓ (list + GET-by-id; out-of-scope → 404) |
 | **D**oS | Flooding write/auth endpoints | Rate limiting, timeouts on external calls | ✓ (per-user/IP rate limit + external-call timeouts/retries) |
 | **E**oP | Auditor or Employee performing privileged action | Policies + domain invariants, deny-by-default | ✓ P3 |
 | Supply chain | Vulnerable NuGet/npm dep, leaked secret | gitleaks + native secret scanning/push protection + `dotnet list --vulnerable` + Dependabot + CodeQL | ✓ P9 |
