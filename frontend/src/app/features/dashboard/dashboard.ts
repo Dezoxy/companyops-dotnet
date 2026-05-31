@@ -37,7 +37,9 @@ export class Dashboard {
     return [
       { label: 'Awaiting approval', value: count('Submitted'), icon: 'pending_actions' },
       { label: 'Approved', value: count('Approved'), icon: 'task_alt' },
-      { label: 'In fulfilment', value: count('InFulfillment'), icon: 'inventory_2' },
+      // 'Rejected' rather than 'InFulfillment': fulfillment is synchronous (Approved → Completed),
+      // so InFulfillment is never reached and would always read 0.
+      { label: 'Rejected', value: count('Rejected'), icon: 'cancel' },
       { label: 'Completed', value: count('Completed'), icon: 'check_circle' },
     ];
   });

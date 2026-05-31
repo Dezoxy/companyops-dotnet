@@ -10,6 +10,10 @@ The goal of this project is to build an enterprise-style internal business syste
 
 This is not meant to be a simple CRUD demo.
 
+> **Status:** all 20 phases are complete — the build is feature-complete (see the
+> [README](../README.md#status) and the git history). The per-phase `✅` markers in the sections
+> below were not all backfilled; treat the README's status section as canonical.
+
 The purpose is to demonstrate that I understand how backend systems work in a real company environment.
 
 At its core CompanyOps is **one configurable approval-workflow engine**.

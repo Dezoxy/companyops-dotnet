@@ -18,9 +18,9 @@ Allowed here:
 
 ## Conventions for CompanyOps
 
-- One **vertical slice per business action** (`SubmitRequest`,
-  `ApproveRequestByManager`, `ApproveRequestByFinance`, `RejectRequest`,
-  `FulfillRequest`, `CancelRequest`). Keep command + validator + handler together.
+- One **vertical slice per business action** (`CreateRequest`, `SubmitRequest`,
+  `ApproveRequest`, `RejectRequest`, `FulfillRequest`) — one step-driven `approve`/`reject`,
+  not role-named handlers (ADR 0006). Keep command + validator + handler together.
 - Handlers orchestrate: load aggregate via a repository port → call the domain
   method (which enforces the rule) → persist → record the audit entry → return.
 - Authorization intent is expressed here (which role/policy a use case requires);

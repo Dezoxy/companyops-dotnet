@@ -162,7 +162,7 @@ public class Request
             throw new DomainException($"The approval chain for '{Type}' has no steps; a request cannot be submitted without an approver.");
         }
 
-        _ = nowUtc; // reserved for SubmittedAtUtc when audit lands (Phase 4)
+        _ = nowUtc; // the submission time is recorded on the audit entry (in the handler), not the aggregate
         Status = RequestStatus.Submitted;
     }
 
