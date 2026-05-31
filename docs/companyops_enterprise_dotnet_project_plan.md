@@ -834,8 +834,8 @@ Log in via Keycloak; authenticated, role-aware calls reach the API
 
 Goal:
 
-The core request/approval screens, rebuilt from the Stitch designs in Angular Material
-(via the `stitch-port` skill).
+The core request/approval screens, rebuilt from the Figma designs in Angular Material
+(via the `figma-port` skill).
 
 Tasks:
 

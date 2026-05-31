@@ -249,12 +249,13 @@ ng lint                            # lint (CI enforces this)
   (PG18 volume path, `ValueGeneratedNever` on owned keys, the revert→re-add flow).
 - **new-angular-feature** skill — scaffolds an Angular feature (standalone component +
   service + route + model + guard) in the project's conventions (Angular Material + signals).
-- **Stitch MCP** — the frontend design source ([ADR 0010](docs/decisions/0010-frontend-full-client-angular-material.md)):
-  pull a screen's HTML + screenshot on demand as the visual / information-architecture
-  reference. The UI is rebuilt in Angular Material, not ported from the Tailwind markup.
-- **stitch-port** skill *(planned, Phase 12)* — turn a Stitch screen reference into the
-  matching Angular Material screen (route + component + service + model + spec), themed to the
-  design tokens, with loading/error/empty states.
+- **Figma MCP** — the frontend design source ([ADR 0011](docs/decisions/0011-design-source-figma.md),
+  file `EX9DRVlslQwRgRTPojErC6`): pull a screen's structure (`get_metadata`), screenshot, and
+  exact tokens (`get_variable_defs`) on demand as the visual / information-architecture reference.
+  The UI is rebuilt in Angular Material, not ported from the emitted markup.
+- **figma-port** skill — turn a Figma screen reference into the matching Angular Material screen
+  (route + component + service + model + spec), themed to the design tokens, with
+  loading/error/empty states.
 - Marketplace skills already cover ADRs (`engineering:architecture`), code review
   (`engineering:code-review`), testing strategy (`engineering:testing-strategy`),
   debugging (`engineering:debug`), runbooks (`operations:runbook`), security review

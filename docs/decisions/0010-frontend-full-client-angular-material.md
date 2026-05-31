@@ -1,7 +1,9 @@
 # 10. Frontend — full Angular Material client, expanded phase track
 
 Date: 2026-05-30
-Status: Accepted
+Status: Accepted — design source/tooling updated by [ADR 0011](0011-design-source-figma.md)
+(Figma replaces Stitch; the Material rebuild, phase track, and client-not-authority rule all
+stand). References to "Stitch" / "stitch-port" below are historical.
 
 ## Context
 

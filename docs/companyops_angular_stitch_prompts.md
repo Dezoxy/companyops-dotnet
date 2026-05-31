@@ -2,6 +2,10 @@
 
 This document contains page-by-page prompts for generating the **CompanyOps** Angular frontend design in Google Stitch or a similar UI generation tool.
 
+> **Note ([ADR 0011](decisions/0011-design-source-figma.md)):** the canonical design source is now
+> **Figma** (file `EX9DRVlslQwRgRTPojErC6`), pulled via the Figma MCP. This document is retained as
+> the historical generation prompts and per-page design intent (still useful as an IA reference).
+
 The recommended workflow is:
 
 1. Start with the global app shell / design system prompt.
