@@ -1,6 +1,11 @@
 # Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
-location         = "germanywestcentral" # any EU region: westeurope, northeurope, swedencentral, ...
-vm_size          = "Standard_B2s"       # ~2 GB RAM; bump or use prebuilt images for heavier builds
-admin_username   = "companyops"
+# Only the two below are required (no defaults). location / vm_size / admin_username have defaults
+# in variables.tf — leave them commented so this file can't override the default; uncomment only to
+# override. (Don't pin vm_size to Standard_B2s — it's capacity-restricted in some EU regions; the
+# default Standard_B2as_v2 avoids that.)
 ssh_public_key   = "ssh-ed25519 AAAA...replace-with-your-public-key... you@host"
 allowed_ssh_cidr = "203.0.113.4/32" # YOUR address as a /32 — do not use 0.0.0.0/0
+
+# location       = "germanywestcentral" # any EU region: westeurope, northeurope, swedencentral, ...
+# vm_size        = "Standard_B2as_v2"    # 2 vCPU / 8 GB
+# admin_username = "companyops"
