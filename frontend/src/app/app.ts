@@ -44,6 +44,7 @@ export class App {
     { label: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
     { label: 'Requests', icon: 'description', path: '/requests' },
     { label: 'Approvals', icon: 'task_alt', path: '/approvals', requiredRoles: ['Manager', 'Finance'] },
+    { label: 'Assets', icon: 'inventory_2', path: '/assets', requiredRoles: ['ItAdmin', 'Auditor'] },
     { label: 'Audit log', icon: 'history', path: '/audit', requiredRoles: ['Auditor'] },
   ];
 
