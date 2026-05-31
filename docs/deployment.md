@@ -89,6 +89,7 @@ before Terraform/Ansible touch prod): repo **Settings → Environments → New e
 | Variable | `TFSTATE_STORAGE_ACCOUNT` | the bootstrap storage-account name |
 | Variable | `ALLOWED_SSH_CIDR` | your management IP `/32` (the workflow also adds the runner IP for the run) |
 | Variable | `APP_DOMAIN` `KEYCLOAK_DOMAIN` `ACME_EMAIL` `KC_ADMIN_USER` | your values |
+| Variable *(optional)* | `VM_LOCATION` `VM_SIZE` | override the Azure region / VM size without a code change — defaults are `westeurope` / `Standard_B2as_v2`. Set one if a region returns `SkuNotAvailable` (capacity restrictions), then re-run. |
 
 `gh secret set NAME` / `gh variable set NAME` set these from the CLI.
 

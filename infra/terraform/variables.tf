@@ -1,7 +1,10 @@
 variable "location" {
-  description = "Azure region. Default is an EU region for GDPR data residency."
+  # EU region for GDPR residency. Default westeurope — germanywestcentral hit SkuNotAvailable
+  # capacity restrictions (no placement for this subscription, across SKU families). Override
+  # per-deploy with the VM_LOCATION GitHub variable (no code change) if a region runs short.
+  description = "Azure region (EU). Default westeurope."
   type        = string
-  default     = "germanywestcentral"
+  default     = "westeurope"
 }
 
 variable "prefix" {
