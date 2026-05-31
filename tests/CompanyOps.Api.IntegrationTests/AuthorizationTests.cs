@@ -310,6 +310,51 @@ public sealed class AuthorizationTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task GetComments_OnAnotherUsersRequest_AsEmployee_Returns404()
+    {
+        var salesRequest = await CreateDraftRequestAsAsync("manager.sales"); // Sales dept, not employee.eng's
+        var employee = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
+
+        var response = await employee.GetAsync($"/requests/{salesRequest}/comments");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode); // out of the employee's read scope — thread not revealed
+    }
+
+    [Fact]
+    public async Task AddComment_OnAnotherDepartmentsRequest_AsManager_Returns404()
+    {
+        var salesRequest = await CreateDraftRequestAsAsync("manager.sales"); // Sales dept
+        var engManager = factory.CreateClientWithToken(await factory.GetTokenAsync("manager.eng")); // Engineering manager — passes the policy
+
+        var response = await engManager.PostAsJsonAsync($"/requests/{salesRequest}/comments", new { body = "from another dept" });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode); // out of the manager's department scope — can't comment on what they can't see
+    }
+
+    [Fact]
+    public async Task GetComments_OnDeptRequest_AsManager_Returns200()
+    {
+        var engRequest = await CreateDraftRequestAsync(); // employee.eng, Engineering dept
+        var engManager = factory.CreateClientWithToken(await factory.GetTokenAsync("manager.eng")); // same department
+
+        var response = await engManager.GetAsync($"/requests/{engRequest}/comments");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode); // a manager reads their department's threads (not just blocked cross-dept)
+    }
+
+    [Fact]
+    public async Task GetComments_OnAnyRequest_AsFinance_Returns200()
+    {
+        var engRequest = await CreateDraftRequestAsync(); // employee.eng's Engineering request
+        var finance = factory.CreateClientWithToken(await factory.GetTokenAsync("finance.user"));
+
+        // GetFromJsonAsync throws on a non-success status, so this asserts 200 and the body shape.
+        var thread = await finance.GetFromJsonAsync<List<CommentResponse>>($"/requests/{engRequest}/comments");
+
+        Assert.Empty(thread!); // global read scope: reads the (empty) thread of another department's request
+    }
+
+    [Fact]
     public async Task Cancel_OwnDraft_AsRequester_Returns200_Cancelled()
     {
         var id = await CreateDraftRequestAsync(); // created by employee.eng
@@ -390,6 +435,14 @@ public sealed class AuthorizationTests(ApiFactory factory)
         response.EnsureSuccessStatusCode();
         var created = await response.Content.ReadFromJsonAsync<RequestResponse>();
         return created!.Id;
+    }
+
+    private async Task<Guid> CreateDraftRequestAsAsync(string user)
+    {
+        var client = factory.CreateClientWithToken(await factory.GetTokenAsync(user));
+        var response = await client.PostAsJsonAsync("/requests", new { title = "Cross-scope request", type = "Procurement" });
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<RequestResponse>())!.Id;
     }
 
     private async Task<Guid> CreateSubmittedRequestAsync()

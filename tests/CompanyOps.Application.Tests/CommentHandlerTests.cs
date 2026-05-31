@@ -16,6 +16,7 @@ public class CommentHandlerTests
     private static readonly Guid Requester = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid Department = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private static readonly Guid Author = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    private static readonly Guid Other = Guid.Parse("99999999-9999-9999-9999-999999999999");
 
     private readonly FakeRequestRepository _requests = new();
     private readonly FakeCommentRepository _comments = new();
@@ -54,6 +55,32 @@ public class CommentHandlerTests
         Assert.Null(dto);
         Assert.Empty(_comments.Store);
         Assert.Equal(0, _uow.SaveCount);
+    }
+
+    [Fact]
+    public async Task AddComment_OnRequestOutOfScope_ReturnsNull_DoesNotPersist()
+    {
+        var request = SeedRequest(); // requester == Requester, department == Department
+        var handler = new AddCommentHandler(_requests, _comments, _uow, _clock);
+
+        // Scoped to a different requester — the caller can't see this request, so can't comment on it.
+        var dto = await handler.HandleAsync(new AddCommentCommand(request.Id, Author, "nope", RequesterId: Other));
+
+        Assert.Null(dto);
+        Assert.Empty(_comments.Store);
+        Assert.Equal(0, _uow.SaveCount);
+    }
+
+    [Fact]
+    public async Task ListComments_ForRequestOutOfScope_ReturnsNull()
+    {
+        var request = SeedRequest();
+        var handler = new ListCommentsHandler(_requests, _comments);
+
+        // Scoped to a different department — out of scope reads as not-found, not an empty thread.
+        var result = await handler.HandleAsync(new ListCommentsQuery(request.Id, DepartmentId: Other));
+
+        Assert.Null(result);
     }
 
     [Fact]

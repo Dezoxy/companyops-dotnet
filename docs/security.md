@@ -78,6 +78,8 @@ department's manager, or past the Draft/Submitted stage) is a **400**.
 | Cancel — `…/cancel` | ✓ own, Draft/Submitted | ✓ dept, Draft/Submitted | ✗ | ✗ | ✗ |
 | View a request — `GET /requests/{id}` | ✓ own | ✓ dept | ✓ all | ✓ all | ✓ all |
 | List requests — `GET /requests` | ✓ own | ✓ dept | ✓ all | ✓ all | ✓ all |
+| Read thread — `GET …/comments` | ✓ own | ✓ dept | ✓ all | ✓ all | ✓ all |
+| Comment — `POST …/comments` | ✓ own | ✓ dept | ✓ all | ✓ all | ✗ |
 | View audit log — `GET /audit-logs` | ✗ | ✗ | ✗ | ✓ read | ✓ read |
 
 > **Read scoping:** both request reads — `GET /requests` (list) and `GET /requests/{id}` (single)
@@ -87,6 +89,11 @@ department's manager, or past the Draft/Submitted stage) is a **400**.
 > (`RequestsController.ReadScope`); the list applies it in the repository query, the single read in
 > the handler. An out-of-scope single read returns **404, not 403** — a request's existence isn't
 > revealed to someone not entitled to see it.
+>
+> The **comment thread** (`GET` / `POST /requests/{id}/comments`) shares that same scope (the
+> `RequestReadScope` rule): the thread is scoped to its parent request, so a caller can neither
+> read nor add comments on a request they can't see — out of scope → 404. Commenting additionally
+> requires the `CommentOnRequests` policy, which excludes the read-only Auditor.
 
 ### Asset console (Phase 16)
 

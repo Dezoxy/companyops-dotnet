@@ -14,13 +14,9 @@ public sealed class GetRequestByIdHandler(IRequestRepository requests)
         }
 
         // Out-of-scope reads return not-found (the caller gets a 404), so a request's existence
-        // isn't revealed to someone not entitled to see it. At most one filter is set by the Api.
-        if (query.RequesterId is { } requesterId && request.RequesterId != requesterId)
-        {
-            return null;
-        }
-
-        if (query.DepartmentId is { } departmentId && request.DepartmentId != departmentId)
+        // isn't revealed to someone not entitled to see it (RequestReadScope is shared with the
+        // comment thread). The Api sets at most one filter, from the caller's role.
+        if (RequestReadScope.IsOutOfScope(request, query.RequesterId, query.DepartmentId))
         {
             return null;
         }
