@@ -11,9 +11,12 @@ variable "prefix" {
 }
 
 variable "vm_size" {
-  description = "VM size. Needs ~2 GB+ RAM to build the .NET images on-host; use prebuilt images (GHCR) for smaller VMs — see deployment docs."
+  # Images are pulled from GHCR (ADR 0012), not built on the VM, so no build headroom is needed.
+  # B2as_v2 (AMD, 2 vCPU / 8 GB) over B2s (Intel, 4 GB): different capacity pool — B2s hit a
+  # SkuNotAvailable capacity restriction in germanywestcentral. Swap if your region restricts this one.
+  description = "VM size (2 vCPU). Default Standard_B2as_v2."
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_B2as_v2"
 }
 
 variable "admin_username" {

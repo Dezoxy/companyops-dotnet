@@ -45,6 +45,13 @@ infra/terraform/backend.hcl
 infra/ansible/inventory.ini
 infra/ansible/.vault_pass
 infra/ansible/group_vars/all.yml
+# SSH keys must never be committed — generate them OUTSIDE the repo (~/.ssh). Defensive backstop
+# alongside gitleaks, in case a key gets created inside the tree by accident.
+*_deploy_key
+*_deploy_key.pub
+id_ed25519*
+id_rsa*
+*.pem
 
 # ---- Angular / Node (frontend/) ----
 node_modules/
