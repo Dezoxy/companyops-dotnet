@@ -24,6 +24,10 @@ public class Request
     public string Title { get; private set; } = null!;
     public string? Description { get; private set; }
     public RequestType Type { get; private set; }
+    public RequestPriority Priority { get; private set; }
+
+    /// <summary>Helpdesk classification (incident/service/access). Null for non-helpdesk types.</summary>
+    public RequestCategory? Category { get; private set; }
     public RequestStatus Status { get; private set; }
     public Guid RequesterId { get; private set; }
     public Guid DepartmentId { get; private set; }
@@ -42,6 +46,8 @@ public class Request
         string title,
         string? description,
         RequestType type,
+        RequestPriority priority,
+        RequestCategory? category,
         Guid requesterId,
         Guid departmentId,
         DateTimeOffset createdAtUtc)
@@ -50,6 +56,8 @@ public class Request
         Title = title;
         Description = description;
         Type = type;
+        Priority = priority;
+        Category = category;
         Status = RequestStatus.Draft;
         RequesterId = requesterId;
         DepartmentId = departmentId;
@@ -64,6 +72,8 @@ public class Request
         string title,
         string? description,
         RequestType type,
+        RequestPriority priority,
+        RequestCategory? category,
         Guid requesterId,
         Guid departmentId,
         DateTimeOffset nowUtc)
@@ -89,7 +99,24 @@ public class Request
             throw new DomainException("Request must belong to a department.");
         }
 
-        return new Request(Guid.NewGuid(), title, description?.Trim(), type, requesterId, departmentId, nowUtc);
+        // Reject out-of-range enum values (e.g. an integer that maps to no member) at the boundary.
+        if (!Enum.IsDefined(priority))
+        {
+            throw new DomainException($"Unknown request priority '{priority}'.");
+        }
+
+        if (category is not null && !Enum.IsDefined(category.Value))
+        {
+            throw new DomainException($"Unknown request category '{category}'.");
+        }
+
+        // Category classifies helpdesk tickets only; other types must not carry one.
+        if (category is not null && type != RequestType.Helpdesk)
+        {
+            throw new DomainException("Only helpdesk requests can have a category.");
+        }
+
+        return new Request(Guid.NewGuid(), title, description?.Trim(), type, priority, category, requesterId, departmentId, nowUtc);
     }
 
     /// <summary>

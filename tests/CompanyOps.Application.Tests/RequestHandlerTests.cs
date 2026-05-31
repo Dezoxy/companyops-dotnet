@@ -36,7 +36,7 @@ public class RequestHandlerTests
     {
         var handler = new CreateRequestHandler(_requests, _audit, _uow, _clock);
 
-        var dto = await handler.HandleAsync(new CreateRequestCommand("Laptop", null, RequestType.Procurement, Requester, Department));
+        var dto = await handler.HandleAsync(new CreateRequestCommand("Laptop", null, RequestType.Procurement, RequestPriority.Medium, null, Requester, Department));
 
         Assert.Equal("Draft", dto.Status.ToString());
         Assert.True(_requests.Store.ContainsKey(dto.Id));
@@ -50,7 +50,7 @@ public class RequestHandlerTests
     [Fact]
     public async Task Submit_ByRequester_AuditsSubmitted_NoEvent()
     {
-        var request = Request.Create("Laptop", null, RequestType.Procurement, Requester, Department, Now);
+        var request = Request.Create("Laptop", null, RequestType.Procurement, RequestPriority.Medium, null, Requester, Department, Now);
         _requests.Seed(request);
         var handler = new SubmitRequestHandler(_requests, _audit, _uow, _clock);
 
@@ -154,7 +154,7 @@ public class RequestHandlerTests
 
     private static Request Submitted()
     {
-        var request = Request.Create("Laptop", null, RequestType.Procurement, Requester, Department, Now);
+        var request = Request.Create("Laptop", null, RequestType.Procurement, RequestPriority.Medium, null, Requester, Department, Now);
         request.Submit(Requester, Now);
         return request;
     }

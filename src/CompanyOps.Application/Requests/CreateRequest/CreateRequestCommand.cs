@@ -15,5 +15,7 @@ public sealed record CreateRequestCommand(
     string Title,
     string? Description,
     RequestType Type,
+    RequestPriority? Priority,
+    RequestCategory? Category,
     Guid RequesterId,
     Guid DepartmentId);

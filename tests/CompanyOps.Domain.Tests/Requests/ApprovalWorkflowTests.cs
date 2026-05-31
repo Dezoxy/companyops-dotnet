@@ -19,7 +19,7 @@ public class ApprovalWorkflowTests
     private static readonly Guid FinanceId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
     private static Request NewDraft(RequestType type = RequestType.Procurement) =>
-        Request.Create("New laptop", "spec", type, Requester, Department, Now);
+        Request.Create("New laptop", "spec", type, RequestPriority.Medium, null, Requester, Department, Now);
 
     private static Request NewSubmitted()
     {

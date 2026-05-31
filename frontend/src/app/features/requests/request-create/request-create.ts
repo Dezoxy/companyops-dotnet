@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
@@ -12,7 +12,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { RequestsService } from '../requests.service';
-import { REQUEST_TYPE_LABEL, RequestType } from '../requests.models';
+import {
+  REQUEST_CATEGORY_LABEL,
+  REQUEST_PRIORITY_META,
+  REQUEST_TYPE_LABEL,
+  RequestCategory,
+  RequestPriority,
+  RequestType,
+} from '../requests.models';
 
 /** Create a request. Only the API-backed fields (title/type/description) — department comes from
  *  the JWT, and Priority/Cost Center/Approval Path from the mockup aren't in the domain. Two
@@ -44,6 +51,14 @@ export class RequestCreate {
     value: value as RequestType,
     label,
   }));
+  protected readonly priorities = Object.entries(REQUEST_PRIORITY_META).map(([value, meta]) => ({
+    value: value as RequestPriority,
+    label: meta.label,
+  }));
+  protected readonly categories = Object.entries(REQUEST_CATEGORY_LABEL).map(([value, label]) => ({
+    value: value as RequestCategory,
+    label,
+  }));
 
   protected readonly submitting = signal(false);
   protected readonly error = signal(false);
@@ -51,8 +66,25 @@ export class RequestCreate {
   protected readonly form = this.fb.nonNullable.group({
     title: ['', [Validators.required, Validators.maxLength(200)]],
     type: this.fb.nonNullable.control<RequestType | ''>('', Validators.required),
+    priority: this.fb.nonNullable.control<RequestPriority>('Medium', Validators.required),
+    category: this.fb.nonNullable.control<RequestCategory | ''>(''),
     description: [''],
   });
+
+  // Reactive type → drives the conditional Category field (signals over manual change detection).
+  private readonly typeValue = toSignal(this.form.controls.type.valueChanges, {
+    initialValue: this.form.controls.type.value,
+  });
+  protected readonly isHelpdesk = computed(() => this.typeValue() === 'Helpdesk');
+
+  constructor() {
+    // Clear a stale category if the user switches away from Helpdesk (save() also guards).
+    this.form.controls.type.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((type) => {
+      if (type !== 'Helpdesk') {
+        this.form.controls.category.setValue('');
+      }
+    });
+  }
 
   /** Create the request; when `thenSubmit`, chain the submit so it goes straight to approval. */
   protected save(thenSubmit: boolean): void {
@@ -66,8 +98,16 @@ export class RequestCreate {
     this.submitting.set(true);
     this.error.set(false);
 
-    const { title, type, description } = this.form.getRawValue();
-    const created$ = this.service.create({ title, type: type as RequestType, description: description || null });
+    const { title, type, priority, category, description } = this.form.getRawValue();
+    const requestType = type as RequestType;
+    const created$ = this.service.create({
+      title,
+      type: requestType,
+      description: description || null,
+      priority,
+      // Category is helpdesk-only; never send one for other types.
+      category: requestType === 'Helpdesk' ? category || null : null,
+    });
     const flow$ = thenSubmit ? created$.pipe(switchMap((request) => this.service.submit(request.id))) : created$;
 
     flow$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({

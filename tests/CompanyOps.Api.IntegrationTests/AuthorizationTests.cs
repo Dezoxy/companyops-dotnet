@@ -35,6 +35,8 @@ public sealed class AuthorizationTests(ApiFactory factory)
         Assert.Equal("Draft", created!.Status);
         Assert.Equal(EmployeeEngSub, created.RequesterId);       // from the JWT sub, not the body
         Assert.Equal(EngineeringDept, created.DepartmentId);     // from the department claim
+        Assert.Equal("Medium", created.Priority);                // defaulted when the client omits it
+        Assert.Null(created.Category);                           // category is helpdesk-only
     }
 
     [Fact]
@@ -211,6 +213,34 @@ public sealed class AuthorizationTests(ApiFactory factory)
         Assert.Equal(2, entries.Count(a => a == "RequestApproved"));
     }
 
+    [Fact]
+    public async Task Create_Helpdesk_WithPriorityAndCategory_RoundTrips()
+    {
+        var client = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
+
+        var response = await client.PostAsJsonAsync(
+            "/requests",
+            new { title = "VPN access", type = "Helpdesk", priority = "High", category = "AccessRequest" });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var created = await response.Content.ReadFromJsonAsync<RequestResponse>();
+        Assert.Equal("High", created!.Priority);
+        Assert.Equal("AccessRequest", created.Category);
+    }
+
+    [Fact]
+    public async Task Create_NonHelpdesk_WithCategory_Returns400()
+    {
+        var client = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
+
+        // Category is helpdesk-only; the domain rejects it on a procurement request.
+        var response = await client.PostAsJsonAsync(
+            "/requests",
+            new { title = "Laptop", type = "Procurement", category = "Incident" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     private async Task<Guid> CreateDraftRequestAsync()
     {
         var client = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
@@ -239,7 +269,7 @@ public sealed class AuthorizationTests(ApiFactory factory)
         return id;
     }
 
-    private sealed record RequestResponse(Guid Id, string Status, Guid RequesterId, Guid DepartmentId);
+    private sealed record RequestResponse(Guid Id, string Status, string Priority, string? Category, Guid RequesterId, Guid DepartmentId);
 
     private sealed record AuditLogResponse(string Action, Guid TargetId, string? FromStatus, string? ToStatus);
 }

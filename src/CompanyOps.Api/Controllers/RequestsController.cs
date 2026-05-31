@@ -36,7 +36,15 @@ public sealed class RequestsController : ControllerBase
         CancellationToken cancellationToken)
     {
         // Requester and department come from the authenticated principal, never the body.
-        var command = new CreateRequestCommand(body.Title, body.Description, body.Type, User.GetUserId(), User.GetDepartmentId());
+        // Priority/category pass through as-is; the Application layer applies the default.
+        var command = new CreateRequestCommand(
+            body.Title,
+            body.Description,
+            body.Type,
+            body.Priority,
+            body.Category,
+            User.GetUserId(),
+            User.GetDepartmentId());
         var created = await handler.HandleAsync(command, cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
