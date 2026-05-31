@@ -39,4 +39,8 @@ internal static class Policies
 
     /// <summary>Read the asset inventory + history — IT Admin and the read-only Auditor.</summary>
     public const string ReadAssets = "ReadAssets";
+
+    /// <summary>Read aggregate reports / analytics — the oversight roles (Manager, Finance, IT
+    /// Admin, Auditor). Plain Employees see only their own requests, not org-wide analytics.</summary>
+    public const string ReadReports = "ReadReports";
 }

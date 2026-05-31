@@ -1,0 +1,57 @@
+<header class="page-head">
+  <div>
+    <h1>Reports & Analytics</h1>
+    <p>Aggregate breakdowns across all requests and assets.</p>
+  </div>
+  <button mat-stroked-button (click)="refresh()" [disabled]="loading()">
+    <mat-icon>refresh</mat-icon>
+    Refresh
+  </button>
+</header>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+@if (error()) {
+  <mat-card appearance="outlined" class="state">
+    <mat-icon class="state-icon" aria-hidden="true">error_outline</mat-icon>
+    <p>Couldn't load reports.</p>
+    <button mat-stroked-button (click)="refresh()">Try again</button>
+  </mat-card>
+} @else if (reports().length > 0) {
+  <section class="report-grid">
+    @for (report of reports(); track report.title) {
+      <mat-card appearance="outlined" class="report">
+        <mat-card-header>
+          <mat-card-title>{{ report.title }}</mat-card-title>
+          <mat-card-subtitle>{{ report.total }} total</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          @if (report.total === 0) {
+            <p class="muted">No data yet.</p>
+          } @else {
+            @for (section of report.sections; track section.title) {
+              <section class="breakdown">
+                <h3 class="breakdown-title">{{ section.title }}</h3>
+                @for (row of section.rows; track row.label) {
+                  <div class="bar-row">
+                    <span class="bar-label" [title]="row.label">{{ row.label }}</span>
+                    <div class="bar-track">
+                      <div
+                        class="bar-fill"
+                        [style.width.%]="row.percent"
+                        [style.background-color]="'var(--app-tone-' + row.tone + '-fg)'"
+                      ></div>
+                    </div>
+                    <span class="bar-count">{{ row.count }}</span>
+                  </div>
+                }
+              </section>
+            }
+          }
+        </mat-card-content>
+      </mat-card>
+    }
+  </section>
+}
