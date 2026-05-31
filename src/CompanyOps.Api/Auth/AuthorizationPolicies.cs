@@ -43,4 +43,8 @@ internal static class Policies
     /// <summary>Read aggregate reports / analytics — the oversight roles (Manager, Finance, IT
     /// Admin, Auditor). Plain Employees see only their own requests, not org-wide analytics.</summary>
     public const string ReadReports = "ReadReports";
+
+    /// <summary>Read the integration pipeline's operational status (outbox/worker) — IT Admin
+    /// (operators) and the read-only Auditor (oversight). Business roles don't see plumbing.</summary>
+    public const string ReadIntegrations = "ReadIntegrations";
 }
