@@ -97,6 +97,24 @@ console. It is still IT-Admin-only — gated by `FulfillRequests`, not `ManageAs
 employee who raised the request never gains a write path to `/assets`. Both paths converge on the
 same Domain transition and audit entry.
 
+### Reports & Analytics (Phase 18)
+
+Aggregate, read-only counts for the oversight roles. The numbers are computed in the database
+(`GROUP BY` / `COUNT` — see `ReportingStore`); only the grouped buckets leave Postgres.
+
+| Action (endpoint) | Employee | Manager | Finance | IT Admin | Auditor |
+|---|---|---|---|---|---|
+| Request report — `GET /reports/requests` | ✗ | ✓ read | ✓ read | ✓ read | ✓ read |
+| Asset report — `GET /reports/assets` | ✗ | ✓ read | ✓ read | ✓ read | ✓ read |
+
+All endpoints use one `ReadReports` policy (Manager / Finance / IT Admin / Auditor). Plain
+Employees are excluded — they see only their own requests, not org-wide analytics. The asset
+report exposes aggregate counts only (not the inventory records `ReadAssets` gates), so it is
+open to the same oversight set rather than IT-Admin/Auditor alone. **Reports are global**, not
+department-scoped: a Manager sees org-wide counts, not just their department. Department-scoped
+reporting is a deliberate enterprise-optional follow-up (it would mirror the per-step department
+check already applied to approvals). Read-only — no mutation, no audit entry.
+
 **Hard invariants (must always hold):**
 - Auditor has **no** mutating path anywhere.
 - Manager actions are **department-scoped** — a manager cannot act on another

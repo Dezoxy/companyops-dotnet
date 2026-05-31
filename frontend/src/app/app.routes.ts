@@ -36,6 +36,14 @@ export const routes: Routes = [
     canActivate: [roleGuard('Auditor')],
     loadComponent: () => import('./features/audit/audit-log').then((m) => m.AuditLog),
   },
+  // Reports & Analytics: aggregate read-only views for the oversight roles. The API enforces
+  // ReadReports (Manager/Finance/IT Admin/Auditor); this gate is UX.
+  {
+    path: 'reports',
+    title: 'Reports · CompanyOps',
+    canActivate: [roleGuard('Manager', 'Finance', 'ItAdmin', 'Auditor')],
+    loadComponent: () => import('./features/reports/reports').then((m) => m.Reports),
+  },
   // Asset console: reads admit IT Admin + the read-only Auditor (docs/security.md); writes
   // are IT-Admin-only and the API re-checks, so the UI hides write actions for the Auditor.
   {

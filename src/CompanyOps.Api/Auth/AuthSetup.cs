@@ -68,7 +68,9 @@ public static class AuthSetup
             .AddPolicy(Policies.CommentOnRequests, p => p.RequireRole(Roles.Employee, Roles.Manager, Roles.Finance, Roles.ItAdmin))
             .AddPolicy(Policies.ReadAuditLog, p => p.RequireRole(Roles.Auditor))
             .AddPolicy(Policies.ManageAssets, p => p.RequireRole(Roles.ItAdmin))
-            .AddPolicy(Policies.ReadAssets, p => p.RequireRole(Roles.ItAdmin, Roles.Auditor));
+            .AddPolicy(Policies.ReadAssets, p => p.RequireRole(Roles.ItAdmin, Roles.Auditor))
+            // Aggregate analytics for the oversight roles; plain Employees are excluded.
+            .AddPolicy(Policies.ReadReports, p => p.RequireRole(Roles.Manager, Roles.Finance, Roles.ItAdmin, Roles.Auditor));
 
         return services;
     }

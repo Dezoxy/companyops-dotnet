@@ -1,5 +1,6 @@
 using CompanyOps.Application.Assets;
 using CompanyOps.Application.Auditing.ListAuditLogs;
+using CompanyOps.Application.Reports;
 using CompanyOps.Application.Requests.ApproveRequest;
 using CompanyOps.Application.Requests.Comments.AddComment;
 using CompanyOps.Application.Requests.Comments.ListComments;
@@ -43,6 +44,9 @@ public static class DependencyInjection
         services.AddScoped<ListAssetsHandler>();
         services.AddScoped<GetAssetByIdHandler>();
         services.AddScoped<GetAssetHistoryHandler>();
+
+        services.AddScoped<GetRequestReportHandler>();
+        services.AddScoped<GetAssetReportHandler>();
         return services;
     }
 }
