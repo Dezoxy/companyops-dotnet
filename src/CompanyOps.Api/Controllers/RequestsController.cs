@@ -119,7 +119,8 @@ public sealed class RequestsController : ControllerBase
         [FromServices] CancelRequestHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.HandleAsync(new CancelRequestCommand(id, User.GetUserId()), cancellationToken);
+        var command = new CancelRequestCommand(id, User.GetUserId(), User.GetApproverRoles(), User.GetDepartmentId());
+        var result = await handler.HandleAsync(command, cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }
 

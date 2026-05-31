@@ -339,7 +339,7 @@ public class ApprovalWorkflowTests
     {
         var request = NewDraft();
 
-        request.Cancel(Requester, Now);
+        request.Cancel(Requester, [], Department, Now); // requester needs no role
 
         Assert.Equal(RequestStatus.Cancelled, request.Status);
     }
@@ -349,17 +349,56 @@ public class ApprovalWorkflowTests
     {
         var request = NewSubmitted();
 
-        request.Cancel(Requester, Now);
+        request.Cancel(Requester, [], Department, Now);
 
         Assert.Equal(RequestStatus.Cancelled, request.Status);
     }
 
     [Fact]
-    public void Cancel_ByNonRequester_ThrowsDomainException()
+    public void Cancel_SubmittedByDepartmentManager_SetsCancelled()
+    {
+        var request = NewSubmitted(); // department == Department
+
+        request.Cancel(ManagerId, [ApproverRole.Manager], Department, Now); // a manager of the same department
+
+        Assert.Equal(RequestStatus.Cancelled, request.Status);
+    }
+
+    [Fact]
+    public void Cancel_DraftByDepartmentManager_SetsCancelled()
     {
         var request = NewDraft();
 
-        Assert.Throws<DomainException>(() => request.Cancel(ManagerId, Now));
+        request.Cancel(ManagerId, [ApproverRole.Manager], Department, Now);
+
+        Assert.Equal(RequestStatus.Cancelled, request.Status);
+    }
+
+    [Fact]
+    public void Cancel_ByManagerOfAnotherDepartment_ThrowsDomainException()
+    {
+        var request = NewSubmitted(); // department == Department
+
+        // A manager, but of a different department — department oversight doesn't reach here.
+        Assert.Throws<DomainException>(() => request.Cancel(ManagerId, [ApproverRole.Manager], OtherDepartment, Now));
+    }
+
+    [Fact]
+    public void Cancel_ByFinanceInDepartment_ThrowsDomainException()
+    {
+        var request = NewSubmitted();
+
+        // Finance (even same department) cannot cancel — only requester or department manager.
+        Assert.Throws<DomainException>(() => request.Cancel(FinanceId, [ApproverRole.Finance], Department, Now));
+    }
+
+    [Fact]
+    public void Cancel_ByUnrelatedActor_ThrowsDomainException()
+    {
+        var request = NewDraft();
+
+        // Not the requester and holds no approver role → cannot cancel someone else's request.
+        Assert.Throws<DomainException>(() => request.Cancel(ManagerId, [], Department, Now));
     }
 
     [Fact]
@@ -370,6 +409,6 @@ public class ApprovalWorkflowTests
         request.Approve(FinanceId, [ApproverRole.Finance], OtherDepartment, Now); // now Approved
 
         // Cancellation is only allowed before approval completes.
-        Assert.Throws<DomainException>(() => request.Cancel(Requester, Now));
+        Assert.Throws<DomainException>(() => request.Cancel(Requester, [], Department, Now));
     }
 }

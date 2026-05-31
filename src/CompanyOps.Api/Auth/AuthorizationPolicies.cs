@@ -21,8 +21,9 @@ internal static class Policies
     public const string CreateRequests = "CreateRequests";
     public const string SubmitRequests = "SubmitRequests";
 
-    /// <summary>Cancel a request — the requester (Employee); the Domain enforces own + the
-    /// Draft/Submitted stage.</summary>
+    /// <summary>Cancel a request — the requester (Employee) or a department Manager; the Domain
+    /// enforces the fine-grained rule (own request, or manager of the request's department) plus
+    /// the Draft/Submitted stage on the loaded aggregate.</summary>
     public const string CancelRequests = "CancelRequests";
 
     /// <summary>Approve or reject the current step — Manager or Finance (the domain

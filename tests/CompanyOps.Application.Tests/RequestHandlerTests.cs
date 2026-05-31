@@ -211,10 +211,25 @@ public class RequestHandlerTests
         _requests.Seed(request);
         var handler = new CancelRequestHandler(_requests, _audit, _uow, _clock);
 
-        var dto = await handler.HandleAsync(new CancelRequestCommand(request.Id, Requester));
+        var dto = await handler.HandleAsync(new CancelRequestCommand(request.Id, Requester, [], Department));
 
         Assert.Equal("Cancelled", dto!.Status.ToString());
         Assert.Contains(_audit.Entries, e => e.Action == AuditAction.RequestCancelled && e.TargetId == request.Id);
+        Assert.Equal(1, _uow.SaveCount);
+    }
+
+    [Fact]
+    public async Task Cancel_SubmittedByDepartmentManager_AuditsCancelled()
+    {
+        var request = Submitted(); // requester == Requester, department == Department
+        _requests.Seed(request);
+        var handler = new CancelRequestHandler(_requests, _audit, _uow, _clock);
+
+        // A manager of the request's department cancels it — the handler threads role + department through.
+        var dto = await handler.HandleAsync(new CancelRequestCommand(request.Id, ManagerId, [ApproverRole.Manager], Department));
+
+        Assert.Equal("Cancelled", dto!.Status.ToString());
+        Assert.Contains(_audit.Entries, e => e.Action == AuditAction.RequestCancelled && e.ActorId == ManagerId);
         Assert.Equal(1, _uow.SaveCount);
     }
 
@@ -223,7 +238,7 @@ public class RequestHandlerTests
     {
         var handler = new CancelRequestHandler(_requests, _audit, _uow, _clock);
 
-        var dto = await handler.HandleAsync(new CancelRequestCommand(Guid.NewGuid(), Requester));
+        var dto = await handler.HandleAsync(new CancelRequestCommand(Guid.NewGuid(), Requester, [], Department));
 
         Assert.Null(dto);
     }

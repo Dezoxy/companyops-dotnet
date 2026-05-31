@@ -56,6 +56,17 @@ rejects a fulfillment that names no asset for this type, or names one for any ot
 Anyone holding the **Employee** role may create requests; Managers/Finance create via
 their Employee role (roles compose — resolves the earlier Create TODO).
 
+**Cancel** (`…/cancel`) *withdraws* a request that hasn't been decided yet (Draft or Submitted) —
+distinct from `…/reject`, which is an approver's decision *on the merits* (carries a reason,
+recorded against the step). The **requester** may cancel their own request; a **department
+Manager** may cancel any request in their department (oversight). The `✗` for Finance / IT Admin /
+Auditor means *not by virtue of those roles* — but a Finance or IT user who raised a request
+themselves cancels it via their **Employee** role, exactly as with create/submit (roles compose).
+The **Auditor** holds no Employee role and is stopped at the policy (403). The API policy admits
+Employee **or** Manager; the Domain enforces the fine-grained rule (own request, or manager of the
+request's department) on the loaded aggregate — a domain rejection (not the requester, not this
+department's manager, or past the Draft/Submitted stage) is a **400**.
+
 | Action (endpoint) | Employee | Manager | Finance | IT Admin | Auditor |
 |---|---|---|---|---|---|
 | Create request — `POST /requests` | ✓ | ✓ (as Employee) | ✓ (as Employee) | ✗ | ✗ |
@@ -64,7 +75,7 @@ their Employee role (roles compose — resolves the earlier Create TODO).
 | Finance step — `…/approve` | ✗ | ✗ | ✓ stage | ✗ | ✗ |
 | Reject — `…/reject` | ✗ | ✓ dept, stage | ✓ stage | ✗ | ✗ |
 | Fulfill — `…/fulfill` | ✗ | ✗ | ✗ | ✓ stage | ✗ |
-| Cancel — `…/cancel` | ✓ own, Draft/Submitted | TODO dept? | ✗ | ✗ | ✗ |
+| Cancel — `…/cancel` | ✓ own, Draft/Submitted | ✓ dept, Draft/Submitted | ✗ | ✗ | ✗ |
 | View a request — `GET /requests/{id}` | ✓ own | ✓ dept | ✓ all | ✓ all | ✓ all |
 | List requests — `GET /requests` | ✓ own | ✓ dept | ✓ all | ✓ all | ✓ all |
 | View audit log — `GET /audit-logs` | ✗ | ✗ | ✗ | ✓ read | ✓ read |
