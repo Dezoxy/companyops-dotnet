@@ -60,7 +60,24 @@ public sealed class RequestsController : ControllerBase
         [FromServices] ListRequestsHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.HandleAsync(new ListRequestsQuery(), cancellationToken);
+        // Read scope mirrors the authorization model (docs/security.md): the global/oversight
+        // roles see everything; a Manager sees their department (what they can act on); an
+        // Employee sees only their own. The API is the authority — the SPA renders what it gets.
+        ListRequestsQuery query;
+        if (User.IsInRole(Roles.Finance) || User.IsInRole(Roles.ItAdmin) || User.IsInRole(Roles.Auditor))
+        {
+            query = new ListRequestsQuery();
+        }
+        else if (User.IsInRole(Roles.Manager))
+        {
+            query = new ListRequestsQuery(DepartmentId: User.GetDepartmentId());
+        }
+        else
+        {
+            query = new ListRequestsQuery(RequesterId: User.GetUserId());
+        }
+
+        var result = await handler.HandleAsync(query, cancellationToken);
         return Ok(result);
     }
 

@@ -25,8 +25,13 @@ internal sealed class FakeRequestRepository : IRequestRepository
     public Task<Request?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_store.GetValueOrDefault(id));
 
-    public Task<IReadOnlyList<Request>> ListAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<Request>>([.. _store.Values]);
+    public Task<IReadOnlyList<Request>> ListAsync(Guid? requesterId, Guid? departmentId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<Request>>(
+        [
+            .. _store.Values
+                .Where(r => requesterId is not { } requester || r.RequesterId == requester)
+                .Where(r => departmentId is not { } department || r.DepartmentId == department),
+        ]);
 }
 
 internal sealed class FakeCommentRepository : ICommentRepository

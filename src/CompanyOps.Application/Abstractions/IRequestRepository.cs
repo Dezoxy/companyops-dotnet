@@ -21,5 +21,10 @@ public interface IRequestRepository
     /// </summary>
     Task<Request?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<Request>> ListAsync(CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Scoped read of requests, newest first. At most one filter is set by the caller:
+    /// <paramref name="requesterId"/> → only that requester's; <paramref name="departmentId"/> →
+    /// only that department's; both null → all. The Api derives the scope from the principal's role.
+    /// </summary>
+    Task<IReadOnlyList<Request>> ListAsync(Guid? requesterId, Guid? departmentId, CancellationToken cancellationToken = default);
 }
