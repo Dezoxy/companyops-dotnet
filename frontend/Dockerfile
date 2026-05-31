@@ -2,8 +2,8 @@
 # Build the Angular client, then serve the static bundle with nginx behind the Traefik edge
 # (ADR 0009/0010). apiBaseUrl is the relative '/api' (same-origin — Traefik strips the prefix and
 # routes to the API), so the only domain-specific value is the OIDC authority. That's a known
-# placeholder substituted at container start from KEYCLOAK_DOMAIN, so one image deploys to any
-# domain (ADR 0012).
+# placeholder substituted at container start from APP_DOMAIN, so one image deploys to any
+# domain (ADR 0012). Keycloak shares the app origin under /auth, so the authority is same-origin.
 FROM node:24-alpine AS build
 WORKDIR /src
 COPY package.json package-lock.json ./

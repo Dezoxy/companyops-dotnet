@@ -1,15 +1,16 @@
 #!/bin/sh
-# Pin the OIDC authority baked into the Angular bundle to this deploy's Keycloak host. The SPA's
-# apiBaseUrl is the relative '/api' (no substitution needed); only the Keycloak authority is
-# domain-specific. Built as the placeholder host 'auth.REPLACE_ME.example' (environment.ts) and
-# replaced here from KEYCLOAK_DOMAIN, so one image deploys to any domain (ADR 0012). Runs via
-# nginx:alpine's /docker-entrypoint.d/ before the server starts.
+# Pin the OIDC authority baked into the Angular bundle to this deploy's domain. Keycloak shares
+# the app's origin under /auth (single-domain deploy), so only the host in the authority URL is
+# deploy-specific; apiBaseUrl is the relative '/api' (no substitution needed). Built with the
+# placeholder host 'app.REPLACE_ME.example' (environment.ts) and replaced here from APP_DOMAIN,
+# so one image deploys to any domain (ADR 0012). Runs via nginx:alpine's /docker-entrypoint.d/
+# before the server starts.
 set -eu
 
-: "${KEYCLOAK_DOMAIN:?KEYCLOAK_DOMAIN is required (the Keycloak host, e.g. auth.example.com)}"
+: "${APP_DOMAIN:?APP_DOMAIN is required (the public host, e.g. app.example.com)}"
 
 # '|' delimiter — domains never contain it. Idempotent: re-running after substitution is a no-op.
 find /usr/share/nginx/html -name '*.js' -exec \
-    sed -i "s|auth\.REPLACE_ME\.example|${KEYCLOAK_DOMAIN}|g" {} +
+    sed -i "s|app\.REPLACE_ME\.example|${APP_DOMAIN}|g" {} +
 
-echo "companyops: pinned OIDC authority host to ${KEYCLOAK_DOMAIN}"
+echo "companyops: pinned OIDC authority host to ${APP_DOMAIN}"

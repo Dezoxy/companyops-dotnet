@@ -1,5 +1,5 @@
 output "public_ip" {
-  description = "VM public IP. Point your APP_DOMAIN and KEYCLOAK_DOMAIN DNS A records here, then run the Ansible playbook against it."
+  description = "VM public IP. Point your APP_DOMAIN DNS A record here (the SPA, API and Keycloak all share it), then run the Ansible playbook against it."
   value       = azurerm_public_ip.this.ip_address
 }
 

@@ -113,7 +113,6 @@ jobs:
           GHCR_OWNER: ci
           COMPANYOPS_VERSION: ci
           APP_DOMAIN: app.example.com
-          KEYCLOAK_DOMAIN: auth.example.com
           ACME_EMAIL: ci@example.com
           POSTGRES_PASSWORD: ci_dummy_not_a_secret
           KC_DB_PASSWORD: ci_dummy_not_a_secret

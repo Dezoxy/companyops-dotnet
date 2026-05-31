@@ -77,7 +77,7 @@ tf-validate: ## Terraform fmt-check + init + validate
 
 prod-config: ## Validate the production Compose file (dummy env)
 	@GHCR_OWNER=ci COMPANYOPS_VERSION=ci \
-	APP_DOMAIN=app.example.com KEYCLOAK_DOMAIN=auth.example.com ACME_EMAIL=ci@example.com \
+	APP_DOMAIN=app.example.com ACME_EMAIL=ci@example.com \
 	POSTGRES_PASSWORD=dummy KC_DB_PASSWORD=dummy RABBITMQ_PASSWORD=dummy \
 	KC_ADMIN_USER=ci KC_ADMIN_PASSWORD=dummy \
 	$(COMPOSE_PROD) config -q && echo "prod compose: valid"
