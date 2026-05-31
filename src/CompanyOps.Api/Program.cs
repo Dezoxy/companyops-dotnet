@@ -5,6 +5,7 @@ using CompanyOps.Api.ErrorHandling;
 using CompanyOps.Api.Observability;
 using CompanyOps.Api.RateLimiting;
 using CompanyOps.Application;
+using CompanyOps.Application.Abstractions;
 using CompanyOps.Infrastructure;
 using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
@@ -56,6 +57,9 @@ builder.Services.AddCompanyOpsRateLimiting(builder.Configuration);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+// API-originated audits record the caller's IP — override the Infrastructure default.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditContext, HttpAuditContext>();
 builder.Services.AddOutboxRelay(); // producer-side: publish the outbox to RabbitMQ
 builder.Services.AddObservability(builder.Configuration, builder.Environment.IsDevelopment());
 

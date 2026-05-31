@@ -34,6 +34,10 @@ internal sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
         builder.Property(a => a.FromStatus).HasMaxLength(50);
         builder.Property(a => a.ToStatus).HasMaxLength(50);
 
+        // Source IP of the triggering request; nullable (worker-written entries have none).
+        // 45 chars covers an IPv6 address (including an IPv4-mapped form).
+        builder.Property(a => a.SourceIp).HasMaxLength(45);
+
         // Common query paths: "history of this request" and "recent activity".
         builder.HasIndex(a => a.TargetId);
         builder.HasIndex(a => a.OccurredAtUtc);

@@ -47,4 +47,17 @@ public class AuditLogTests
         Assert.Throws<DomainException>(
             () => AuditLog.ForRequest(AuditAction.RequestCreated, Guid.Empty, Actor, null, RequestStatus.Draft, Now));
     }
+
+    [Fact]
+    public void StampSource_SetsTheSourceIpWriteOnce()
+    {
+        var entry = AuditLog.ForRequest(AuditAction.RequestCreated, RequestId, Actor, null, RequestStatus.Draft, Now);
+        Assert.Null(entry.SourceIp);
+
+        entry.StampSource("203.0.113.7");
+        Assert.Equal("203.0.113.7", entry.SourceIp);
+
+        entry.StampSource("10.0.0.1"); // write-once — a second stamp is ignored
+        Assert.Equal("203.0.113.7", entry.SourceIp);
+    }
 }

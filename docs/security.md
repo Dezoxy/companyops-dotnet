@@ -171,15 +171,19 @@ attempt count, error text) — **never the event payload**. Read-only — no mut
   same transaction** as the state change — no approved-but-unaudited request. No
   write/update/delete API path; reads go through `GET /audit-logs` (Auditor + IT Admin).
 - Records who (`ActorId` = `sub`) / what (`AuditAction`) / when / old→new status /
-  affected object (`TargetType`+`TargetId`) for create, submit, approve, reject, fulfill.
+  affected object (`TargetType`+`TargetId`) / source IP for create, submit, approve, reject,
+  fulfill, cancel. The source IP is stamped by the audit writer from the request context (null for
+  Worker-driven outcomes, which have no HTTP request); behind the edge it's the real client IP
+  (ForwardedHeaders).
 - Worker-driven outcomes (budget committed / asset reserved, Phase 6) have no human
   principal, so they record the **reserved system actor**
   `ffffffff-ffff-ffff-ffff-ffffffffffff` (`WellKnownActors.SystemWorker`) — never assign
   it to a real user.
-- Correlation id + trace id now flow through logs and traces (Phase 10), so any audited
-  action is traceable end-to-end; persisting them onto the audit record itself (with
-  source IP) is an optional follow-up. DB-level grants so even the app user cannot
-  UPDATE/DELETE `audit_logs` (Phase 11); tamper-evidence / hash chain — enterprise-optional.
+- Correlation id + trace id flow through logs and traces (Phase 10), so any audited action is
+  traceable end-to-end; the source IP is now persisted on the audit record itself (above), while
+  persisting the correlation/trace ids onto it too remains an optional follow-up. DB-level grants
+  so even the app user cannot UPDATE/DELETE `audit_logs` (Phase 11); tamper-evidence / hash chain —
+  enterprise-optional.
 
 ## Secrets handling
 
@@ -249,7 +253,7 @@ API ↔ external mock services (Finance/Inventory).
 |---|---|---|---|
 | **S**poofing | Forged/replayed JWT | OIDC validation (sig/iss/aud/exp), short tokens | ✓ P3 (token lifetime tuning TODO) |
 | **T**ampering | Altering another dept's request (IDOR) | Resource-scoped authz on loaded aggregate | ✓ P3 (Domain dept-scope) |
-| **R**epudiation | "I didn't approve that" | Append-only audit log w/ actor + old→new | ✓ P4 (source IP TODO) |
+| **R**epudiation | "I didn't approve that" | Append-only audit log w/ actor + old→new + source IP | ✓ P4 |
 | **I**nfo disclosure | Leaking entities/PII via API | DTO mapping, least-data responses, authz on reads | DTOs ✓; list read-scoping ✓ (GET-by-id TODO) |
 | **D**oS | Flooding write/auth endpoints | Rate limiting, timeouts on external calls | ✓ (per-user/IP rate limit + external-call timeouts/retries) |
 | **E**oP | Auditor or Employee performing privileged action | Policies + domain invariants, deny-by-default | ✓ P3 |

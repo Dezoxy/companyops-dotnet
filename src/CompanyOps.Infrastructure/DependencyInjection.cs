@@ -30,6 +30,10 @@ public static class DependencyInjection
         services.AddScoped<IReportingStore, ReportingStore>();
         services.AddScoped<IIntegrationStatusStore, IntegrationStatusStore>();
 
+        // Audit provenance: no source IP by default (the Worker/migrator have no HTTP request).
+        // The API overrides this with an HttpContext-backed implementation.
+        services.AddScoped<IAuditContext, NullAuditContext>();
+
         // One AuditLogStore per scope, exposed as both the write and read ports.
         services.AddScoped<AuditLogStore>();
         services.AddScoped<IAuditLogger>(sp => sp.GetRequiredService<AuditLogStore>());
