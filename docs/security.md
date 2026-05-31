@@ -243,14 +243,18 @@ attempt count, error text) — **never the event payload**. Read-only — no mut
   off — the edge owns the redirect.
 - **CORS restricted to the SPA origin** (Phase 13): the API allows only `Cors:AllowedOrigins`
   (dev `http://localhost:4200`; the deployed SPA origin via env), Bearer-token only (no
-  credentials). Verified by an integration test (allowed vs unknown origin).
+  credentials). Verified by an integration test (allowed vs unknown origin). In prod the SPA and
+  API are **same-origin** (both at `APP_DOMAIN`; the SPA calls the relative `/api`, which Traefik
+  strips), so CORS isn't exercised by the SPA there — it stays as defense for any cross-origin tool.
 - **Keycloak client split** (Phase 13): a public **`companyops-spa`** client (Auth Code + PKCE,
   pinned redirect/web origins, audience mapper → `companyops-api`) is separate from the
   **bearer-only `companyops-api`** audience. The dev realm keeps `companyops-api` with ROPC for
   the integration tests; the prod realm makes it bearer-only.
-- TODO (when the SPA is served in prod): a **Content-Security-Policy** on the SPA's responses
-  (script/style/connect-src for the API + Keycloak). Deferred until the SPA is dockerised behind
-  the edge — a CSP on the API/Keycloak routers now would be the wrong target.
+- TODO: a **Content-Security-Policy** on the SPA's responses (script/style/connect-src for self +
+  Keycloak). The prerequisite is now met — the SPA is dockerised and served behind the edge at
+  `APP_DOMAIN` — so this is the next hardening step (a Traefik `headers` middleware on the `spa`
+  router). Not shipped yet because an over-tight CSP silently breaks Angular Material (inline
+  styles) and needs validation against the running app. Tracked in [future-improvements.md](future-improvements.md).
 - TODO (enterprise-optional): split the security knobs keyed on the environment name (e.g.
   `RequireHttpsMetadata`) into explicit config flags so a stray environment value can't
   silently drop a protection.

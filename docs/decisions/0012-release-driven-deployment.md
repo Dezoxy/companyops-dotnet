@@ -29,7 +29,9 @@ cloud-native alternative.
 
 2. **Package: build versioned images in CI, push to GHCR** (GitHub Container Registry —
    locked-stack addition, the container registry). `ghcr.io/<owner>/companyops-{api,worker,
-   fakeexternals}:<version>` (+ `:latest`). Chosen over ACR: free, repo-native, no extra Azure
+   fakeexternals,frontend}:<version>` (+ `:latest`) — the `frontend` image is the Angular SPA
+   served by nginx behind the same edge (same-origin: SPA at `APP_DOMAIN`, API at `/api`).
+   Chosen over ACR: free, repo-native, no extra Azure
    cost; the VM pulls with a read-only token. ACR (managed-identity pull, images inside Azure)
    is the noted upgrade. This **replaces building on the VM** (ADR 0009 §6) — the VM now pulls
    prebuilt images, so deploys are faster and a smaller VM suffices.

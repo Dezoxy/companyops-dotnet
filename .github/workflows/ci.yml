@@ -83,6 +83,8 @@ jobs:
       - uses: actions/checkout@v6
       - name: Build images
         run: docker compose -f infra/docker-compose.yml build
+      - name: Build the frontend image (nginx-served SPA)
+        run: docker build -t companyops-frontend:ci frontend
 
   # Validate the Phase 11 infrastructure-as-code: Terraform, the prod Compose file, the
   # Ansible playbook, and the shell scripts. Independent of the build/test jobs (none applied).
@@ -102,8 +104,8 @@ jobs:
           terraform init -backend=false -input=false
           terraform validate
 
-      - name: ShellCheck infra scripts
-        run: shellcheck infra/backup/*.sh infra/postgres/initdb/*.sh infra/terraform/*.sh
+      - name: ShellCheck infra + container scripts
+        run: shellcheck infra/backup/*.sh infra/postgres/initdb/*.sh infra/terraform/*.sh frontend/docker-entrypoint.sh
 
       - name: Validate prod Compose config
         run: docker compose -f infra/docker-compose.prod.yml config -q

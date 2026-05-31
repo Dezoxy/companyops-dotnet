@@ -1,0 +1,9 @@
+# Keep the build context lean — npm ci reinstalls deps fresh inside the image (host node_modules
+# is platform-specific and must not leak in), and the build produces dist/.angular itself.
+node_modules
+dist
+.angular
+coverage
+*.log
+Dockerfile
+.dockerignore
