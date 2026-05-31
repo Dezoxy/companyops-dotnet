@@ -1,6 +1,6 @@
 ---
 name: new-angular-feature
-description: Scaffold a new Angular feature for the CompanyOps client (the "Enterprise Suite") in the project's conventions — a feature folder with a standalone Angular Material component, a feature service (HTTP + signals), view models, a lazy route, and an optional role guard. Use when adding a screen/feature to frontend/ such as the requests list, request detail, an approval action, the audit log, or any suite screen. To start from a Stitch design, use the stitch-port skill (it builds on this).
+description: Scaffold a new Angular feature for the CompanyOps client (the "Enterprise Suite") in the project's conventions — a feature folder with a standalone Angular Material component, a feature service (HTTP + signals), view models, a lazy route, and an optional role guard. Use when adding a screen/feature to frontend/ such as the requests list, request detail, an approval action, the audit log, or any suite screen. To start from a Figma design, use the figma-port skill (it builds on this).
 ---
 
 # Scaffold an Angular feature (CompanyOps)
@@ -8,8 +8,8 @@ description: Scaffold a new Angular feature for the CompanyOps client (the "Ente
 Create a cohesive, convention-correct feature under `frontend/src/app/features/`.
 Read `frontend/CLAUDE.md` first and match what already exists in `frontend/` — the app shell
 (sidenav + toolbar), the Angular **Material M3 theme** (built from the Precision-Enterprise
-tokens, ADR 0010), and existing features. To begin from a designed Stitch screen, use
-**`stitch-port`**, which wraps this skill.
+tokens, ADR 0010), and existing features. To begin from a designed Figma screen, use
+**`figma-port`**, which wraps this skill.
 
 ## Inputs to confirm
 

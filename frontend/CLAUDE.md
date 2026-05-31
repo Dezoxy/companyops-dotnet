@@ -50,7 +50,7 @@ Phases 12–20. It is a **client, not a product backend**: every screen is a vie
 - Signals/`computed` over manual change detection; render loading / error / empty states.
 - Dev server proxies `/api` to the backend (`proxy.conf.json`) to avoid local CORS; the API sets
   real CORS for deployed origins. (Added with the API-client chunk.)
-- To port a designed screen, use the **`stitch-port`** skill; for a fresh feature,
+- To port a designed screen, use the **`figma-port`** skill; for a fresh feature,
   **`new-angular-feature`**. Run **angular-guardian** on the diff.
 
 ## Commands
