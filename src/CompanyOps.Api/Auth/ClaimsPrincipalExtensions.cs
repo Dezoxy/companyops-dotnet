@@ -16,7 +16,7 @@ public static class ClaimsPrincipalExtensions
         var sub = principal.FindFirstValue("sub");
         return Guid.TryParse(sub, out var id)
             ? id
-            : throw new InvalidOperationException("Authenticated principal has no usable 'sub' claim.");
+            : throw new MissingClaimException("sub");
     }
 
     /// <summary>The actor's department, from the custom <c>department</c> claim.</summary>
@@ -25,7 +25,7 @@ public static class ClaimsPrincipalExtensions
         var dept = principal.FindFirstValue("department");
         return Guid.TryParse(dept, out var id)
             ? id
-            : throw new InvalidOperationException("Authenticated principal has no usable 'department' claim.");
+            : throw new MissingClaimException("department");
     }
 
     /// <summary>
