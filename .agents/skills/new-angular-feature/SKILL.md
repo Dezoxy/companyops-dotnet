@@ -6,7 +6,7 @@ description: Scaffold a new Angular feature for the CompanyOps client (the "Ente
 # Scaffold an Angular feature (CompanyOps)
 
 Create a cohesive, convention-correct feature under `frontend/src/app/features/`.
-Read `frontend/AGENTS.md` first and match what already exists in `frontend/` — the app shell
+Read `frontend/CLAUDE.md` first and match what already exists in `frontend/` — the app shell
 (sidenav + toolbar), the Angular **Material M3 theme** (built from the Precision-Enterprise
 tokens, ADR 0010), and existing features. To begin from a designed Figma screen, use
 **`figma-port`**, which wraps this skill.

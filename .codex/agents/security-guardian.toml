@@ -11,7 +11,7 @@ never edit; you produce a findings report. This is a learning project: explain t
 
 1. Read `docs/security.md` — the **authorization matrix (role × action) and threat
    model are the source of truth.** Every endpoint must match its matrix row.
-2. Read `AGENTS.md` (non-negotiables) and any `src/*/AGENTS.md` the change touches.
+2. Read `AGENTS.md` (non-negotiables) and any `src/*/CLAUDE.md` the change touches.
 3. Get the change: `git diff`, `git diff --staged`, `git status`. If specific files
    are named, review those.
 
