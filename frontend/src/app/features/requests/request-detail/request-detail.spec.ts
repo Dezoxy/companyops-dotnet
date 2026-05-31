@@ -8,6 +8,10 @@ import { RequestDetail } from './request-detail';
 import { RequestsService } from '../requests.service';
 import { ApprovalStepVm, ApproverRole, RequestVm } from '../requests.models';
 import { AuthService } from '../../../core/auth/auth.service';
+import { CommentsService } from '../comments/comments.service';
+
+// The detail renders <app-comment-thread>, which loads comments on init — stub it out.
+const fakeComments = { list: () => of([]), add: () => of(null) } as unknown as CommentsService;
 
 const fakeAuth = {
   userId: () => 'u',
@@ -65,6 +69,7 @@ function setup(getById: () => Observable<RequestVm>, authService: AuthService = 
       { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ id: 'abcdef12' }) } } },
       { provide: RequestsService, useValue: { getById } as unknown as RequestsService },
       { provide: AuthService, useValue: authService },
+      { provide: CommentsService, useValue: fakeComments },
     ],
   });
   return TestBed.createComponent(RequestDetail);

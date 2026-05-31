@@ -241,6 +241,64 @@ public sealed class AuthorizationTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task AddComment_AsAuditor_Returns403()
+    {
+        var id = await CreateDraftRequestAsync();
+        var auditor = factory.CreateClientWithToken(await factory.GetTokenAsync("auditor.user"));
+
+        var response = await auditor.PostAsJsonAsync($"/requests/{id}/comments", new { body = "looks fine" });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode); // Auditor is read-only
+    }
+
+    [Fact]
+    public async Task AddComment_AsEmployee_Returns201_AndAppearsInThread()
+    {
+        var id = await CreateDraftRequestAsync();
+        var employee = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
+
+        var post = await employee.PostAsJsonAsync($"/requests/{id}/comments", new { body = "Adding context." });
+        Assert.Equal(HttpStatusCode.Created, post.StatusCode);
+        var created = await post.Content.ReadFromJsonAsync<CommentResponse>();
+        Assert.Equal(EmployeeEngSub, created!.AuthorId); // author derived from the JWT, not the body
+
+        var thread = await employee.GetFromJsonAsync<List<CommentResponse>>($"/requests/{id}/comments");
+        Assert.Single(thread!);
+        Assert.Equal("Adding context.", thread![0].Body);
+    }
+
+    [Fact]
+    public async Task GetComments_AsAuditor_Returns200()
+    {
+        var id = await CreateDraftRequestAsync();
+        var auditor = factory.CreateClientWithToken(await factory.GetTokenAsync("auditor.user"));
+
+        var response = await auditor.GetAsync($"/requests/{id}/comments");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode); // Auditor may read the thread
+    }
+
+    [Fact]
+    public async Task AddComment_OnMissingRequest_Returns404()
+    {
+        var employee = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
+
+        var response = await employee.PostAsJsonAsync($"/requests/{Guid.NewGuid()}/comments", new { body = "hi" });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetComments_OnMissingRequest_Returns404()
+    {
+        var employee = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
+
+        var response = await employee.GetAsync($"/requests/{Guid.NewGuid()}/comments");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
     private async Task<Guid> CreateDraftRequestAsync()
     {
         var client = factory.CreateClientWithToken(await factory.GetTokenAsync("employee.eng"));
@@ -272,4 +330,6 @@ public sealed class AuthorizationTests(ApiFactory factory)
     private sealed record RequestResponse(Guid Id, string Status, string Priority, string? Category, Guid RequesterId, Guid DepartmentId);
 
     private sealed record AuditLogResponse(string Action, Guid TargetId, string? FromStatus, string? ToStatus);
+
+    private sealed record CommentResponse(Guid Id, Guid RequestId, Guid AuthorId, string Body, DateTimeOffset CreatedAtUtc);
 }

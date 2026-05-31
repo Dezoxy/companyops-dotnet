@@ -28,6 +28,9 @@ internal static class Policies
     /// <summary>Fulfill an approved request — IT Admin.</summary>
     public const string FulfillRequests = "FulfillRequests";
 
+    /// <summary>Comment on a request — any participant (everyone except the read-only Auditor).</summary>
+    public const string CommentOnRequests = "CommentOnRequests";
+
     /// <summary>Read the audit trail — Auditor (matrix lists IT Admin as a TODO).</summary>
     public const string ReadAuditLog = "ReadAuditLog";
 }

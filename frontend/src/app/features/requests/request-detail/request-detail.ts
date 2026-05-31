@@ -16,6 +16,7 @@ import { ApproverRole, RequestVm } from '../requests.models';
 import { StatusChip } from '../../../shared/status-chip/status-chip';
 import { AuthService } from '../../../core/auth/auth.service';
 import { DecisionDialog, DecisionDialogData, DecisionDialogResult } from '../decision-dialog/decision-dialog';
+import { CommentThread } from '../comments/comment-thread';
 
 type LoadState = 'loading' | 'loaded' | 'notfound' | 'error';
 
@@ -34,6 +35,7 @@ type LoadState = 'loading' | 'loaded' | 'notfound' | 'error';
     MatDialogModule,
     MatSnackBarModule,
     StatusChip,
+    CommentThread,
   ],
   templateUrl: './request-detail.html',
   styleUrl: './request-detail.scss',

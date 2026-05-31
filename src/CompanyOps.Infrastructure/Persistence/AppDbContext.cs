@@ -14,6 +14,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 {
     public DbSet<Request> Requests => Set<Request>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<Comment> Comments => Set<Comment>();
 
     // OutboxMessage is internal infrastructure (ADR 0007) — no public DbSet; the model
     // registers it via OutboxMessageConfiguration, and the publisher/relay use Set<T>().
