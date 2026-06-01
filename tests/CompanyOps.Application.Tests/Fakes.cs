@@ -25,12 +25,14 @@ internal sealed class FakeRequestRepository : IRequestRepository
     public Task<Request?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_store.GetValueOrDefault(id));
 
-    public Task<IReadOnlyList<Request>> ListAsync(Guid? requesterId, Guid? departmentId, CancellationToken cancellationToken = default) =>
+    public Task<IReadOnlyList<Request>> ListAsync(Guid? requesterId, Guid? departmentId, int skip, int take, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<Request>>(
         [
             .. _store.Values
                 .Where(r => requesterId is not { } requester || r.RequesterId == requester)
-                .Where(r => departmentId is not { } department || r.DepartmentId == department),
+                .Where(r => departmentId is not { } department || r.DepartmentId == department)
+                .OrderByDescending(r => r.CreatedAtUtc).ThenByDescending(r => r.Id)
+                .Skip(skip).Take(take),
         ]);
 }
 
@@ -64,8 +66,13 @@ internal sealed class FakeAssetRepository : IAssetRepository
     public Task<Asset?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_store.GetValueOrDefault(id));
 
-    public Task<IReadOnlyList<Asset>> ListAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<Asset>>([.. _store.Values]);
+    public Task<IReadOnlyList<Asset>> ListAsync(int skip, int take, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<Asset>>(
+        [
+            .. _store.Values
+                .OrderByDescending(a => a.CreatedAtUtc).ThenByDescending(a => a.Id)
+                .Skip(skip).Take(take),
+        ]);
 }
 
 internal sealed class FakeUnitOfWork : IUnitOfWork

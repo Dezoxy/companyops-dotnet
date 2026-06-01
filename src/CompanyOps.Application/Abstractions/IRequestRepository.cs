@@ -26,5 +26,5 @@ public interface IRequestRepository
     /// <paramref name="requesterId"/> → only that requester's; <paramref name="departmentId"/> →
     /// only that department's; both null → all. The Api derives the scope from the principal's role.
     /// </summary>
-    Task<IReadOnlyList<Request>> ListAsync(Guid? requesterId, Guid? departmentId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Request>> ListAsync(Guid? requesterId, Guid? departmentId, int skip, int take, CancellationToken cancellationToken = default);
 }

@@ -1,3 +1,5 @@
+using CompanyOps.Application.Common;
+
 namespace CompanyOps.Application.Requests.ListRequests;
 
 /// <summary>
@@ -5,4 +7,4 @@ namespace CompanyOps.Application.Requests.ListRequests;
 /// caller's role): <see cref="RequesterId"/> → the caller's own requests; <see cref="DepartmentId"/>
 /// → that department; both null → all.
 /// </summary>
-public sealed record ListRequestsQuery(Guid? RequesterId = null, Guid? DepartmentId = null);
+public sealed record ListRequestsQuery(Guid? RequesterId = null, Guid? DepartmentId = null, PageRequest? Page = null);

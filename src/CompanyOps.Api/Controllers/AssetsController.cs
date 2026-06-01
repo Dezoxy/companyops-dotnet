@@ -1,6 +1,7 @@
 using CompanyOps.Api.Auth;
 using CompanyOps.Api.Contracts;
 using CompanyOps.Application.Assets;
+using CompanyOps.Application.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,7 +25,10 @@ public sealed class AssetsController : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<AssetDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<AssetDto>>> List(
         [FromServices] ListAssetsHandler handler,
-        CancellationToken cancellationToken) => Ok(await handler.HandleAsync(new ListAssetsQuery(), cancellationToken));
+        CancellationToken cancellationToken,
+        [FromQuery] int? page = null,
+        [FromQuery] int? pageSize = null) =>
+        Ok(await handler.HandleAsync(new ListAssetsQuery(new PageRequest(page, pageSize)), cancellationToken));
 
     [HttpGet("{id:guid}")]
     [Authorize(Policy = Policies.ReadAssets)]

@@ -1,6 +1,7 @@
 using CompanyOps.Api.Auth;
 using CompanyOps.Application.Auditing;
 using CompanyOps.Application.Auditing.ListAuditLogs;
+using CompanyOps.Application.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,9 +23,11 @@ public sealed class AuditLogsController : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<AuditLogDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<AuditLogDto>>> List(
         [FromServices] ListAuditLogsHandler handler,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] int? page = null,
+        [FromQuery] int? pageSize = null)
     {
-        var result = await handler.HandleAsync(new ListAuditLogsQuery(), cancellationToken);
+        var result = await handler.HandleAsync(new ListAuditLogsQuery(new PageRequest(page, pageSize)), cancellationToken);
         return Ok(result);
     }
 }

@@ -17,9 +17,13 @@ internal sealed class AssetRepository(AppDbContext dbContext) : IAssetRepository
     public Task<Asset?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default) =>
         dbContext.Assets.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
 
-    public async Task<IReadOnlyList<Asset>> ListAsync(CancellationToken cancellationToken = default) =>
+    public async Task<IReadOnlyList<Asset>> ListAsync(int skip, int take, CancellationToken cancellationToken = default) =>
         await dbContext.Assets
             .AsNoTracking()
+            // Tie-break on Id so paging is deterministic when CreatedAtUtc ties.
             .OrderByDescending(a => a.CreatedAtUtc)
+            .ThenByDescending(a => a.Id)
+            .Skip(skip)
+            .Take(take)
             .ToListAsync(cancellationToken);
 }
