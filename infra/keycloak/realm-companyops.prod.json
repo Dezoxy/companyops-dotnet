@@ -1,6 +1,8 @@
 {
   "realm": "companyops",
   "enabled": true,
+  "displayName": "CompanyOps",
+  "loginTheme": "companyops",
   "sslRequired": "external",
   "accessTokenLifespan": 900,
   "bruteForceProtected": true,
