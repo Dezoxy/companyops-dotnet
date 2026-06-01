@@ -91,8 +91,6 @@ desktop.ini
 # hardened and a canonical committed location is chosen (docs/openapi-contract-plan.md, Phases 2-5).
 /artifacts/
 # ---- 42Crunch API security scan scaffolding ----
-# Local audit/scan artifacts. The hand-tuned root openapi.json is slated for
-# retirement in favour of a code-generated contract (docs/openapi-contract-plan.md);
-# .42c/ is the local scan config (regenerable). Revisit when that plan lands.
+# Local 42Crunch scan config (regenerable). The root openapi.json is now the committed,
+# code-generated contract (NOT ignored) — see docs/openapi-contract-plan.md (Phase 5).
 /.42c/
-/openapi.json
