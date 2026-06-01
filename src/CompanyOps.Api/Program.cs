@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json.Serialization;
 using CompanyOps.Api.Auth;
 using CompanyOps.Api.Cors;
@@ -31,6 +32,24 @@ if (args.Contains("--migrate"))
     var migrator = builder.Build();
     await migrator.Services.MigrateDatabaseAsync();
     return;
+}
+
+// Build-time OpenAPI generation (Microsoft.Extensions.ApiDescription.Server) loads this app to
+// emit the document: it runs the full Program up to — but not including — app.Run(), with no DB /
+// broker / Keycloak config available. The lazy registrations (EF, JWT, RabbitMQ) never connect at
+// build time, so harmless placeholder config lets the host construct without weakening the real
+// fail-fast: a genuine boot still reads (and requires) the real values.
+if (Assembly.GetEntryAssembly()?.GetName().Name is "dotnet-getdocument" or "GetDocument.Insider")
+{
+    builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+    {
+        ["ConnectionStrings:CompanyOps"] = "Host=openapi-build;Database=openapi;Username=openapi;Password=openapi",
+        ["Keycloak:Authority"] = "https://openapi-build.invalid/realms/companyops",
+        ["Keycloak:Audience"] = "companyops-api",
+        ["RabbitMq:Host"] = "openapi-build.invalid",
+        ["RabbitMq:Username"] = "openapi",
+        ["RabbitMq:Password"] = "openapi",
+    });
 }
 
 builder.Services

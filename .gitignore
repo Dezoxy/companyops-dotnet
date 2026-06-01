@@ -85,3 +85,8 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ---- Build-time OpenAPI document (Microsoft.Extensions.ApiDescription.Server) ----
+# Generated on every `dotnet build`. Gitignored until the contract is hardened and a
+# canonical location is chosen (docs/openapi-contract-plan.md, Phases 2-5).
+/src/CompanyOps.Api/openapi/
