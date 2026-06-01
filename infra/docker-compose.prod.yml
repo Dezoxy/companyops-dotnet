@@ -74,12 +74,17 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:?set KC_DB_PASSWORD in .env}
-      # Single-domain deployment: Keycloak shares APP_DOMAIN with the SPA/API and is served under
-      # the /auth context path (KC_HTTP_RELATIVE_PATH) — Traefik passes /auth/* through unchanged
-      # (no strip), so Keycloak owns the full path and every issued URL (issuer, JS/CSS links,
-      # redirects) is correct by construction. TLS terminates at Traefik, so Keycloak speaks HTTP
-      # and trusts the X-Forwarded-* headers. Issuer => https://APP_DOMAIN/auth/realms/companyops.
-      KC_HOSTNAME: https://${APP_DOMAIN:?set APP_DOMAIN in .env}
+      # Single-domain: Keycloak shares APP_DOMAIN with the SPA/API, served under /auth. TWO
+      # settings are needed and they are NOT redundant (KC 26 hostname v2 — verified the hard way):
+      #   - KC_HOSTNAME carries the public base INCLUDING /auth. It is what KC stamps into the
+      #     issuer, the OIDC endpoints, redirect URIs and console asset URLs. A *bare* host omits
+      #     /auth, so the advertised endpoints point at /realms/... — which don't route to Keycloak
+      #     (they fall through to the SPA) and OIDC breaks. KC_HTTP_RELATIVE_PATH does NOT add the
+      #     path to these advertised URLs; only KC_HOSTNAME does.
+      #   - KC_HTTP_RELATIVE_PATH makes Keycloak actually SERVE under /auth, so Traefik forwards
+      #     /auth/* unchanged (no strip) and the advertised URLs resolve back to it.
+      # Issuer => https://APP_DOMAIN/auth/realms/companyops. TLS terminates at Traefik (HTTP + X-Forwarded-*).
+      KC_HOSTNAME: https://${APP_DOMAIN:?set APP_DOMAIN in .env}/auth
       KC_HTTP_RELATIVE_PATH: /auth
       # Pin the issuer/redirect base to KC_HOSTNAME; don't derive it from X-Forwarded-Host
       # (the default in prod mode, set explicitly so a default change can't loosen it).
