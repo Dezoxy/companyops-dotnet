@@ -13,6 +13,6 @@ namespace CompanyOps.Api.Contracts;
 public sealed record CreateRequestRequest(
     string Title,
     string? Description,
-    RequestType Type,
+    RequestType? Type, // nullable so an omitted type is rejected by the validator, not defaulted
     RequestPriority? Priority,
     RequestCategory? Category);

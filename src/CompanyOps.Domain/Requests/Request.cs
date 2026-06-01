@@ -17,6 +17,7 @@ namespace CompanyOps.Domain.Requests;
 public class Request
 {
     public const int TitleMaxLength = 200;
+    public const int DescriptionMaxLength = 4000;
 
     private readonly List<ApprovalStep> _approvalSteps = [];
 
@@ -94,6 +95,11 @@ public class Request
         if (title.Length > TitleMaxLength)
         {
             throw new DomainException($"Request title must be at most {TitleMaxLength} characters.");
+        }
+
+        if (description is not null && description.Trim().Length > DescriptionMaxLength)
+        {
+            throw new DomainException($"Request description must be at most {DescriptionMaxLength} characters.");
         }
 
         if (requesterId == Guid.Empty)

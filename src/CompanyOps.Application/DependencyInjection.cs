@@ -12,6 +12,7 @@ using CompanyOps.Application.Requests.GetRequest;
 using CompanyOps.Application.Requests.ListRequests;
 using CompanyOps.Application.Requests.RejectRequest;
 using CompanyOps.Application.Requests.SubmitRequest;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CompanyOps.Application;
@@ -52,6 +53,12 @@ public static class DependencyInjection
         services.AddScoped<GetAssetReportHandler>();
 
         services.AddScoped<GetIntegrationStatusHandler>();
+
+        // Input validators (FluentValidation) — registered alongside their handler slice.
+        // Explicit registration keeps the dependency surface small (no assembly scanning);
+        // add an entry here when a new command gets a validator.
+        services.AddScoped<IValidator<CreateRequestCommand>, CreateRequestValidator>();
+        services.AddScoped<IValidator<RegisterAssetCommand>, RegisterAssetValidator>();
         return services;
     }
 }
