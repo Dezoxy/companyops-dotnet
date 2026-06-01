@@ -20,7 +20,7 @@
     backup_minute: "30"
     # Required (define in group_vars/all.yml via ansible-vault, or pass via --extra-vars from the
     #   release workflow — no defaults on purpose):
-    #   ghcr_owner, companyops_version, app_domain, keycloak_domain, acme_email,
+    #   ghcr_owner, companyops_version, app_domain, acme_email,
     #   postgres_password, kc_db_password, rabbitmq_password, kc_admin_user, kc_admin_password
     # Optional: ghcr_pull_username + ghcr_pull_token (private packages), otel_exporter_otlp_endpoint
 

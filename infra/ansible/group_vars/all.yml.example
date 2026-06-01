@@ -9,8 +9,7 @@ companyops_version: "1.0.0" # release version to deploy (the tag without the lea
 ghcr_pull_username: "" # a GitHub username/bot with read:packages
 ghcr_pull_token: "" # a token with read:packages (keep this vault-encrypted)
 
-app_domain: app.example.com
-keycloak_domain: auth.example.com
+app_domain: app.example.com # the SPA, API (/api) and Keycloak (/auth) all share this one domain
 acme_email: admin@example.com
 
 # Generate strong values, e.g.: openssl rand -base64 24

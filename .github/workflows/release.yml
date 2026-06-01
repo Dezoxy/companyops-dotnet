@@ -159,7 +159,6 @@ jobs:
           GHCR_PULL_USERNAME: ${{ github.actor }}
           GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
           APP_DOMAIN: ${{ vars.APP_DOMAIN }}
-          KEYCLOAK_DOMAIN: ${{ vars.KEYCLOAK_DOMAIN }}
           ACME_EMAIL: ${{ vars.ACME_EMAIL }}
           KC_ADMIN_USER: ${{ vars.KC_ADMIN_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -176,7 +175,6 @@ jobs:
           ghcr_pull_username: "${GHCR_PULL_USERNAME}"
           ghcr_pull_token: "${GHCR_PULL_TOKEN}"
           app_domain: "${APP_DOMAIN}"
-          keycloak_domain: "${KEYCLOAK_DOMAIN}"
           acme_email: "${ACME_EMAIL}"
           kc_admin_user: "${KC_ADMIN_USER}"
           postgres_password: "${POSTGRES_PASSWORD}"

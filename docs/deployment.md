@@ -5,9 +5,10 @@ Day-2 operations: [runbook.md](runbook.md) · backups: [backup-restore.md](backu
 
 > **What gets deployed:** the [`docker-compose.prod.yml`](../infra/docker-compose.prod.yml)
 > stack behind a **Traefik** edge that terminates TLS (Let's Encrypt) and is the only public
-> ingress. The **Angular SPA** is the site root at `APP_DOMAIN`; the **API** is same-origin under
-> `APP_DOMAIN/api/*` (Traefik strips `/api`); **Keycloak** is at `KEYCLOAK_DOMAIN`. Postgres,
-> RabbitMQ, and Redis stay internal.
+> ingress. Everything is one origin, `APP_DOMAIN`: the **Angular SPA** is the site root, the
+> **API** is under `APP_DOMAIN/api/*` (Traefik strips `/api`), and **Keycloak** is under
+> `APP_DOMAIN/auth/*` (served there via `KC_HTTP_RELATIVE_PATH`, no strip). Postgres, RabbitMQ,
+> and Redis stay internal.
 >
 > **Two layers, two scopes:** the Compose stack and the **Ansible** playbook are
 > cloud-agnostic (any Ubuntu 24.04 VM). **Terraform** is the Azure provisioner — swap it for
@@ -88,16 +89,17 @@ before Terraform/Ansible touch prod): repo **Settings → Environments → New e
 | Variable | `TFSTATE_RESOURCE_GROUP` | `companyops-tfstate` |
 | Variable | `TFSTATE_STORAGE_ACCOUNT` | the bootstrap storage-account name |
 | Variable | `ALLOWED_SSH_CIDR` | your management IP `/32` (the workflow also adds the runner IP for the run) |
-| Variable | `APP_DOMAIN` `KEYCLOAK_DOMAIN` `ACME_EMAIL` `KC_ADMIN_USER` | your values |
+| Variable | `APP_DOMAIN` `ACME_EMAIL` `KC_ADMIN_USER` | your values (SPA, API and Keycloak all share `APP_DOMAIN`) |
 | Variable *(optional)* | `VM_LOCATION` `VM_SIZE` | override the Azure region / VM size without a code change — defaults are `westeurope` / `Standard_B2as_v2`. Set one if a region returns `SkuNotAvailable` (capacity restrictions), then re-run. |
 
 `gh secret set NAME` / `gh variable set NAME` set these from the CLI.
 
-**5. DNS** — point `APP_DOMAIN` and `KEYCLOAK_DOMAIN` A records at the VM's public IP. On the
-first release the VM doesn't exist yet, so: run the release once (Terraform creates the VM and
-the Ansible step's TLS will be self-signed until DNS resolves), set the A records to the new IP
-(`terraform output public_ip`, or the Azure portal), then re-run the workflow (`Run workflow`)
-so Let's Encrypt issues real certs. The Static public IP is stable across later releases.
+**5. DNS** — point the `APP_DOMAIN` A record at the VM's public IP (one record — the SPA, API
+and Keycloak all share it). On the first release the VM doesn't exist yet, so: run the release
+once (Terraform creates the VM and the Ansible step's TLS will be self-signed until DNS
+resolves), set the A record to the new IP (`terraform output public_ip`, or the Azure portal),
+then re-run the workflow (`Run workflow`) so Let's Encrypt issues a real cert. The Static public
+IP is stable across later releases.
 
 ### Deploy
 
@@ -124,9 +126,9 @@ exist in GHCR (build them via a release, or `docker buildx build --push` locally
 
 ## Prerequisites
 
-- A **domain** with two DNS A records you can set: `APP_DOMAIN` (the API) and
-  `KEYCLOAK_DOMAIN` (Keycloak), both pointing at the VM's public IP. Real TLS needs this —
-  Let's Encrypt validates over the public name on :443.
+- A **domain** with a DNS A record you can set: `APP_DOMAIN`, pointing at the VM's public IP
+  (one record — the SPA, the API under `/api`, and Keycloak under `/auth` all share it). Real
+  TLS needs this — Let's Encrypt validates over the public name on :443.
 - A **VM** (~2 GB RAM to *run* the stack — images are pulled, not built, so no build
   headroom needed). Provision with Terraform, or bring your own / a homelab box.
 - An **SSH key** and a control machine with `ansible` (`ansible-galaxy collection install -r
@@ -152,8 +154,8 @@ locked down. Skip to step 2.
 
 ## 2. Point DNS at the VM
 
-Create A records: `APP_DOMAIN` → public IP, `KEYCLOAK_DOMAIN` → public IP. Wait for them to
-resolve (`dig +short APP_DOMAIN`) — Let's Encrypt fails until they do.
+Create one A record: `APP_DOMAIN` → public IP. Wait for it to resolve (`dig +short APP_DOMAIN`)
+— Let's Encrypt fails until it does.
 
 ## 3. Configure secrets
 
@@ -190,11 +192,11 @@ curl -sI https://APP_DOMAIN/                 # 200 text/html — the SPA loads
 curl -s  https://APP_DOMAIN/api/health       # Healthy            (API under /api, prefix stripped)
 curl -s  https://APP_DOMAIN/api/health/ready # Healthy (DB + RabbitMQ)
 curl -sI http://APP_DOMAIN/api/health        # 301 -> https       (edge redirect)
-curl -s  https://KEYCLOAK_DOMAIN/realms/companyops/.well-known/openid-configuration | jq .issuer
+curl -s  https://APP_DOMAIN/auth/realms/companyops/.well-known/openid-configuration | jq .issuer
 ```
 
-The issuer must be `https://KEYCLOAK_DOMAIN/realms/companyops`. **Create real users** in the
-Keycloak admin console (`https://KEYCLOAK_DOMAIN/admin`, the bootstrap admin from your vault)
+The issuer must be `https://APP_DOMAIN/auth/realms/companyops`. **Create real users** in the
+Keycloak admin console (`https://APP_DOMAIN/auth/admin`, the bootstrap admin from your vault)
 and assign roles + the `department` attribute — the prod realm ships with **no seed users**
 and **ROPC disabled**, so login is the browser Authorization-Code + PKCE flow (exercised by
 the SPA in Phase 12).
@@ -230,6 +232,12 @@ playbook can `docker login ghcr.io`; **public** packages need no token.
 
 ## Notes
 
+- **Single domain (one origin).** The SPA, the API (`/api`) and Keycloak (`/auth`) share
+  `APP_DOMAIN` — one DNS record, one cert, no cross-origin hop for auth. Keycloak is served
+  under `/auth` via `KC_HTTP_RELATIVE_PATH`, so it owns the full path (Traefik passes the prefix
+  through — no strip). Trade-off vs a dedicated auth subdomain: you give up origin isolation
+  between the IdP and the app — minor here (public PKCE client, Keycloak session cookies are
+  HttpOnly), so simplicity wins.
 - **TLS is real Let's Encrypt** only once DNS resolves and :443 is reachable; until then
   Traefik serves its self-signed default cert. Certs persist in the `traefik-letsencrypt`
   volume across restarts (mind LE rate limits when testing).
