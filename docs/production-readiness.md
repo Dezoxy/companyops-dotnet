@@ -49,7 +49,7 @@ Authoritative: [security.md](security.md) (role × action matrix + STRIDE threat
 ## 2. API contract & documentation
 Authoritative: [openapi-contract-plan.md](openapi-contract-plan.md).
 
-- [x] OpenAPI document generated at build time from the code.
+- [ ] OpenAPI document generated at build time from the code (prototyped + verified this session, then reverted to keep PRs focused; re-introduced as Phase 1 of [openapi-contract-plan.md](openapi-contract-plan.md)).
 - [x] Interactive API docs (Scalar) — currently dev-only.
 - [ ] Single canonical, security-accurate contract; hand-tuned `openapi.json` retired (in progress — see the plan).
 - [ ] CI gate that fails on contract drift.

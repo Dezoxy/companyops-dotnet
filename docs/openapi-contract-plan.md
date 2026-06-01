@@ -22,14 +22,14 @@ hand-written file, re-prove it's clean with the 42Crunch audit + scan, and add a
 
 | | State |
 |---|---|
-| Build-time emission (`Microsoft.Extensions.ApiDescription.Server`) | ✅ enabled — writes `src/CompanyOps.Api/openapi/CompanyOps.Api.json` on every `dotnet build` |
-| Input-validation hardening (FluentValidation + JSON `Disallow`/`allowIntegerValues:false`) | ✅ done — so `additionalProperties:false` is now *honest* of the running API |
-| Hand-tuned `openapi.json` (repo root) | ⚠️ still the 42Crunch-audited contract; **drifts** from code |
-| Generated doc — security scheme, servers, error-response polish | ❌ absent (bare, but accurate) |
+| Build-time emission (`Microsoft.Extensions.ApiDescription.Server`) | ❌ **not in the repo.** Prototyped and verified working this session (it emitted `src/CompanyOps.Api/openapi/CompanyOps.Api.json`), then **reverted** so the PRs stayed focused. Re-introduced as Phase 1 below — including the design-time gotcha already solved. |
+| Input-validation hardening (FluentValidation + JSON `Disallow`/`allowIntegerValues:false`) | ✅ done (separate PR) — so `additionalProperties:false` will be *honest* of the running API |
+| Hand-tuned `openapi.json` (repo root) | ⚠️ the only audited contract today; **drifts** from code; gitignored, slated for deletion |
+| Generated doc — security scheme, servers, error-response polish | ❌ absent |
 | CI drift gate | ❌ none |
 
-The generated doc is **accurate but bare**; the hand-tuned one is **hardened but drifts**. This plan
-collapses them into one.
+Once emission is (re-)enabled, the generated doc is **accurate but bare**; the hand-tuned one is
+**hardened but drifts**. This plan turns the generated doc into the single hardened source of truth.
 
 ## The plan
 
@@ -39,14 +39,25 @@ collapses them into one.
       the 3-line alternative (keep hand-tuned / keep split), and approvers (architecture + security).
 - [ ] Link this plan from `docs/future-improvements.md` and from the API-layer notes.
 
-### Phase 1 — Security in the contract (the one that matters most)
+### Phase 1 — Enable build-time generation
+- [ ] Re-add the `Microsoft.Extensions.ApiDescription.Server` package + `<OpenApiDocumentsDirectory>`
+      to `src/CompanyOps.Api/CompanyOps.Api.csproj` so `dotnet build` emits the document.
+- [ ] Handle the **design-time gotcha** (already solved this session): the generator runs `Program`
+      up to `app.Run()` with no DB/Keycloak/RabbitMQ config, tripping the fail-fast `throw`s. Gate
+      harmless placeholder config on the doc-tool entry assembly
+      (`Assembly.GetEntryAssembly()?.GetName().Name is "dotnet-getdocument" or "GetDocument.Insider"`)
+      so a real boot still requires the real values.
+- [ ] **Acceptance:** a clean `dotnet build` writes the OpenAPI JSON (≈20 paths / 30 schemas), and
+      the normal app run is unchanged.
+
+### Phase 2 — Security in the contract (the one that matters most)
 - [ ] Add an OpenAPI **document transformer** that declares the Bearer/JWT (Keycloak) security
       scheme and applies it as the global security requirement.
 - [ ] **Acceptance:** the generated doc's `components.securitySchemes` contains `Bearer` and every
       operation requires it. *Verify:* `42c-ast audit` security score returns to 30/30 (without it,
       the audit sees an unauthenticated API).
 
-### Phase 2 — Honest hardening (only what the code actually enforces)
+### Phase 3 — Honest hardening (only what the code actually enforces)
 - [ ] Document transformer: add the production **`servers`** entry (`https://companyops.toomhorvath.com`).
 - [ ] Schema transformer: set **`additionalProperties:false`** on request bodies — now truthful,
       because the API rejects unknown fields (`UnmappedMemberHandling.Disallow`).
@@ -54,27 +65,27 @@ collapses them into one.
 - [ ] **Acceptance:** no audit finding claims a constraint the API doesn't enforce (the free-text
       `pattern` tension disappears — the code never declares patterns it doesn't enforce).
 
-### Phase 3 — Completeness polish
+### Phase 4 — Completeness polish
 - [ ] Add `maxItems` to list responses (document the real, intended bound) — **and** decide whether
       to add real **pagination** to the list endpoints (see `production-readiness.md` → Performance).
 - [ ] Add the standard error responses to all operations: `default`, `429` (real rate-limiter),
       `415` (JSON-only), `406`. Prefer expressing these once via a convention/transformer, not 23×.
 - [ ] **Acceptance:** 42Crunch data-validation score is at target with no synthetic constraints.
 
-### Phase 4 — Make the generated doc the single source of truth
+### Phase 5 — Make the generated doc the single source of truth
 - [ ] Choose the canonical output path + name (e.g. emit to repo root as `openapi.json`, or keep
       `src/CompanyOps.Api/openapi/CompanyOps.Api.json` and reference it). Record the choice in ADR 0013.
 - [ ] **Delete the hand-maintained `openapi.json`** once the generated one carries the hardening.
 - [ ] Decide **commit vs. gitignore**: recommended → *commit* the generated doc so it's diffable and
-      reviewed in every PR (the contract is visible), with the CI gate (Phase 6) keeping it honest.
+      reviewed in every PR (the contract is visible), with the CI gate (Phase 7) keeping it honest.
 
-### Phase 5 — Re-prove it's clean
+### Phase 6 — Re-prove it's clean
 - [ ] Run `42crunch-audit` against the generated contract; record the score in the PR.
 - [ ] Run `42crunch-scan` against a non-prod instance (the local stack); confirm **0 critical / 0
       high**, no BOLA/BFLA (as in the prior session).
 - [ ] **Acceptance:** audit ≥ 70 (target), scan shows no authorization findings.
 
-### Phase 6 — CI drift gate (so it can never go stale)
+### Phase 7 — CI drift gate (so it can never go stale)
 - [ ] Add a CI step (extend `.github/workflows/ci.yml`): regenerate the doc and **fail the build if
       it differs** from the committed copy (`dotnet build` then `git diff --exit-code` on the doc).
 - [ ] (Optional) Publish the contract as browsable docs (Scalar is already wired, dev-only) and/or
@@ -88,7 +99,7 @@ collapses them into one.
 - **Risk:** `additionalProperties:false` rejects a field a real client sends → it's already the
   runtime behaviour, so the contract only *documents* reality; no behaviour change.
 - **Rollback:** the changes are the transformer classes + csproj/CI lines. Reverting the PR restores
-  the prior state; the hand-tuned `openapi.json` stays in git history until Phase 4 deletes it.
+  the prior state; the hand-tuned `openapi.json` stays in git history until Phase 5 deletes it.
 
 ## Definition of done
 
