@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
 using CompanyOps.Api.Auth;
+using CompanyOps.Api.OpenApi;
 using CompanyOps.Api.Cors;
 using CompanyOps.Api.ErrorHandling;
 using CompanyOps.Api.Observability;
@@ -58,7 +59,9 @@ builder.Services
         // Serialize enums as their names (e.g. "Procurement"), not integers.
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+    // Declare the Bearer/JWT security scheme in the generated contract (AddOpenApi doesn't infer it).
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>());
 
 // Map domain rule violations to RFC 7807 problem responses.
 builder.Services.AddProblemDetails();

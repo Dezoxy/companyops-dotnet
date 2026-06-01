@@ -6,9 +6,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- Emit the OpenAPI document at build time (Microsoft.Extensions.ApiDescription.Server):
          `dotnet build` writes <AssemblyName>.json into this directory from the live AddOpenApi
-         pipeline — no running server needed. Output is gitignored until the contract is hardened
-         (see docs/openapi-contract-plan.md, Phases 2-5). -->
-    <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)/openapi</OpenApiDocumentsDirectory>
+         pipeline — no running server needed. Output goes to repo-root artifacts/ (NOT a source
+         folder — on case-insensitive filesystems "openapi" would collide with the OpenApi/ source
+         namespace folder). Gitignored until the contract is hardened (docs/openapi-contract-plan.md,
+         Phases 2-5). -->
+    <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)/../../artifacts/openapi</OpenApiDocumentsDirectory>
   </PropertyGroup>
 
   <ItemGroup>
