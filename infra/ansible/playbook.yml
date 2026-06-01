@@ -139,3 +139,63 @@
           - .env
         pull: always
         state: present
+
+    # The realm's loginTheme/displayName only apply on a FRESH import — `start --import-realm` skips
+    # a realm that already exists. So a rollout against an already-provisioned Keycloak mounts the
+    # theme CSS but leaves the realm on the default login theme. Apply it idempotently via the admin
+    # API: read the realm, patch ONLY loginTheme + displayName (every other setting is preserved),
+    # PUT it back, and only when it isn't already set. Best-effort (block/rescue) so a first-ever
+    # deploy — self-signed TLS before Let's Encrypt issues — doesn't fail the rollout: a fresh realm
+    # already gets the theme from the import, and a re-run applies it once HTTPS is live.
+    - name: Apply the companyops realm login theme (idempotent, admin API)
+      block:
+        - name: Wait for Keycloak to be reachable
+          ansible.builtin.uri:
+            url: "https://{{ app_domain }}/auth/realms/master/.well-known/openid-configuration"
+            status_code: 200
+          register: kc_ready
+          retries: 30
+          delay: 5
+          until: kc_ready.status == 200
+
+        - name: Get a Keycloak admin token
+          ansible.builtin.uri:
+            url: "https://{{ app_domain }}/auth/realms/master/protocol/openid-connect/token"
+            method: POST
+            body_format: form-urlencoded
+            body:
+              grant_type: password
+              client_id: admin-cli
+              username: "{{ kc_admin_user }}"
+              password: "{{ kc_admin_password }}"
+          register: kc_token
+          no_log: true
+
+        - name: Read the current companyops realm settings
+          ansible.builtin.uri:
+            url: "https://{{ app_domain }}/auth/admin/realms/companyops"
+            headers:
+              Authorization: "Bearer {{ kc_token.json.access_token }}"
+          register: kc_realm
+          no_log: true
+
+        - name: Set loginTheme + displayName on the realm (only when changed)
+          ansible.builtin.uri:
+            url: "https://{{ app_domain }}/auth/admin/realms/companyops"
+            method: PUT
+            headers:
+              Authorization: "Bearer {{ kc_token.json.access_token }}"
+            body_format: json
+            body: "{{ kc_realm.json | combine({'loginTheme': 'companyops', 'displayName': 'CompanyOps'}) }}"
+            status_code: 204
+          when: >-
+            (kc_realm.json.loginTheme | default('')) != 'companyops'
+            or (kc_realm.json.displayName | default('')) != 'CompanyOps'
+          no_log: true
+      rescue:
+        - name: Warn that the login theme could not be applied via the admin API
+          ansible.builtin.debug:
+            msg: >-
+              Could not apply loginTheme via the Keycloak admin API (Keycloak unreachable, or HTTPS
+              not ready on a first deploy). A freshly imported realm already has it; re-run the
+              playbook once Keycloak is reachable over HTTPS to apply it to an existing realm.

@@ -1,0 +1,131 @@
+/* CompanyOps login — "Precision Enterprise" dark theme, matching the Angular client.
+   Values mirror the dark scheme in frontend/src/styles.scss (ADR 0010). Markup is
+   keycloak.v2 / PatternFly v5 (pf-v5-c-*); we recolour + refont on top of the parent CSS. */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --co-bg: #111722;            /* --mat-sys-background (dark)            */
+  --co-surface: #1c232f;       /* --mat-sys-surface-container           */
+  --co-field: #0b111b;         /* --mat-sys-surface-container-lowest    */
+  --co-text: #dfe2ed;          /* --mat-sys-on-surface                  */
+  --co-muted: #c3c6d7;         /* --mat-sys-on-surface-variant          */
+  --co-border: #434655;        /* --mat-sys-outline-variant             */
+  --co-primary: #2563eb;       /* brand cobalt (--mat-sys-primary-container, light) */
+  --co-primary-hover: #1d4ed8;
+  --co-accent: #b4c5ff;        /* --mat-sys-primary (dark) — links/focus */
+  --co-radius: 14px;
+}
+
+/* ---- page background: replace KC's default image with the app's flat dark surface ---- */
+html.login-pf,
+body#keycloak-bg,
+.login-pf-page {
+  background: var(--co-bg) !important;
+  color: var(--co-text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+body#keycloak-bg { background-image: none !important; }
+
+/* ---- the login card ---- */
+.pf-v5-c-login__main {
+  background: var(--co-surface) !important;
+  border: 1px solid var(--co-border);
+  border-radius: var(--co-radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  color: var(--co-text);
+}
+.pf-v5-c-login__main-header,
+.pf-v5-c-login__main-body,
+.pf-v5-c-login__main-footer { background: transparent !important; }
+
+/* ---- brand + titles ---- */
+#kc-header,
+.pf-v5-c-login__header { color: var(--co-text); }
+#kc-header-wrapper {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 1.55rem;
+  letter-spacing: 0.2px;
+  /* keycloak.v2's .pf-v5-c-brand force-uppercases the brand; the app uses "CompanyOps" */
+  text-transform: none !important;
+  color: var(--co-text);
+  padding: 6px 0 2px;
+}
+#kc-page-title,
+.pf-v5-c-title {
+  color: var(--co-text) !important;
+  /* labels use Inter; force it on the heading too (keycloak.v2 defaults to Red Hat) */
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+#kc-page-subtitle,
+.pf-v5-c-login__main-header-desc { color: var(--co-muted) !important; }
+
+/* ---- labels ---- */
+label,
+.pf-v5-c-form__label,
+.pf-v5-c-form__label-text { color: var(--co-text) !important; font-weight: 500; }
+
+/* ---- inputs ---- */
+.pf-v5-c-form-control,
+.pf-v5-c-form-control input,
+input[type="text"],
+input[type="password"],
+input[type="email"],
+select,
+textarea {
+  background: var(--co-field) !important;
+  color: var(--co-text) !important;
+  border: 1px solid var(--co-border) !important;
+  border-radius: 8px !important;
+}
+.pf-v5-c-form-control::placeholder,
+input::placeholder { color: #7f859a !important; }
+/* PatternFly draws its focus underline via ::after — neutralise it and use our ring instead */
+.pf-v5-c-form-control::after,
+.pf-v5-c-form-control::before { border: 0 !important; }
+.pf-v5-c-form-control:focus,
+.pf-v5-c-form-control:focus-within,
+input:focus {
+  border-color: var(--co-primary) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35) !important;
+}
+
+/* show/hide-password toggle inside the input group */
+.pf-v5-c-input-group,
+.pf-v5-c-input-group__item { background: transparent !important; }
+.pf-v5-c-button.pf-m-control {
+  background: var(--co-field) !important;
+  border: 1px solid var(--co-border) !important;
+  color: var(--co-muted) !important;
+}
+
+/* ---- primary button ---- */
+#kc-login,
+.pf-v5-c-button.pf-m-primary,
+button[type="submit"],
+input[type="submit"] {
+  background: var(--co-primary) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+}
+#kc-login:hover,
+.pf-v5-c-button.pf-m-primary:hover { background: var(--co-primary-hover) !important; }
+
+/* ---- links, footer, "remember me" ---- */
+a,
+.pf-v5-c-button.pf-m-link { color: var(--co-accent) !important; }
+#kc-info,
+#kc-info-wrapper,
+.pf-v5-c-login__main-footer,
+.pf-v5-c-check__label { color: var(--co-muted) !important; }
+
+/* ---- alerts (error / info banners) stay legible on dark ---- */
+.pf-v5-c-alert {
+  background: var(--co-field) !important;
+  color: var(--co-text) !important;
+  border: 1px solid var(--co-border) !important;
+}

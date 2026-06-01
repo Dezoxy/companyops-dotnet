@@ -94,6 +94,9 @@ services:
       KC_HEALTH_ENABLED: "true"
     volumes:
       - ./keycloak/realm-companyops.prod.json:/opt/keycloak/data/import/realm-companyops.json:ro
+      # Custom login theme matching the SPA's dark theme. Activated by the realm's loginTheme
+      # ("companyops"); CSS-only over keycloak.v2 (infra/keycloak/themes/companyops).
+      - ./keycloak/themes:/opt/keycloak/themes:ro
     depends_on:
       postgres:
         condition: service_healthy
