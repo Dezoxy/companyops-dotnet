@@ -39,11 +39,16 @@
       }
       <span class="spacer"></span>
       @if (auth.isAuthenticated()) {
-        <button mat-icon-button [matMenuTriggerFor]="accountMenu" aria-label="Account menu">
+        <button mat-button [matMenuTriggerFor]="accountMenu" class="account-trigger" aria-label="Account menu">
+          @if (!isHandset() && auth.userName()) {
+            <span class="account-trigger-name">{{ auth.userName() }}</span>
+          }
           <mat-icon>account_circle</mat-icon>
         </button>
         <mat-menu #accountMenu="matMenu">
-          <div class="account-name">{{ auth.userName() }}</div>
+          @if (auth.userName()) {
+            <div class="account-name">{{ auth.userName() }}</div>
+          }
           <a mat-menu-item routerLink="/settings">
             <mat-icon>settings</mat-icon>
             <span>Settings</span>
