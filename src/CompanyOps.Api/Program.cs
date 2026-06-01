@@ -66,8 +66,12 @@ builder.Services
     });
 
 builder.Services.AddOpenApi(options =>
+{
     // Declare the Bearer/JWT security scheme in the generated contract (AddOpenApi doesn't infer it).
-    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>());
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+    // Reject undeclared properties in the contract — honest, since the API does too.
+    options.AddSchemaTransformer<NoAdditionalPropertiesSchemaTransformer>();
+});
 
 // Map domain rule violations to RFC 7807 problem responses.
 builder.Services.AddProblemDetails();

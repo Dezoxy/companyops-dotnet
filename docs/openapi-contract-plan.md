@@ -37,33 +37,36 @@ Once emission is (re-)enabled, the generated doc is **accurate but bare**; the h
 - [ ] Write **ADR 0013 — code-generated API contract** (`docs/decisions/0013-*.md`): records the move
       from a hand-maintained spec to a build-time-generated + CI-gated contract; lists rationale,
       the 3-line alternative (keep hand-tuned / keep split), and approvers (architecture + security).
-- [ ] Link this plan from `docs/future-improvements.md` and from the API-layer notes.
+- [x] Link this plan from `docs/future-improvements.md` and from the API-layer notes. (#77)
 
-### Phase 1 — Enable build-time generation
-- [ ] Re-add the `Microsoft.Extensions.ApiDescription.Server` package + `<OpenApiDocumentsDirectory>`
+### Phase 1 — Enable build-time generation ✅ (#79)
+- [x] Re-add the `Microsoft.Extensions.ApiDescription.Server` package + `<OpenApiDocumentsDirectory>`
       to `src/CompanyOps.Api/CompanyOps.Api.csproj` so `dotnet build` emits the document.
-- [ ] Handle the **design-time gotcha** (already solved this session): the generator runs `Program`
-      up to `app.Run()` with no DB/Keycloak/RabbitMQ config, tripping the fail-fast `throw`s. Gate
-      harmless placeholder config on the doc-tool entry assembly
-      (`Assembly.GetEntryAssembly()?.GetName().Name is "dotnet-getdocument" or "GetDocument.Insider"`)
-      so a real boot still requires the real values.
-- [ ] **Acceptance:** a clean `dotnet build` writes the OpenAPI JSON (≈20 paths / 30 schemas), and
-      the normal app run is unchanged.
+- [x] Handle the **design-time gotcha** (solved): the generator runs `Program` up to `app.Run()`
+      with no DB/Keycloak/RabbitMQ config, tripping the fail-fast `throw`s. Gate harmless placeholder
+      config on the doc-tool entry assembly (`BuildTimeOpenApi.IsGenerating`) so a real boot still
+      requires the real values.
+- [x] **Acceptance:** a clean `dotnet build` writes the OpenAPI JSON (20 paths / 30 schemas); the
+      normal app run is unchanged. Output → `artifacts/openapi/` (NOT a source folder — `openapi`
+      collides with the `OpenApi/` namespace folder on case-insensitive filesystems).
 
-### Phase 2 — Security in the contract (the one that matters most)
-- [ ] Add an OpenAPI **document transformer** that declares the Bearer/JWT (Keycloak) security
+### Phase 2 — Security in the contract (the one that matters most) ✅ (#79)
+- [x] Add an OpenAPI **document transformer** that declares the Bearer/JWT (Keycloak) security
       scheme and applies it as the global security requirement.
-- [ ] **Acceptance:** the generated doc's `components.securitySchemes` contains `Bearer` and every
-      operation requires it. *Verify:* `42c-ast audit` security score returns to 30/30 (without it,
-      the audit sees an unauthenticated API).
+- [x] **Acceptance:** the generated doc's `components.securitySchemes` contains `Bearer` and every
+      operation requires it; `42c-ast audit` security score is **30/30**. (Servers folded in here —
+      the score depends on an https server; gated to build-time only so the dev `/openapi` stays
+      relative to localhost.)
 
-### Phase 3 — Honest hardening (only what the code actually enforces)
-- [ ] Document transformer: add the production **`servers`** entry (`https://companyops.toomhorvath.com`).
-- [ ] Schema transformer: set **`additionalProperties:false`** on request bodies — now truthful,
-      because the API rejects unknown fields (`UnmappedMemberHandling.Disallow`).
-- [ ] Confirm enums emit as string + nullable-required reflects the code (already true).
-- [ ] **Acceptance:** no audit finding claims a constraint the API doesn't enforce (the free-text
-      `pattern` tension disappears — the code never declares patterns it doesn't enforce).
+### Phase 3 — Honest hardening (only what the code actually enforces) ✅ (this PR)
+- [x] Document transformer: production **`servers`** entry (`https://companyops.toomhorvath.com`) — done in Phase 2.
+- [x] Schema transformer: set **`additionalProperties:false`** on request/response objects — truthful,
+      because the API rejects unknown request fields (`UnmappedMemberHandling.Disallow`) and returns
+      exactly the declared DTO shape. RFC 7807 `ProblemDetails` is left open (extensible).
+- [x] Confirm enums emit as string + nullable-required reflects the code (verified — already true).
+- [x] **Acceptance:** no audit finding claims a constraint the API doesn't enforce; the only
+      remaining `additionalProperties` finding is the deliberate `ProblemDetails` exclusion. Data
+      score 4.17 → 8.89 (the rest is Phase 4). No synthetic free-text patterns added.
 
 ### Phase 4 — Completeness polish
 - [ ] Add `maxItems` to list responses (document the real, intended bound) — **and** decide whether
