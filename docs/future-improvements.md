@@ -20,6 +20,12 @@ Items are grouped by **why** they're deferred, continuing the tiers from the pos
 The authoritative per-area notes live in [security.md](security.md) and
 [testing-strategy.md](testing-strategy.md); this file is the single index over them.
 
+For a **customer-handover lens** on the same gaps — tracked as a checklist across security,
+reliability, data/GDPR, deployment, performance, and docs — see
+[production-readiness.md](production-readiness.md). The plan to turn the API contract into a single
+code-generated, audit-clean, drift-gated artifact is in
+[openapi-contract-plan.md](openapi-contract-plan.md).
+
 ---
 
 ## Tier B — Deferred security hardening

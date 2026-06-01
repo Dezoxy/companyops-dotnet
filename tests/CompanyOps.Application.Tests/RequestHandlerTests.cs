@@ -38,7 +38,7 @@ public class RequestHandlerTests
     [Fact]
     public async Task Create_StoresDraftAndAuditsCreated_WithoutEvent()
     {
-        var handler = new CreateRequestHandler(_requests, _audit, _uow, _clock);
+        var handler = new CreateRequestHandler(new CreateRequestValidator(), _requests, _audit, _uow, _clock);
 
         var dto = await handler.HandleAsync(new CreateRequestCommand("Laptop", null, RequestType.Procurement, RequestPriority.Medium, null, Requester, Department));
 

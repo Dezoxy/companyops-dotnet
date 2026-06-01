@@ -55,8 +55,15 @@ if (BuildTimeOpenApi.IsGenerating)
 builder.Services
     .AddControllers()
     .AddJsonOptions(options =>
-        // Serialize enums as their names (e.g. "Procurement"), not integers.
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+    {
+        // Serialize enums as their names (e.g. "Procurement"); reject numeric enum input so a
+        // client cannot send `2` in place of "Medium" (allowIntegerValues: false).
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: false));
+        // Reject unknown JSON properties on request bodies (mass-assignment / typo defence) —
+        // an undocumented field is a 400, not silently ignored.
+        options.JsonSerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
+    });
 
 builder.Services.AddOpenApi(options =>
     // Declare the Bearer/JWT security scheme in the generated contract (AddOpenApi doesn't infer it).
@@ -64,6 +71,9 @@ builder.Services.AddOpenApi(options =>
 
 // Map domain rule violations to RFC 7807 problem responses.
 builder.Services.AddProblemDetails();
+// Exception handlers run in registration order; the first that handles the exception wins.
+// FluentValidation failures at the Application boundary → 400 with per-field errors.
+builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 // A valid-but-insufficient principal (missing sub/department) → 403, not a leaked 500.
 builder.Services.AddExceptionHandler<MissingClaimExceptionHandler>();

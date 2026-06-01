@@ -33,7 +33,7 @@ public class AssetHandlerTests
     [Fact]
     public async Task Register_AddsInStockAsset_AuditsRegistered_AndSaves()
     {
-        var handler = new RegisterAssetHandler(_assets, _audit, _uow, _clock);
+        var handler = new RegisterAssetHandler(new RegisterAssetValidator(), _assets, _audit, _uow, _clock);
 
         var dto = await handler.HandleAsync(new RegisterAssetCommand("AST-NEW", "Dell XPS", AssetType.Laptop, ItAdmin));
 
@@ -48,7 +48,7 @@ public class AssetHandlerTests
     public async Task Register_DuplicateTag_ThrowsConflict_AndDoesNotSaveOrAudit()
     {
         Seed(); // an asset already tagged "AST-1"
-        var handler = new RegisterAssetHandler(_assets, _audit, _uow, _clock);
+        var handler = new RegisterAssetHandler(new RegisterAssetValidator(), _assets, _audit, _uow, _clock);
 
         await Assert.ThrowsAsync<ConflictException>(() =>
             handler.HandleAsync(new RegisterAssetCommand("AST-1", "Another laptop", AssetType.Laptop, ItAdmin)));
@@ -61,7 +61,7 @@ public class AssetHandlerTests
     public async Task Register_DuplicateTag_IgnoringSurroundingWhitespace_ThrowsConflict()
     {
         Seed(); // "AST-1"
-        var handler = new RegisterAssetHandler(_assets, _audit, _uow, _clock);
+        var handler = new RegisterAssetHandler(new RegisterAssetValidator(), _assets, _audit, _uow, _clock);
 
         // Register normalizes the tag (trim); the uniqueness check runs on the normalized value.
         await Assert.ThrowsAsync<ConflictException>(() =>

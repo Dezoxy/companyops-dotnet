@@ -90,3 +90,9 @@ desktop.ini
 # Generated on every `dotnet build` into artifacts/. Gitignored until the contract is
 # hardened and a canonical committed location is chosen (docs/openapi-contract-plan.md, Phases 2-5).
 /artifacts/
+# ---- 42Crunch API security scan scaffolding ----
+# Local audit/scan artifacts. The hand-tuned root openapi.json is slated for
+# retirement in favour of a code-generated contract (docs/openapi-contract-plan.md);
+# .42c/ is the local scan config (regenerable). Revisit when that plan lands.
+/.42c/
+/openapi.json
