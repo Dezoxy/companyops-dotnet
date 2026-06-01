@@ -1,6 +1,7 @@
 using CompanyOps.Application.Abstractions;
 using CompanyOps.Domain.Auditing;
 using CompanyOps.Domain.Requests;
+using FluentValidation;
 
 namespace CompanyOps.Application.Requests.CreateRequest;
 
@@ -14,6 +15,7 @@ namespace CompanyOps.Application.Requests.CreateRequest;
 /// earn the dependency. <see cref="TimeProvider"/> is injected so "now" is testable.
 /// </remarks>
 public sealed class CreateRequestHandler(
+    IValidator<CreateRequestCommand> validator,
     IRequestRepository requests,
     IAuditLogger auditLogger,
     IUnitOfWork unitOfWork,
@@ -21,12 +23,15 @@ public sealed class CreateRequestHandler(
 {
     public async Task<RequestDto> HandleAsync(CreateRequestCommand command, CancellationToken cancellationToken = default)
     {
+        // Validate at the Application boundary (non-negotiable #2) before the aggregate is built.
+        await validator.ValidateAndThrowAsync(command, cancellationToken);
+
         var now = timeProvider.GetUtcNow();
 
         var request = Request.Create(
             command.Title,
             command.Description,
-            command.Type,
+            command.Type!.Value, // non-null guaranteed by the validator (NotNull)
             command.Priority ?? RequestPriority.Medium, // default lives in the app layer, not the API
             command.Category,
             command.RequesterId,

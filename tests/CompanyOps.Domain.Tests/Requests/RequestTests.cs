@@ -80,6 +80,15 @@ public class RequestTests
     }
 
     [Fact]
+    public void Create_WithDescriptionExceedingMaxLength_ThrowsDomainException()
+    {
+        var tooLong = new string('a', Request.DescriptionMaxLength + 1);
+
+        Assert.Throws<DomainException>(
+            () => Request.Create("New laptop", tooLong, RequestType.Procurement, RequestPriority.Medium, null, Requester, Department, NowUtc));
+    }
+
+    [Fact]
     public void Create_WithEmptyRequesterId_ThrowsDomainException()
     {
         var ex = Assert.Throws<DomainException>(
