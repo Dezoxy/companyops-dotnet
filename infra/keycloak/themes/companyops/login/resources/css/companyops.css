@@ -47,11 +47,17 @@ body#keycloak-bg { background-image: none !important; }
   font-weight: 700;
   font-size: 1.55rem;
   letter-spacing: 0.2px;
+  /* keycloak.v2's .pf-v5-c-brand force-uppercases the brand; the app uses "CompanyOps" */
+  text-transform: none !important;
   color: var(--co-text);
   padding: 6px 0 2px;
 }
 #kc-page-title,
-.pf-v5-c-title { color: var(--co-text) !important; }
+.pf-v5-c-title {
+  color: var(--co-text) !important;
+  /* labels use Inter; force it on the heading too (keycloak.v2 defaults to Red Hat) */
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
 #kc-page-subtitle,
 .pf-v5-c-login__main-header-desc { color: var(--co-muted) !important; }
 
