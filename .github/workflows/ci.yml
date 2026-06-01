@@ -70,7 +70,29 @@ jobs:
           restore-keys: nuget-${{ runner.os }}-
 
       - name: Integration tests
-        run: dotnet test tests/CompanyOps.Api.IntegrationTests --configuration Release
+        # Retry ONLY transient Testcontainers image-pull failures (registry "502 Bad Gateway" while
+        # pulling Postgres/Keycloak/RabbitMQ/Redis before any test runs). A real test failure — a
+        # product/test race, ordering bug, or genuine regression — is NOT retried: we inspect the
+        # run log and re-run only when it carries the registry/pull-error signature, so a flaky test
+        # that happens to pass on a second attempt can't sneak through the gate.
+        run: |
+          set -o pipefail
+          log="$(mktemp)"
+          for attempt in 1 2 3; do
+            echo "::group::Integration tests (attempt ${attempt}/3)"
+            if dotnet test tests/CompanyOps.Api.IntegrationTests --configuration Release 2>&1 | tee "$log"; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "::endgroup::"
+            if [ "$attempt" -ge 3 ] || ! grep -qiE 'PullImageAsync|received unexpected HTTP status: 5[0-9][0-9]|Bad Gateway|error pulling image|failed to (pull|resolve) image' "$log"; then
+              echo "::error::integration tests failed — not a transient image-pull error (or retries exhausted); not retrying"
+              exit 1
+            fi
+            echo "::warning::transient registry image-pull failure on attempt ${attempt}/3 — retrying"
+            sleep 20
+          done
+          exit 1
 
   # Smoke-test that the Dockerfiles still build (dev compose: API/Worker/FakeExternals). Gated on
   # the fast job. Versioned images are built + pushed to GHCR by release.yml on a published
