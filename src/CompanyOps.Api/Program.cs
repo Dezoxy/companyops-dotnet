@@ -71,6 +71,10 @@ builder.Services.AddOpenApi(options =>
     options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
     // Reject undeclared properties in the contract — honest, since the API does too.
     options.AddSchemaTransformer<NoAdditionalPropertiesSchemaTransformer>();
+    // Add the string constraints the API actually enforces (uuid/date-time formats, domain maxLengths).
+    options.AddSchemaTransformer<StringConstraintsSchemaTransformer>();
+    // Document the standard error responses every operation can actually produce.
+    options.AddDocumentTransformer<StandardErrorResponsesTransformer>();
 });
 
 // Map domain rule violations to RFC 7807 problem responses.
