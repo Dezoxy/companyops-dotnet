@@ -49,17 +49,16 @@
   padding: 24px;
 }
 
-// The logged-in user's name shown next to the account icon in the toolbar (desktop only).
+// The logged-in user's name shown next to the account icon in the toolbar (all viewports).
 .account-trigger-name {
+  display: inline-block;
+  max-width: 9rem; // keep a long name from crowding the (narrow, on mobile) toolbar
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
   margin-right: 4px;
   font: var(--mat-sys-label-large);
   color: var(--mat-sys-on-surface);
   text-transform: none; // names aren't button labels — don't uppercase
-}
-
-// The name repeated at the top of the opened account menu (also covers the handset case).
-.account-name {
-  padding: 8px 16px;
-  font: var(--mat-sys-label-large);
-  color: var(--mat-sys-on-surface-variant);
 }
