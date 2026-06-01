@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using CompanyOps.Api.Auth;
+using CompanyOps.Api.OpenApi;
 using CompanyOps.Api.Cors;
 using CompanyOps.Api.ErrorHandling;
 using CompanyOps.Api.Observability;
@@ -33,6 +34,24 @@ if (args.Contains("--migrate"))
     return;
 }
 
+// Build-time OpenAPI generation (Microsoft.Extensions.ApiDescription.Server) loads this app to
+// emit the document: it runs the full Program up to — but not including — app.Run(), with no DB /
+// broker / Keycloak config available. The lazy registrations (EF, JWT, RabbitMQ) never connect at
+// build time, so harmless placeholder config lets the host construct without weakening the real
+// fail-fast: a genuine boot still reads (and requires) the real values.
+if (BuildTimeOpenApi.IsGenerating)
+{
+    builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+    {
+        ["ConnectionStrings:CompanyOps"] = "Host=openapi-build;Database=openapi;Username=openapi;Password=openapi",
+        ["Keycloak:Authority"] = "https://openapi-build.invalid/realms/companyops",
+        ["Keycloak:Audience"] = "companyops-api",
+        ["RabbitMq:Host"] = "openapi-build.invalid",
+        ["RabbitMq:Username"] = "openapi",
+        ["RabbitMq:Password"] = "openapi",
+    });
+}
+
 builder.Services
     .AddControllers()
     .AddJsonOptions(options =>
@@ -46,7 +65,9 @@ builder.Services
         options.JsonSerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
     });
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+    // Declare the Bearer/JWT security scheme in the generated contract (AddOpenApi doesn't infer it).
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>());
 
 // Map domain rule violations to RFC 7807 problem responses.
 builder.Services.AddProblemDetails();
