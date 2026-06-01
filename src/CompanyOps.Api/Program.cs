@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.Json.Serialization;
 using CompanyOps.Api.Auth;
 using CompanyOps.Api.OpenApi;
@@ -40,7 +39,7 @@ if (args.Contains("--migrate"))
 // broker / Keycloak config available. The lazy registrations (EF, JWT, RabbitMQ) never connect at
 // build time, so harmless placeholder config lets the host construct without weakening the real
 // fail-fast: a genuine boot still reads (and requires) the real values.
-if (Assembly.GetEntryAssembly()?.GetName().Name is "dotnet-getdocument" or "GetDocument.Insider")
+if (BuildTimeOpenApi.IsGenerating)
 {
     builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
     {
