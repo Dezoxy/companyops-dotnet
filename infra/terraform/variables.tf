@@ -33,13 +33,8 @@ variable "ssh_public_key" {
   type        = string
 }
 
-variable "allowed_ssh_cidr" {
-  description = "CIDR allowed to reach SSH (port 22). Set to your address as a /32 — never 0.0.0.0/0 in real use. No default, so it's a conscious choice."
-  type        = string
-}
-
 variable "ci_ssh_cidr" {
-  description = "Extra CIDR allowed to reach SSH (port 22), set by the release workflow to the CI runner's IP as a /32 for the duration of a deploy. Empty by default — no CI access on a local apply (ADR 0012)."
+  description = "CIDR allowed to reach SSH (port 22) as a /32. SSH is otherwise DEFAULT-DENY: the release workflow sets this to the CI runner's IP to open a transient hole for the Ansible deploy, then re-applies with \"\" to close it. Empty (the default, and every local apply) => no SSH rule at all => use `az vm run-command` for access (ADR 0012)."
   type        = string
   default     = ""
 }
