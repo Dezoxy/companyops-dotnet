@@ -14,7 +14,10 @@ public sealed record PageRequest
     public int Page { get; }
     public int PageSize { get; }
 
-    public int Skip => (Page - 1) * PageSize;
+    // Compute in long and saturate: a very large Page (e.g. ?page=10737420&pageSize=200) would
+    // overflow int and produce a negative offset → a 500 from EF/Postgres. Saturating to int.MaxValue
+    // instead returns an empty page, which is the intended "past the end" behaviour.
+    public int Skip => (int)Math.Min((long)(Page - 1) * PageSize, int.MaxValue);
     public int Take => PageSize;
 
     public PageRequest(int? page = null, int? pageSize = null)
