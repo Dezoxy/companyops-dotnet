@@ -88,7 +88,6 @@ before Terraform/Ansible touch prod): repo **Settings → Environments → New e
 | Secret | `POSTGRES_PASSWORD` `KC_DB_PASSWORD` `RABBITMQ_PASSWORD` `KC_ADMIN_PASSWORD` | `openssl rand -base64 24` each (no `'` in `KC_DB_PASSWORD`) |
 | Variable | `TFSTATE_RESOURCE_GROUP` | `companyops-tfstate` |
 | Variable | `TFSTATE_STORAGE_ACCOUNT` | the bootstrap storage-account name |
-| Variable | `ALLOWED_SSH_CIDR` | your management IP `/32` (the workflow also adds the runner IP for the run) |
 | Variable | `APP_DOMAIN` `ACME_EMAIL` `KC_ADMIN_USER` | your values (SPA, API and Keycloak all share `APP_DOMAIN`) |
 | Variable *(optional)* | `VM_LOCATION` `VM_SIZE` | override the Azure region / VM size without a code change — defaults are `westeurope` / `Standard_B2as_v2`. Set one if a region returns `SkuNotAvailable` (capacity restrictions), then re-run. |
 
@@ -141,12 +140,15 @@ exist in GHCR (build them via a release, or `docker buildx build --push` locally
 ```bash
 cd infra/terraform
 ./bootstrap-state.sh && cp backend.hcl.example backend.hcl   # one-time: remote state (paste printed values)
-cp terraform.tfvars.example terraform.tfvars                 # set ssh_public_key + allowed_ssh_cidr (your IP/32)
+cp terraform.tfvars.example terraform.tfvars                 # set ssh_public_key (SSH is default-deny)
 terraform init -backend-config=backend.hcl && terraform apply
 terraform output public_ip
 ```
 
-It opens **only** SSH (locked to your CIDR), 80, and 443. See [the Terraform README](../infra/terraform/README.md)
+It opens **only** 80 and 443 — SSH/22 is **default-deny**. The release workflow opens it just-in-time
+for the deploy; to deploy manually from here, open SSH to your own IP for the run with
+`terraform apply -var "ci_ssh_cidr=$(curl -s ifconfig.me)/32"`, then re-apply with `-var "ci_ssh_cidr="`
+to close it (or just use `az vm run-command`). See [the Terraform README](../infra/terraform/README.md)
 for the AWS/Hetzner equivalents and the managed-PaaS alternative.
 
 **Or bring your own VM:** any Ubuntu 24.04 host reachable over SSH, with 80/443 open and SSH

@@ -16,17 +16,18 @@ it once with `bootstrap-state.sh`, then `init` against it:
 cd infra/terraform
 ./bootstrap-state.sh                           # one-time: creates the state storage, prints the values
 cp backend.hcl.example backend.hcl             # paste the printed values (gitignored)
-cp terraform.tfvars.example terraform.tfvars   # fill in ssh_public_key + allowed_ssh_cidr
+cp terraform.tfvars.example terraform.tfvars   # fill in ssh_public_key (SSH is default-deny)
 terraform init -backend-config=backend.hcl
 terraform plan
 terraform apply
 terraform output public_ip      # -> set DNS A records, then run Ansible
 ```
 
-Creates: a resource group, VNet/subnet, a Standard public IP, an NSG that allows **only**
-SSH (locked to `allowed_ssh_cidr`) + 80 + 443, and an Ubuntu 24.04 VM (key-only SSH). The
-datastores are never opened in the NSG — Traefik is the sole ingress and everything else
-stays on the internal Docker network behind the firewall.
+Creates: a resource group, VNet/subnet, a Standard public IP, an NSG that allows **only** 80 +
+443 (SSH/22 is default-deny — opened just-in-time to the CI runner during a deploy, then closed;
+use `az vm run-command` for ad-hoc access), and an Ubuntu 24.04 VM (key-only SSH). The datastores
+are never opened in the NSG — Traefik is the sole ingress and everything else stays on the
+internal Docker network behind the firewall.
 
 The OS image uses `version = "latest"` for convenience in this example; pin a specific
 gallery image version for fully reproducible applies. The committed `.terraform.lock.hcl`

@@ -4,6 +4,6 @@ output "public_ip" {
 }
 
 output "ssh_command" {
-  description = "Convenience SSH command once the VM is up."
+  description = "SSH command for the admin user. NOTE: inbound 22 is default-deny (no standing NSG rule) — this only connects from inside the transient CI deploy window. For ad-hoc access use `az vm run-command invoke` (control plane + RBAC, no open port)."
   value       = "ssh ${var.admin_username}@${azurerm_public_ip.this.ip_address}"
 }

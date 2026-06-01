@@ -25,26 +25,31 @@ resource "azurerm_public_ip" "this" {
   sku                 = "Standard"
 }
 
-# Only SSH (locked to your CIDR, plus the CI runner's IP during a deploy) + the public web
-# ports. Traefik is the sole ingress; Postgres/RabbitMQ/Redis/Keycloak are never exposed to the
-# NSG — they stay on the internal Docker network behind this firewall.
+# Public web ports (80/443) are the only standing ingress. SSH (22) is DEFAULT-DENY — there is no
+# permanent inbound SSH rule. Day-to-day access is via `az vm run-command` (Azure control plane +
+# RBAC, no open port). The release workflow opens 22 just-in-time, scoped to the CI runner's IP,
+# by setting ci_ssh_cidr for the deploy, then re-applies with "" to close it. Traefik is the sole
+# standing ingress; Postgres/RabbitMQ/Redis/Keycloak are never exposed to the NSG.
 resource "azurerm_network_security_group" "this" {
   name                = "${var.prefix}-nsg"
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
 
-  security_rule {
-    name                   = "ssh"
-    priority               = 100
-    direction              = "Inbound"
-    access                 = "Allow"
-    protocol               = "Tcp"
-    source_port_range      = "*"
-    destination_port_range = "22"
-    # Your stable management CIDR + (when set) the release workflow's runner IP for the deploy.
-    # compact() drops ci_ssh_cidr when it's empty, so a local apply opens SSH to just your CIDR.
-    source_address_prefixes    = compact([var.allowed_ssh_cidr, var.ci_ssh_cidr])
-    destination_address_prefix = "*"
+  # Transient SSH: present ONLY while ci_ssh_cidr is set (i.e. mid-deploy), scoped to that one
+  # runner IP. Empty (the steady state, and every local apply) => no rule => port 22 is denied.
+  dynamic "security_rule" {
+    for_each = var.ci_ssh_cidr != "" ? [var.ci_ssh_cidr] : []
+    content {
+      name                       = "ssh-ci-deploy"
+      priority                   = 100
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "22"
+      source_address_prefixes    = [security_rule.value]
+      destination_address_prefix = "*"
+    }
   }
 
   security_rule {

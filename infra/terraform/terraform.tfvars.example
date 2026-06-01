@@ -1,10 +1,11 @@
 # Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
-# Only the two below are required (no defaults). location / vm_size / admin_username have defaults
-# in variables.tf — leave them commented so this file can't override the default; uncomment only to
-# override. (Don't pin vm_size to Standard_B2s — it's capacity-restricted in some EU regions; the
-# default Standard_B2as_v2 avoids that.)
-ssh_public_key   = "ssh-ed25519 AAAA...replace-with-your-public-key... you@host"
-allowed_ssh_cidr = "203.0.113.4/32" # YOUR address as a /32 — do not use 0.0.0.0/0
+# Only ssh_public_key below is required (no default). location / vm_size / admin_username have
+# defaults in variables.tf — leave them commented so this file can't override the default;
+# uncomment only to override. (Don't pin vm_size to Standard_B2s — it's capacity-restricted in
+# some EU regions; the default Standard_B2as_v2 avoids that.)
+# SSH (22) is default-deny — there is no allowed_ssh_cidr knob. The release workflow opens a
+# transient, runner-scoped hole during a deploy; for ad-hoc access use `az vm run-command`.
+ssh_public_key = "ssh-ed25519 AAAA...replace-with-your-public-key... you@host"
 
 # location       = "germanywestcentral" # any EU region: westeurope, northeurope, swedencentral, ...
 # vm_size        = "Standard_B2as_v2"    # 2 vCPU / 8 GB
