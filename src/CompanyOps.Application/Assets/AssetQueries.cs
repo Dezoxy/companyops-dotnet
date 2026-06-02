@@ -7,11 +7,13 @@ public sealed record ListAssetsQuery(PageRequest? Page = null);
 
 public sealed class ListAssetsHandler(IAssetRepository assets)
 {
-    public async Task<IReadOnlyList<AssetDto>> HandleAsync(ListAssetsQuery query, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<AssetDto>> HandleAsync(ListAssetsQuery query, CancellationToken cancellationToken = default)
     {
         var page = query.Page ?? new PageRequest();
-        var all = await assets.ListAsync(page.Skip, page.Take, cancellationToken);
-        return all.Select(AssetDto.FromDomain).ToList();
+        var items = await assets.ListAsync(page.Skip, page.Take, cancellationToken);
+        var total = await assets.CountAsync(cancellationToken);
+        var dtos = items.Select(AssetDto.FromDomain).ToList();
+        return new PagedResult<AssetDto>(dtos, total, page.Page, page.PageSize);
     }
 }
 

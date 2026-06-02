@@ -22,8 +22,8 @@ public sealed class AssetsController : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = Policies.ReadAssets)]
-    [ProducesResponseType(typeof(IReadOnlyList<AssetDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<AssetDto>>> List(
+    [ProducesResponseType(typeof(PagedResult<AssetDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<AssetDto>>> List(
         [FromServices] ListAssetsHandler handler,
         CancellationToken cancellationToken,
         [FromQuery] int? page = null,

@@ -75,6 +75,8 @@ internal sealed class FakeAssetRepository : IAssetRepository
                 .OrderByDescending(a => a.CreatedAtUtc).ThenByDescending(a => a.Id)
                 .Skip(skip).Take(take),
         ]);
+
+    public Task<int> CountAsync(CancellationToken cancellationToken = default) => Task.FromResult(_store.Count);
 }
 
 internal sealed class FakeUnitOfWork : IUnitOfWork

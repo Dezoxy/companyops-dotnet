@@ -52,14 +52,9 @@ export interface RequestDto {
   readonly approvalSteps: readonly ApprovalStepDto[];
 }
 
-/** A page of a list response: the items plus the unpaged total and the window that produced it.
- *  Mirrors the server's PagedResult<T>. */
-export interface PagedResultDto<T> {
-  readonly items: readonly T[];
-  readonly total: number;
-  readonly page: number;
-  readonly pageSize: number;
-}
+// Re-exported so existing imports (`PagedResultDto` from this module) keep working; the type now
+// lives in shared/ since assets and other features page too.
+export type { PagedResultDto } from '../../shared/api/paged-result';
 
 /** Body for POST /requests (create). Requester + department come from the JWT, never the body. */
 export interface CreateRequestInput {

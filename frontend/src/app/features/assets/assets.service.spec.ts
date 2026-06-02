@@ -38,13 +38,24 @@ describe('AssetsService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('loadAll GETs /api/assets and populates the signal', () => {
+  it('loadAll GETs /api/assets (max page) and populates the signal from the page envelope', () => {
     service.loadAll();
-    const req = httpMock.expectOne('/api/assets');
+    const req = httpMock.expectOne((r) => r.url === '/api/assets');
     expect(req.request.method).toBe('GET');
-    req.flush([dto()]);
+    expect(req.request.params.get('pageSize')).toBe('200'); // pulls the full inventory, not page 1
+    req.flush({ items: [dto()], total: 1, page: 1, pageSize: 200 });
     expect(service.assets()).toHaveLength(1);
     expect(service.loading()).toBe(false);
+  });
+
+  it('fetchPageResult passes page/pageSize and returns the mapped envelope', () => {
+    let total: number | undefined;
+    service.fetchPageResult(2, 10).subscribe((res) => (total = res.total));
+    const req = httpMock.expectOne((r) => r.url === '/api/assets');
+    expect(req.request.params.get('page')).toBe('2');
+    expect(req.request.params.get('pageSize')).toBe('10');
+    req.flush({ items: [dto()], total: 42, page: 2, pageSize: 10 });
+    expect(total).toBe(42);
   });
 
   it('register POSTs the input', () => {

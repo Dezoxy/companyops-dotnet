@@ -13,6 +13,8 @@ public sealed class PaginationTests(ApiFactory factory)
 {
     private sealed record AssetResponse(Guid Id);
 
+    private sealed record PagedResponse<T>(List<T> Items, int Total, int Page, int PageSize);
+
     [Fact]
     public async Task ListAssets_PagesResults_WithDisjointPages()
     {
@@ -26,16 +28,19 @@ public sealed class PaginationTests(ApiFactory factory)
             r.EnsureSuccessStatusCode();
         }
 
-        var page1 = await client.GetFromJsonAsync<List<AssetResponse>>("/assets?page=1&pageSize=2");
-        var page2 = await client.GetFromJsonAsync<List<AssetResponse>>("/assets?page=2&pageSize=2");
+        var page1 = await client.GetFromJsonAsync<PagedResponse<AssetResponse>>("/assets?page=1&pageSize=2");
+        var page2 = await client.GetFromJsonAsync<PagedResponse<AssetResponse>>("/assets?page=2&pageSize=2");
 
         Assert.NotNull(page1);
         Assert.NotNull(page2);
         // pageSize is respected: a page never exceeds the requested size.
-        Assert.Equal(2, page1!.Count);
-        Assert.True(page2!.Count >= 1);
+        Assert.Equal(2, page1!.Items.Count);
+        Assert.True(page2!.Items.Count >= 1);
+        // The total counts the whole table (≥ the 3 we just seeded), not just the page.
+        Assert.True(page1.Total >= 3);
+        Assert.Equal(page1.Total, page2.Total);
         // Pages are disjoint — no row appears on both.
-        Assert.Empty(page1.Select(a => a.Id).Intersect(page2.Select(a => a.Id)));
+        Assert.Empty(page1.Items.Select(a => a.Id).Intersect(page2.Items.Select(a => a.Id)));
     }
 
     [Fact]
@@ -47,8 +52,8 @@ public sealed class PaginationTests(ApiFactory factory)
         var response = await client.GetAsync("/assets?pageSize=100000");
 
         response.EnsureSuccessStatusCode();
-        var items = await response.Content.ReadFromJsonAsync<List<AssetResponse>>();
-        Assert.NotNull(items);
-        Assert.True(items!.Count <= 200);
+        var page = await response.Content.ReadFromJsonAsync<PagedResponse<AssetResponse>>();
+        Assert.NotNull(page);
+        Assert.True(page!.Items.Count <= 200);
     }
 }
