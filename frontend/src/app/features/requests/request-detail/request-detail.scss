@@ -35,10 +35,55 @@
   }
 }
 
-.content {
+// Two-column: main content + a details sidebar (collapses to one column on narrow screens).
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+.detail-main {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
+}
+
+.detail-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: var(--app-content-top-offset);
+}
+
+.meta-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  margin: 0;
+
+  dt {
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-body-small);
+  }
+
+  dd {
+    margin: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 839px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-aside {
+    position: static;
+  }
 }
 
 .description {
@@ -95,6 +140,20 @@
   border-radius: 50%;
   margin-top: 4px;
   z-index: 1;
+  background-color: var(--app-tone-neutral-fg);
+
+  &.tone-info {
+    background-color: var(--app-tone-info-fg);
+  }
+  &.tone-progress {
+    background-color: var(--app-tone-progress-fg);
+  }
+  &.tone-success {
+    background-color: var(--app-tone-success-fg);
+  }
+  &.tone-danger {
+    background-color: var(--app-tone-danger-fg);
+  }
 }
 
 .step-body {

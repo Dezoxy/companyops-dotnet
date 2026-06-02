@@ -12,7 +12,8 @@
   <mat-progress-bar mode="indeterminate" />
 }
 
-<form [formGroup]="form" class="form">
+<form [formGroup]="form" class="create-grid">
+  <div class="create-main">
   <mat-card appearance="outlined">
     <mat-card-header><mat-card-title>Basic information</mat-card-title></mat-card-header>
     <mat-card-content class="fields">
@@ -73,14 +74,30 @@
     </mat-card-content>
   </mat-card>
 
-  @if (error()) {
-    <p class="error-text"><mat-icon>error_outline</mat-icon> Couldn't save the request. Please try again.</p>
-  }
-
-  <div class="actions">
-    <a mat-stroked-button routerLink="/requests">Cancel</a>
-    <span class="spacer"></span>
-    <button mat-stroked-button type="button" [disabled]="submitting()" (click)="save(false)">Save as draft</button>
-    <button mat-flat-button type="button" [disabled]="submitting()" (click)="save(true)">Create &amp; submit</button>
+    @if (error()) {
+      <p class="error-text"><mat-icon>error_outline</mat-icon> Couldn't save the request. Please try again.</p>
+    }
   </div>
+
+  <aside class="create-aside">
+    <mat-card appearance="outlined">
+      <mat-card-header><mat-card-title>Before you submit</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <p class="muted">
+          Save a <strong>draft</strong> to finish later, or <strong>submit</strong> to start the
+          approval chain configured for this request type. You can track its progress on the
+          request page.
+        </p>
+        <div class="actions">
+          <button mat-flat-button type="button" [disabled]="submitting()" (click)="save(true)">
+            Create &amp; submit
+          </button>
+          <button mat-stroked-button type="button" [disabled]="submitting()" (click)="save(false)">
+            Save as draft
+          </button>
+          <a mat-button routerLink="/requests">Cancel</a>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </aside>
 </form>

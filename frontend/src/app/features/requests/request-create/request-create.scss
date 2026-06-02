@@ -16,11 +16,24 @@
   }
 }
 
-.form {
+// Two-column: form on the left, the submit/draft actions in a sticky sidebar on the right.
+.create-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+.create-main {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 720px;
+  min-width: 0;
+}
+
+.create-aside {
+  position: sticky;
+  top: var(--app-content-top-offset);
 }
 
 .fields {
@@ -33,20 +46,32 @@
   }
 }
 
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+  margin: 0 0 16px;
+}
+
 .error-text {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0;
+  margin: 8px 0 0;
   color: var(--mat-sys-error);
 }
 
 .actions {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
 
-  .spacer {
-    flex: 1 1 auto;
+@media (max-width: 839px) {
+  .create-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .create-aside {
+    position: static;
   }
 }

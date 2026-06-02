@@ -77,11 +77,13 @@ Split into two PRs to keep each diff focused.
 - [x] **Deferred (not cheap):** status/type **filtering** needs backend filter params; requester /
       department **names** need a user directory — both simplified out for now (follow-ups).
 
-**3b — Detail + Create (next PR)**
-- [ ] **Detail:** approval-timeline stepper (from `approvalSteps`), request meta; line-items /
-      requester-name / per-request integration health simplified (domain doesn't have them).
-- [ ] **Create:** sectioned form (title/type/priority/description/category); cost-center / location /
-      delivery-date / chain-preview simplified (not in the domain).
+**3b — Detail + Create ✅ done (this PR)**
+- [x] **Detail:** two-column layout — main column (description, approval-timeline stepper from
+      `approvalSteps`, comments) + a Details sidebar (status/priority/type/category/created/id).
+      Line-items / requester-name / per-request integration health simplified out (domain lacks them).
+- [x] **Create:** two-column — Basic Information form (title/type/priority/description/category) +
+      an action sidebar (Create & submit / Save draft / Cancel) with a short approval note.
+      Cost-center / location / delivery-date / live chain-preview simplified out (not in the domain).
 
 ### Phase 4 — Approvals + Assets
 - [ ] Approvals queue (approve/reject inline). Assets list + **slide-over detail** + history timeline.
