@@ -40,6 +40,7 @@
       @if (messages().length === 0) {
         <p class="muted">No integration messages yet.</p>
       } @else {
+        <div class="table-scroll">
         <table class="messages-table">
           <thead>
             <tr>
@@ -64,6 +65,7 @@
             }
           </tbody>
         </table>
+        </div>
       }
     </mat-card-content>
   </mat-card>

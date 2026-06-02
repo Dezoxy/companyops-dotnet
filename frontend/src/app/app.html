@@ -144,3 +144,29 @@
     </main>
   </mat-sidenav-content>
 </mat-sidenav-container>
+
+<!-- Handset bottom navigation: quick tabs for the top sections (full nav via the menu); the
+     New-request FAB sits above it. Rendered OUTSIDE the sidenav container so `position: fixed`
+     resolves against the viewport, not the content's scroll container. Handset only. -->
+@if (isHandset()) {
+  <nav class="bottom-nav" aria-label="Bottom navigation">
+    @for (item of bottomNav(); track item.path) {
+      <a
+        class="bn-item"
+        [routerLink]="item.path"
+        routerLinkActive="active"
+        #bnrla="routerLinkActive"
+        [attr.aria-current]="bnrla.isActive ? 'page' : null"
+      >
+        <mat-icon>{{ item.icon }}</mat-icon>
+        <span>{{ item.label }}</span>
+      </a>
+    }
+  </nav>
+
+  @if (canCreate()) {
+    <a mat-fab class="new-request-fab" routerLink="/requests/new" aria-label="New request">
+      <mat-icon>add</mat-icon>
+    </a>
+  }
+}

@@ -34,6 +34,7 @@
       <p>No assets registered.</p>
     </div>
   } @else {
+    <div class="table-scroll">
     <table class="assets-table">
       <thead>
         <tr>
@@ -69,6 +70,7 @@
         }
       </tbody>
     </table>
+    </div>
 
     <nav class="pager" aria-label="Assets pagination">
       <span class="summary">Showing {{ rangeStart() }}–{{ rangeEnd() }} of {{ total() }} assets</span>
