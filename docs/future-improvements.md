@@ -22,9 +22,9 @@ The authoritative per-area notes live in [security.md](security.md) and
 
 For a **customer-handover lens** on the same gaps — tracked as a checklist across security,
 reliability, data/GDPR, deployment, performance, and docs — see
-[production-readiness.md](production-readiness.md). The plan to turn the API contract into a single
-code-generated, audit-clean, drift-gated artifact is in
-[openapi-contract-plan.md](openapi-contract-plan.md).
+[production-readiness.md](production-readiness.md). The API contract is now a single
+code-generated, audit-clean, drift-gated artifact (delivered in v1.2.0,
+[openapi-contract-plan.md](openapi-contract-plan.md)).
 
 ---
 
