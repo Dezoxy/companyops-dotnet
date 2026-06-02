@@ -6,25 +6,32 @@
     [opened]="!isHandset()"
     #drawer
   >
-    <div class="brand">
-      <span class="material-symbols-outlined brand-mark">corporate_fare</span>
-      <span class="brand-text">
-        <span class="brand-name">CompanyOps</span>
-        <span class="brand-sub">Enterprise ERP</span>
-      </span>
-    </div>
+    <!-- mat-sidenav projects children into .mat-drawer-inner-container, so the column layout
+         (and the bottom-pinned user card) must live on an inner wrapper, not the host element. -->
+    <div class="sidenav-inner">
+      <div class="brand">
+        <span class="material-symbols-outlined brand-mark">corporate_fare</span>
+        <span class="brand-text">
+          <span class="brand-name">CompanyOps</span>
+          <span class="brand-sub">Enterprise ERP</span>
+        </span>
+      </div>
 
-    <a
-      mat-flat-button
-      class="new-request"
-      routerLink="/requests/new"
-      (click)="isHandset() && drawer.close()"
-    >
-      <mat-icon>add</mat-icon>
-      New Request
-    </a>
+      <!-- Only the Employee role may create requests (docs/security.md); hide the CTA otherwise.
+           UI convenience only — POST /requests is still enforced server-side. -->
+      @if (auth.hasRole('Employee')) {
+        <a
+          mat-flat-button
+          class="new-request"
+          routerLink="/requests/new"
+          (click)="isHandset() && drawer.close()"
+        >
+          <mat-icon>add</mat-icon>
+          New Request
+        </a>
+      }
 
-    <mat-nav-list class="nav">
+      <mat-nav-list class="nav">
       @for (item of nav; track item.path) {
         @if (canSee(item)) {
           <a
@@ -42,17 +49,18 @@
       }
     </mat-nav-list>
 
-    @if (auth.isAuthenticated()) {
-      <div class="user-card">
-        <span class="avatar" aria-hidden="true">{{ initials() }}</span>
-        <span class="user-meta">
-          <span class="user-name">{{ auth.userName() }}</span>
-          @if (primaryRole()) {
-            <span class="user-role">{{ primaryRole() }}</span>
-          }
-        </span>
-      </div>
-    }
+      @if (auth.isAuthenticated()) {
+        <div class="user-card">
+          <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+          <span class="user-meta">
+            <span class="user-name">{{ auth.userName() }}</span>
+            @if (primaryRole()) {
+              <span class="user-role">{{ primaryRole() }}</span>
+            }
+          </span>
+        </div>
+      }
+    </div>
   </mat-sidenav>
 
   <mat-sidenav-content>

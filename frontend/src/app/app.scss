@@ -6,9 +6,15 @@
   width: 264px;
   background-color: var(--mat-sys-surface-container-lowest);
   border-right: 1px solid var(--mat-sys-outline-variant);
-  // Column layout so the user card can pin to the bottom.
+}
+
+// Inner wrapper carries the column layout: mat-sidenav projects children into its own
+// .mat-drawer-inner-container, so flexing the host wouldn't make .user-card's margin-top:auto
+// pin to the bottom. Fill the full height here so the auto margin has room to push against.
+.sidenav-inner {
   display: flex;
   flex-direction: column;
+  height: 100%;
   padding: 12px;
   gap: 4px;
   box-sizing: border-box;
