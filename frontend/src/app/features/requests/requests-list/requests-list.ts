@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,12 +9,14 @@ import { MatCardModule } from '@angular/material/card';
 
 import { AuthService } from '../../../core/auth/auth.service';
 import { RequestsService } from '../requests.service';
-import { REQUEST_TYPE_ICON } from '../requests.models';
+import { REQUEST_TYPE_ICON, RequestVm } from '../requests.models';
 import { StatusChip } from '../../../shared/status-chip/status-chip';
 
-/** Requests list: a server-paged table over GET /requests (the API scopes rows by role). Pagination
- *  is server-side so the footer shows the true total, not a capped page. Status/type filtering needs
- *  backend filter params (not yet supported) — deferred; see docs/ui-upgrade-plan.md. */
+/** Requests list: a server-paged table over GET /requests (the API scopes rows by role). Owns its
+ *  own page fetch (fetchPageResult) rather than the shared list signal, so paging here never
+ *  clobbers what the Approvals/Fulfilment queue screens read. Pagination is server-side so the
+ *  footer shows the true total. Status/type filtering needs backend filter params (not yet
+ *  supported) — deferred; see docs/ui-upgrade-plan.md. */
 @Component({
   selector: 'app-requests-list',
   imports: [DatePipe, RouterLink, MatButtonModule, MatIconModule, MatProgressBarModule, MatCardModule, StatusChip],
@@ -24,14 +27,15 @@ import { StatusChip } from '../../../shared/status-chip/status-chip';
 export class RequestsList {
   private readonly service = inject(RequestsService);
   private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly requests = this.service.requests;
-  protected readonly loading = this.service.loading;
-  protected readonly error = this.service.error;
-  protected readonly total = this.service.total;
-  protected readonly page = this.service.page;
-  protected readonly pageSize = this.service.pageSize;
-  protected readonly totalPages = this.service.totalPages;
+  protected readonly requests = signal<readonly RequestVm[]>([]);
+  protected readonly loading = signal(false);
+  protected readonly error = signal(false);
+  protected readonly total = signal(0);
+  protected readonly page = signal(1);
+  protected readonly pageSize = signal(50);
+  protected readonly totalPages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize())));
 
   protected readonly typeIcon = REQUEST_TYPE_ICON;
   // Only Employees create requests (docs/security.md); the API still enforces.
@@ -62,16 +66,37 @@ export class RequestsList {
   });
 
   constructor() {
-    this.service.loadAll();
+    this.load(1);
   }
 
   protected goTo(page: number): void {
     if (page >= 1 && page <= this.totalPages() && page !== this.page() && !this.loading()) {
-      this.service.loadAll(page, this.pageSize());
+      this.load(page);
     }
   }
 
   protected refresh(): void {
-    this.service.loadAll(this.page(), this.pageSize());
+    this.load(this.page());
+  }
+
+  private load(page: number): void {
+    this.loading.set(true);
+    this.error.set(false);
+    this.service
+      .fetchPageResult(page, this.pageSize())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.requests.set(res.items);
+          this.total.set(res.total);
+          this.page.set(res.page);
+          this.pageSize.set(res.pageSize);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.error.set(true);
+          this.loading.set(false);
+        },
+      });
   }
 }

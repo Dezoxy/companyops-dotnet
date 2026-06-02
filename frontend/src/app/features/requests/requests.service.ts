@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
@@ -16,9 +16,6 @@ import {
   RequestDto,
   RequestVm,
 } from './requests.models';
-
-/** Mirrors the server's default page size; the list footer pages in these increments. */
-const DEFAULT_PAGE_SIZE = 50;
 
 /** Build the optional page/pageSize query params (only those provided are sent). Explicit
  *  undefined checks, not truthiness, so a literal 0 is still forwarded for the API to reject. */
@@ -86,41 +83,32 @@ export class RequestsService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiBaseUrl}/requests`;
 
+  // The shared default-page list, used by the simple queue screens (Approvals, Fulfilment) that
+  // just want "the requests". Screens that page (the list) own their own fetch via fetchPageResult
+  // so their page selection never pollutes this shared signal.
   private readonly _requests = signal<readonly RequestVm[]>([]);
   private readonly _loading = signal(false);
   private readonly _error = signal(false);
-  // Pagination metadata from the last loadAll() page (for the list footer + page controls).
-  private readonly _total = signal(0);
-  private readonly _page = signal(1);
-  private readonly _pageSize = signal(DEFAULT_PAGE_SIZE);
 
   readonly requests = this._requests.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
-  readonly total = this._total.asReadonly();
-  readonly page = this._page.asReadonly();
-  readonly pageSize = this._pageSize.asReadonly();
-  readonly totalPages = computed(() => Math.max(1, Math.ceil(this._total() / this._pageSize())));
 
-  /** Load (or refresh) a page of the request list into the shared signals (items + pagination
-   *  metadata for the footer). Ignored while a load is already in flight — the list screen calls
-   *  this and its controls are disabled while loading — so this keeps it to a single GET without
-   *  cancellation plumbing. `page` is 1-based; omit both args for the first default-sized page. */
-  loadAll(page?: number, pageSize?: number): void {
+  /** Load (or refresh) the default page into the shared signal. Ignored while a load is already in
+   *  flight (single GET, no cancellation plumbing). For screens that just need the request list;
+   *  paged screens use {@link fetchPageResult} so they don't share/clobber this signal. */
+  loadAll(): void {
     if (this._loading()) {
       return;
     }
     this._loading.set(true);
     this._error.set(false);
     this.http
-      .get<PagedResultDto<RequestDto>>(this.baseUrl, { params: pageParams(page, pageSize) })
-      .pipe(map((res) => ({ ...res, items: res.items.map(mapRequest) })))
+      .get<PagedResultDto<RequestDto>>(this.baseUrl)
+      .pipe(map((res) => res.items.map(mapRequest)))
       .subscribe({
-        next: (res) => {
-          this._requests.set(res.items);
-          this._total.set(res.total);
-          this._page.set(res.page);
-          this._pageSize.set(res.pageSize);
+        next: (items) => {
+          this._requests.set(items);
           this._loading.set(false);
         },
         error: () => {
@@ -137,6 +125,15 @@ export class RequestsService {
     return this.http
       .get<PagedResultDto<RequestDto>>(this.baseUrl, { params: pageParams(undefined, pageSize) })
       .pipe(map((res) => res.items.map(mapRequest)));
+  }
+
+  /** One-shot fetch of a full page envelope (items mapped to view models, plus the total/page/
+   *  pageSize for the footer), independent of the shared list signal. The paged list screen owns
+   *  this so its page selection never clobbers the shared `requests` signal other screens read. */
+  fetchPageResult(page?: number, pageSize?: number): Observable<PagedResultDto<RequestVm>> {
+    return this.http
+      .get<PagedResultDto<RequestDto>>(this.baseUrl, { params: pageParams(page, pageSize) })
+      .pipe(map((res) => ({ ...res, items: res.items.map(mapRequest) })));
   }
 
   /** Fetch a single request by id (used by the detail screen). */

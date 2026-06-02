@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { RequestsService, mapRequest } from './requests.service';
-import { RequestDto } from './requests.models';
+import { PagedResultDto, RequestDto, RequestVm } from './requests.models';
 
 function dto(overrides: Partial<RequestDto> = {}): RequestDto {
   return {
@@ -69,7 +69,7 @@ describe('RequestsService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('loadAll GETs /api/requests and populates the items + pagination signals', () => {
+  it('loadAll GETs the default page and populates the shared items signal', () => {
     service.loadAll();
     const req = httpMock.expectOne('/api/requests');
     expect(req.request.method).toBe('GET');
@@ -79,17 +79,17 @@ describe('RequestsService', () => {
     expect(service.error()).toBe(false);
     expect(service.requests()).toHaveLength(1);
     expect(service.requests()[0].title).toBe('New laptop');
-    expect(service.total()).toBe(142);
-    expect(service.page()).toBe(1);
-    expect(service.totalPages()).toBe(3); // ceil(142 / 50)
   });
 
-  it('loadAll passes 1-based page + pageSize as query params', () => {
-    service.loadAll(2, 25);
+  it('fetchPageResult passes 1-based page + pageSize and returns the mapped envelope', () => {
+    let result: PagedResultDto<RequestVm> | undefined;
+    service.fetchPageResult(2, 25).subscribe((res) => (result = res));
     const req = httpMock.expectOne((r) => r.url === '/api/requests');
     expect(req.request.params.get('page')).toBe('2');
     expect(req.request.params.get('pageSize')).toBe('25');
-    req.flush({ items: [], total: 0, page: 2, pageSize: 25 });
+    req.flush({ items: [dto()], total: 142, page: 2, pageSize: 25 });
+    expect(result?.total).toBe(142);
+    expect(result?.items.map((i) => i.title)).toEqual(['New laptop']);
   });
 
   it('fetchPage returns just the mapped items for the given page size', () => {

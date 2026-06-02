@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { signal } from '@angular/core';
 import { of } from 'rxjs';
 
 import { RequestsList } from './requests-list';
@@ -33,14 +32,8 @@ function vm(title: string): RequestVm {
 
 function fakeService(requests: RequestVm[], total = requests.length): RequestsService {
   return {
-    requests: signal(requests),
-    loading: signal(false),
-    error: signal(false),
-    total: signal(total),
-    page: signal(1),
-    pageSize: signal(50),
-    totalPages: signal(Math.max(1, Math.ceil(total / 50))),
-    loadAll: () => undefined,
+    // The list owns its own paged data via fetchPageResult (not the shared signal).
+    fetchPageResult: () => of({ items: requests, total, page: 1, pageSize: 50 }),
     getById: () => of(requests[0]),
   } as unknown as RequestsService;
 }
