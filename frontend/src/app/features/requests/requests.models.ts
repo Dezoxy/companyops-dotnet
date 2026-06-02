@@ -88,6 +88,13 @@ export const REQUEST_TYPE_LABEL: Record<RequestType, string> = {
   AssetLifecycle: 'Asset lifecycle',
 };
 
+// Material Symbol per request type — used wherever a type is shown with an icon (tables, lists).
+export const REQUEST_TYPE_ICON: Record<RequestType, string> = {
+  Procurement: 'shopping_cart',
+  Helpdesk: 'support_agent',
+  AssetLifecycle: 'inventory_2',
+};
+
 // Declaration order is the select order (ascending severity) — keep it, don't sort alphabetically.
 export const REQUEST_PRIORITY_META: Record<RequestPriority, ToneLabel> = {
   Low: { label: 'Low', tone: 'neutral' },

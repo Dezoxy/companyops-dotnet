@@ -1,7 +1,7 @@
 <header class="page-head">
   <div>
-    <h1>Dashboard</h1>
-    <p>Status of all requests across the workflow.</p>
+    <h1>Dashboard Overview</h1>
+    <p>Real-time enterprise metrics and system health.</p>
   </div>
   <button mat-stroked-button (click)="refresh()" [disabled]="loading()">
     <mat-icon>refresh</mat-icon>
@@ -13,47 +13,121 @@
   <mat-progress-bar mode="indeterminate" />
 }
 
-@if (error()) {
+<!-- KPI cards -->
+@if (kpiError()) {
   <mat-card appearance="outlined" class="state">
     <mat-icon class="state-icon">error_outline</mat-icon>
-    <p>Couldn't load dashboard data.</p>
+    <p>Couldn't load the metrics.</p>
     <button mat-stroked-button (click)="refresh()">Try again</button>
   </mat-card>
 } @else {
   <section class="stat-grid">
     @for (stat of stats(); track stat.label) {
-      <mat-card appearance="outlined">
-        <mat-card-content class="stat">
-          <mat-icon class="stat-icon" aria-hidden="true">{{ stat.icon }}</mat-icon>
-          <div>
-            <div class="stat-value">{{ stat.value }}</div>
-            <div class="stat-label">{{ stat.label }}</div>
-          </div>
-        </mat-card-content>
+      <mat-card appearance="outlined" class="stat-card">
+        <div class="stat-top">
+          <span class="stat-tile" aria-hidden="true"><mat-icon>{{ stat.icon }}</mat-icon></span>
+          @if (stat.badge) {
+            <app-status-chip [label]="stat.badge.text" [tone]="stat.badge.tone" />
+          }
+        </div>
+        <div class="stat-value" [class.emphasis]="stat.emphasis">{{ stat.value }}</div>
+        <div class="stat-label">{{ stat.label }}</div>
       </mat-card>
     }
   </section>
-
-  <mat-card appearance="outlined" class="recent">
-    <mat-card-header>
-      <mat-card-title>Recent requests</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      @if (recent().length === 0) {
-        <p class="muted">No requests yet.</p>
-      } @else {
-        <ul class="recent-list">
-          @for (request of recent(); track request.id) {
-            <li>
-              <a [routerLink]="['/requests', request.id]" class="recent-item">
-                <span class="recent-title">{{ request.title }}</span>
-                <app-status-chip [label]="request.statusMeta.label" [tone]="request.statusMeta.tone" />
-                <span class="recent-date muted">{{ request.createdAt | date: 'mediumDate' }}</span>
-              </a>
-            </li>
-          }
-        </ul>
-      }
-    </mat-card-content>
-  </mat-card>
 }
+
+<div class="grid">
+  <!-- Recent activity -->
+  <mat-card appearance="outlined" class="panel recent">
+    <div class="panel-head">
+      <h2 id="recent-heading">Recent activity</h2>
+      <a routerLink="/requests" class="panel-link">View all <mat-icon>arrow_forward</mat-icon></a>
+    </div>
+
+    @if (recentError()) {
+      <div class="panel-state">
+        <mat-icon>error_outline</mat-icon>
+        <span>Couldn't load recent requests.</span>
+      </div>
+    } @else if (recent().length === 0) {
+      @if (!loading()) {
+        <div class="panel-state">
+          <mat-icon>inbox</mat-icon>
+          <span>No requests yet.</span>
+        </div>
+      }
+    } @else {
+      <table class="activity" aria-labelledby="recent-heading">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Type</th>
+            <th scope="col">Subject</th>
+            <th scope="col">Status</th>
+            <th scope="col">Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of recent(); track row.id) {
+            <tr>
+              <td><a [routerLink]="['/requests', row.id]" class="id-link">{{ row.shortId }}</a></td>
+              <td>
+                <span class="type">
+                  <mat-icon aria-hidden="true">{{ row.typeIcon }}</mat-icon>
+                  <span>{{ row.typeLabel }}</span>
+                </span>
+              </td>
+              <td class="subject" [title]="row.title">{{ row.title }}</td>
+              <td><app-status-chip [label]="row.statusMeta.label" [tone]="row.statusMeta.tone" /></td>
+              <td class="time">{{ row.ago }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </mat-card>
+
+  <!-- System status -->
+  <mat-card appearance="outlined" class="panel system">
+    <div class="panel-head">
+      <h2>System status</h2>
+      <span
+        class="overall"
+        [class]="'overall-' + systemOverall()"
+        role="img"
+        [attr.aria-label]="'Overall system status: ' + systemOverall()"
+      ></span>
+    </div>
+
+    @if (systemError()) {
+      <div class="panel-state">
+        <mat-icon>error_outline</mat-icon>
+        <span>Couldn't load system status.</span>
+      </div>
+    } @else if (systemRows().length === 0) {
+      @if (!loading()) {
+        <div class="panel-state">
+          <mat-icon>cloud_off</mat-icon>
+          <span>No status to report.</span>
+        </div>
+      }
+    } @else {
+      <ul class="status-list">
+        @for (row of systemRows(); track row.name) {
+          <li>
+            <span class="dot" [class]="'state-' + row.state" aria-hidden="true"></span>
+            <span class="status-meta">
+              <span class="status-name">{{ row.name }}</span>
+              <span class="status-detail">{{ row.detail }}</span>
+            </span>
+            <mat-icon class="status-icon" [class]="'state-' + row.state" aria-hidden="true">
+              {{ row.state === 'operational' ? 'check_circle' : 'warning' }}
+            </mat-icon>
+          </li>
+        }
+      </ul>
+      <a routerLink="/integrations" class="status-footer">View integration status</a>
+    }
+  </mat-card>
+</div>

@@ -44,7 +44,7 @@ shell from the designs. This plan upgrades each screen to match the suite, scree
 
 ## Phased plan
 
-### Phase 1 — App shell + theme lock ✅ done (PR `feat/ui-shell`)
+### Phase 1 — App shell + theme lock ✅ done ([#89](https://github.com/Dezoxy/companyops-dotnet/pull/89))
 - [x] Sidebar (brand + "Enterprise ERP" + **New Request** + nav + **user profile pinned bottom**)
       and top bar (env badge, role chip, notifications/help, **theme menu** light·dark·system,
       account menu), responsive (handset → over-mode drawer). Styled with the existing
@@ -54,9 +54,16 @@ shell from the designs. This plan upgrades each screen to match the suite, scree
       tests green; angular-guardian reviewed (no must-fix). Shell is uniform across the design
       variants, so no per-screen variant pick here — that starts at the Dashboard (Phase 2).
 
-### Phase 2 — Dashboard
-- [ ] Pick variant → KPI stat cards (from reports counts), recent-activity table, system-status panel
-      (from integrations status). Loading/empty/error states.
+### Phase 2 — Dashboard ✅ done (this PR)
+- [x] **Variant 2** ("Dashboard Overview") → 4 KPI stat cards (active / pending approvals / critical
+      priority / managed assets, from the `/reports` GROUP BY totals — accurate, not capped by a list
+      page), recent-activity table (`/requests`), system-status panel honestly derived from the
+      `/integrations` outbox snapshot (no fabricated external-system health, no invented trend %).
+      Per-panel loading / empty / error states.
+- [x] **Acceptance:** `ng build` + `ng lint` + 90 unit tests green; angular-guardian reviewed
+      (no must-fix; applied its fixes — typed `KpiCounts` view model, a11y on the table + status
+      indicator). Cross-feature read-only reuse of Reports/Integrations services (those screens land
+      in later phases) — additive, no business logic in the SPA.
 
 ### Phase 3 — Requests flow
 - [ ] **List:** table (id-link, type, requester avatar, status/priority chips), filter chips,
