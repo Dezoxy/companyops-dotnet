@@ -40,34 +40,29 @@
       @if (messages().length === 0) {
         <p class="muted">No integration messages yet.</p>
       } @else {
-        <!-- The *mat* directives are the Material table API, not legacy control flow. -->
-        <table mat-table [dataSource]="messages()" class="messages-table">
-          <ng-container matColumnDef="type">
-            <th mat-header-cell *matHeaderCellDef>Event</th>
-            <td mat-cell *matCellDef="let m">{{ m.type }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
-            <td mat-cell *matCellDef="let m">
-              <span [matTooltip]="m.error" [matTooltipDisabled]="!m.error">
-                <app-status-chip [label]="m.statusMeta.label" [tone]="m.statusMeta.tone" />
-              </span>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="occurred">
-            <th mat-header-cell *matHeaderCellDef>Occurred</th>
-            <td mat-cell *matCellDef="let m">{{ m.occurredAt | date: 'medium' }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="attempts">
-            <th mat-header-cell *matHeaderCellDef>Attempts</th>
-            <td mat-cell *matCellDef="let m">{{ m.attempts }}</td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="columns"></tr>
-          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+        <table class="messages-table">
+          <thead>
+            <tr>
+              <th scope="col">Event</th>
+              <th scope="col">Status</th>
+              <th scope="col">Occurred</th>
+              <th scope="col">Attempts</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of messages(); track m.id) {
+              <tr>
+                <td>{{ m.type }}</td>
+                <td>
+                  <span [matTooltip]="m.error" [matTooltipDisabled]="!m.error">
+                    <app-status-chip [label]="m.statusMeta.label" [tone]="m.statusMeta.tone" />
+                  </span>
+                </td>
+                <td class="occurred">{{ m.occurredAt | date: 'medium' }}</td>
+                <td class="attempts">{{ m.attempts }}</td>
+              </tr>
+            }
+          </tbody>
         </table>
       }
     </mat-card-content>

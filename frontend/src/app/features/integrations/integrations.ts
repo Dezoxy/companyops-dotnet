@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -19,7 +18,6 @@ import { StatusChip } from '../../shared/status-chip/status-chip';
   selector: 'app-integrations',
   imports: [
     DatePipe,
-    MatTableModule,
     MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
@@ -37,7 +35,6 @@ export class Integrations {
   protected readonly status = this.service.status;
   protected readonly loading = this.service.loading;
   protected readonly error = this.service.error;
-  protected readonly columns = ['type', 'status', 'occurred', 'attempts'];
 
   protected readonly messages = computed(() => this.status()?.messages ?? []);
 

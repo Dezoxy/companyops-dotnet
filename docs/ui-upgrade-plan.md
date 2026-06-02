@@ -112,9 +112,13 @@ Split into two PRs.
       plan's three list endpoints) + the "of N entries" footer + the append-only compliance note.
 - [x] **Simplified out:** action/actor/date filtering (needs backend filter params).
 
-**5b — Integrations + Reports (next PR)**
-- [ ] Integration-status board (restyle over the outbox snapshot). **Reports** with charts off the
-      existing grouped counts (status/type/priority); defer time-series / spend / avg-approval / AI.
+**5b — Integrations + Reports ✅ done (this PR)**
+- [x] **Integrations:** outbox/worker status tiles + recent-messages dense semantic table (restyle
+      off the existing snapshot).
+- [x] **Reports:** KPI summary cards (total requests / pending / critical / managed assets, from the
+      real aggregates) + proportional bar "charts" off the grouped counts (status/type/priority),
+      bar tones moved to classes. Deferred: time-series / spend / avg-approval-time / AI insights
+      (no domain data).
 
 ### Phase 6 — Settings + mobile + polish
 - [ ] Settings/profile; mobile responsive (bottom nav + FAB); a11y, loading/empty/error everywhere;

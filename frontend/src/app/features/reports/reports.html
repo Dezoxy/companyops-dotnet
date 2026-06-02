@@ -20,6 +20,20 @@
     <button mat-stroked-button (click)="refresh()">Try again</button>
   </mat-card>
 } @else if (reports().length > 0) {
+  @if (hasData()) {
+    <section class="kpi-grid">
+      @for (kpi of kpis(); track kpi.label) {
+        <mat-card appearance="outlined" class="kpi-card">
+          <span class="kpi-tile" aria-hidden="true"><mat-icon>{{ kpi.icon }}</mat-icon></span>
+          <div>
+            <div class="kpi-value">{{ kpi.value }}</div>
+            <div class="kpi-label">{{ kpi.label }}</div>
+          </div>
+        </mat-card>
+      }
+    </section>
+  }
+
   <section class="report-grid">
     @for (report of reports(); track report.title) {
       <mat-card appearance="outlined" class="report">
@@ -38,11 +52,7 @@
                   <div class="bar-row">
                     <span class="bar-label" [title]="row.label">{{ row.label }}</span>
                     <div class="bar-track">
-                      <div
-                        class="bar-fill"
-                        [style.width.%]="row.percent"
-                        [style.background-color]="'var(--app-tone-' + row.tone + '-fg)'"
-                      ></div>
+                      <div class="bar-fill" [class]="'tone-' + row.tone" [style.width.%]="row.percent"></div>
                     </div>
                     <span class="bar-count">{{ row.count }}</span>
                   </div>

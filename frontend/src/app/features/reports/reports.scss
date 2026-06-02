@@ -16,6 +16,50 @@
   }
 }
 
+/* ---- KPI summary cards ---- */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+}
+
+.kpi-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+
+  mat-icon {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.kpi-value {
+  font: var(--mat-sys-headline-medium);
+  line-height: 1.1;
+}
+
+.kpi-label {
+  margin-top: 2px;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
 .report-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
@@ -63,6 +107,20 @@
   height: 100%;
   border-radius: 6px;
   min-width: 2px;
+  background-color: var(--app-tone-neutral-fg);
+
+  &.tone-info {
+    background-color: var(--app-tone-info-fg);
+  }
+  &.tone-progress {
+    background-color: var(--app-tone-progress-fg);
+  }
+  &.tone-success {
+    background-color: var(--app-tone-success-fg);
+  }
+  &.tone-danger {
+    background-color: var(--app-tone-danger-fg);
+  }
 }
 
 .bar-count {

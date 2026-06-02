@@ -80,7 +80,7 @@ describe('Integrations', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Published');
     expect(el.textContent).toContain('RequestApproved');
-    expect(el.querySelectorAll('tr[mat-row]').length).toBe(1);
+    expect(el.querySelectorAll('.messages-table tbody tr').length).toBe(1);
   });
 
   it('shows an empty state when there are no messages', async () => {
@@ -101,6 +101,6 @@ describe('Integrations', () => {
 
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain("Couldn't load integration status.");
-    expect(el.querySelector('tr[mat-row]')).toBeNull();
+    expect(el.querySelector('.messages-table')).toBeNull();
   });
 });
