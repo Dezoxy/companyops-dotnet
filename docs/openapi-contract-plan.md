@@ -34,9 +34,9 @@ Once emission is (re-)enabled, the generated doc is **accurate but bare**; the h
 ## The plan
 
 ### Phase 0 — Decide & record
-- [ ] Write **ADR 0013 — code-generated API contract** (`docs/decisions/0013-*.md`): records the move
-      from a hand-maintained spec to a build-time-generated + CI-gated contract; lists rationale,
-      the 3-line alternative (keep hand-tuned / keep split), and approvers (architecture + security).
+- [x] Write **ADR 0013 — code-generated API contract** ([decisions/0013-code-generated-api-contract.md](decisions/0013-code-generated-api-contract.md)):
+      records the move from a hand-maintained spec to a build-time-generated + CI-gated contract,
+      the alternatives, and approvers. (Phase 5 PR)
 - [x] Link this plan from `docs/future-improvements.md` and from the API-layer notes. (#77)
 
 ### Phase 1 — Enable build-time generation ✅ (#79)
@@ -83,12 +83,14 @@ Once emission is (re-)enabled, the generated doc is **accurate but bare**; the h
       30/30, data 47.52/70), **with zero synthetic constraints**. Remaining findings are all genuine
       "the code doesn't enforce this" items (free-text patterns, response maxLengths, `maxItems`).
 
-### Phase 5 — Make the generated doc the single source of truth
-- [ ] Choose the canonical output path + name (e.g. emit to repo root as `openapi.json`, or keep
-      `src/CompanyOps.Api/openapi/CompanyOps.Api.json` and reference it). Record the choice in ADR 0013.
-- [ ] **Delete the hand-maintained `openapi.json`** once the generated one carries the hardening.
-- [ ] Decide **commit vs. gitignore**: recommended → *commit* the generated doc so it's diffable and
-      reviewed in every PR (the contract is visible), with the CI gate (Phase 7) keeping it honest.
+### Phase 5 — Make the generated doc the single source of truth ✅ (this PR)
+- [x] Canonical location chosen: **repo-root `openapi.json`** (the conventional name the `.42c` scan
+      config already references). The build emits to a gitignored `artifacts/openapi/` intermediate,
+      then the `CopyOpenApiToRoot` target publishes it to `openapi.json`. Recorded in ADR 0013.
+- [x] **Deleted the hand-maintained `openapi.json`** — the generated, hardened doc takes its place
+      (same path/name, so the scan config keeps working).
+- [x] **Committed** the generated doc (un-gitignored) so it's diffable/reviewed in every PR; the
+      Phase 7 CI gate keeps it honest.
 
 ### Phase 6 — Re-prove it's clean
 - [ ] Run `42crunch-audit` against the generated contract; record the score in the PR.

@@ -5,12 +5,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- Emit the OpenAPI document at build time (Microsoft.Extensions.ApiDescription.Server):
-         `dotnet build` writes <AssemblyName>.json into this directory from the live AddOpenApi
-         pipeline — no running server needed. Output goes to repo-root artifacts/ (NOT a source
-         folder — on case-insensitive filesystems "openapi" would collide with the OpenApi/ source
-         namespace folder). Gitignored until the contract is hardened (docs/openapi-contract-plan.md,
-         Phases 2-5). -->
+         `dotnet build` writes <AssemblyName>.json into this (gitignored) intermediate dir from the
+         live AddOpenApi pipeline — no running server needed. NOT a source folder: on case-insensitive
+         filesystems "openapi" would collide with the OpenApi/ source namespace folder. The CopyOpenApiToRoot
+         target then publishes it to the canonical, committed repo-root openapi.json (Phase 5). -->
     <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)/../../artifacts/openapi</OpenApiDocumentsDirectory>
+    <RepoRoot>$(MSBuildProjectDirectory)/../../</RepoRoot>
   </PropertyGroup>
 
   <ItemGroup>
@@ -42,5 +42,15 @@
     <ProjectReference Include="..\CompanyOps.Application\CompanyOps.Application.csproj" />
     <ProjectReference Include="..\CompanyOps.Infrastructure\CompanyOps.Infrastructure.csproj" />
   </ItemGroup>
+
+  <!-- Publish the generated document to the canonical, committed contract at the repo root
+       (openapi.json). The CI drift gate (Phase 7) regenerates and diffs this file, so an API change
+       that isn't reflected in the contract fails the build. -->
+  <Target Name="CopyOpenApiToRoot" AfterTargets="GenerateOpenApiDocuments">
+    <Copy SourceFiles="$(OpenApiDocumentsDirectory)/CompanyOps.Api.json"
+          DestinationFiles="$(RepoRoot)openapi.json"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(OpenApiDocumentsDirectory)/CompanyOps.Api.json')" />
+  </Target>
 
 </Project>
