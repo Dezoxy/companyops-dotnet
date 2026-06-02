@@ -51,7 +51,36 @@
 
 .messages-table {
   width: 100%;
-  background: transparent;
+  border-collapse: collapse;
+  font: var(--mat-sys-body-medium);
+
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-label-medium);
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.occurred {
+  white-space: nowrap;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.attempts {
+  font-variant-numeric: tabular-nums;
 }
 
 .muted {

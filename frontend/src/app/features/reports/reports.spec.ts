@@ -6,6 +6,7 @@ import { Reports } from './reports';
 import { ReportsService } from './reports.service';
 import {
   AssetReportDto,
+  KpiCounts,
   ReportVm,
   RequestReportDto,
   mapAssetReport,
@@ -68,9 +69,13 @@ function fakeService(
   assetReport: ReportVm | null,
   opts: { loading?: boolean; error?: boolean } = {},
 ): ReportsService {
+  const kpiCounts: KpiCounts | null = requestReport
+    ? { total: requestReport.total, byStatus: {}, byPriority: {} }
+    : null;
   return {
     requestReport: signal(requestReport),
     assetReport: signal(assetReport),
+    kpiCounts: signal(kpiCounts),
     loading: signal(opts.loading ?? false),
     error: signal(opts.error ?? false),
     load: () => undefined,
@@ -101,6 +106,8 @@ describe('Reports', () => {
     expect(el.textContent).toContain('Requests');
     expect(el.textContent).toContain('Assets');
     expect(el.querySelectorAll('.bar-fill').length).toBeGreaterThan(0);
+    // KPI summary cards render once the counts are loaded.
+    expect(el.querySelectorAll('.kpi-card').length).toBe(4);
   });
 
   it('shows a per-report empty state when a report has no data', async () => {
@@ -122,5 +129,6 @@ describe('Reports', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain("Couldn't load reports.");
     expect(el.querySelector('.bar-fill')).toBeNull();
+    expect(el.querySelector('.kpi-grid')).toBeNull(); // no KPI cards without data
   });
 });
