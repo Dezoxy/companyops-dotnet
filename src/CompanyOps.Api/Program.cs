@@ -69,6 +69,8 @@ builder.Services.AddOpenApi(options =>
 {
     // Declare the Bearer/JWT security scheme in the generated contract (AddOpenApi doesn't infer it).
     options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+    // Give every operation a stable operationId (AddOpenApi leaves them null for controllers).
+    options.AddOperationTransformer<OperationIdTransformer>();
     // Reject undeclared properties in the contract — honest, since the API does too.
     options.AddSchemaTransformer<NoAdditionalPropertiesSchemaTransformer>();
     // Add the string constraints the API actually enforces (uuid/date-time formats, domain maxLengths).

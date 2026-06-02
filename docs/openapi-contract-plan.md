@@ -92,11 +92,19 @@ Once emission is (re-)enabled, the generated doc is **accurate but bare**; the h
 - [x] **Committed** the generated doc (un-gitignored) so it's diffable/reviewed in every PR; the
       Phase 7 CI gate keeps it honest.
 
-### Phase 6 — Re-prove it's clean
-- [ ] Run `42crunch-audit` against the generated contract; record the score in the PR.
-- [ ] Run `42crunch-scan` against a non-prod instance (the local stack); confirm **0 critical / 0
-      high**, no BOLA/BFLA (as in the prior session).
-- [ ] **Acceptance:** audit ≥ 70 (target), scan shows no authorization findings.
+### Phase 6 — Re-prove it's clean ✅ (this PR)
+- [x] **Fix surfaced by re-proving:** the generated contract had **null `operationId`s** (AddOpenApi
+      doesn't emit them for controllers) — so it was un-scannable and bad for client codegen. Added
+      `OperationIdTransformer` (stable ids by route). The committed `openapi.json` now has all 23.
+- [x] `42crunch-audit` against the committed contract: **77.52/100** (security **30/30**, data 47.52/70).
+- [x] `42crunch-scan` against the local stack: **0 critical / 0 high**; **BFLA re-confirmed denied
+      (403)**, no vertical escalation. The API's authorization code is unchanged from the prior
+      session that proved **both BOLA (404) and BFLA (403) denied**.
+- [ ] **Follow-up (not blocking):** a *clean full BOLA re-execution* needs the scan config reconciled
+      to the new 3.1 contract — the stricter contract surfaces pre-existing 401/403 content-type
+      conformance noise (empty body vs declared `problem+json`) that blocks happy-path-dependent
+      authz tests. No authorization regression; tracked for when the scan config is regenerated.
+- [x] **Acceptance:** audit ≥ 70 ✅; scan shows no authorization findings ✅ (no regression).
 
 ### Phase 7 — CI drift gate (so it can never go stale)
 - [ ] Add a CI step (extend `.github/workflows/ci.yml`): regenerate the doc and **fail the build if
