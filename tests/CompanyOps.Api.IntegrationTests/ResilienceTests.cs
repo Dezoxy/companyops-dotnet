@@ -147,8 +147,8 @@ public sealed class ResilienceTests(ApiFactory factory)
     private async Task<int> CountBudgetCommittedAsync(Guid requestId)
     {
         var auditor = factory.CreateClientWithToken(await factory.GetTokenAsync("auditor.user"));
-        var entries = await auditor.GetFromJsonAsync<List<AuditEntry>>("/audit-logs");
-        return entries!.Count(e => e.TargetId == requestId && e.Action == "BudgetCommitted");
+        var page = await auditor.GetFromJsonAsync<PagedResponse<AuditEntry>>("/audit-logs");
+        return page!.Items.Count(e => e.TargetId == requestId && e.Action == "BudgetCommitted");
     }
 
     private static async Task WaitUntilAsync(Func<Task<bool>> condition)
@@ -171,4 +171,6 @@ public sealed class ResilienceTests(ApiFactory factory)
     }
 
     private sealed record AuditEntry(string Action, Guid TargetId);
+
+    private sealed record PagedResponse<T>(List<T> Items, int Total, int Page, int PageSize);
 }
