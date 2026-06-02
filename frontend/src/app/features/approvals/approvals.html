@@ -1,6 +1,6 @@
 <header class="page-head">
   <div>
-    <h1>Approvals</h1>
+    <h1>Approval queue</h1>
     <p>Requests awaiting your decision.</p>
   </div>
   <button mat-stroked-button (click)="refresh()" [disabled]="loading()">
@@ -26,37 +26,58 @@
       <p>Nothing is awaiting your decision.</p>
     </div>
   } @else {
-    <!-- The *mat* directives are the Material table API, not legacy control flow. -->
-    <table mat-table [dataSource]="queue()" class="approvals-table">
-      <ng-container matColumnDef="title">
-        <th mat-header-cell *matHeaderCellDef>Title</th>
-        <td mat-cell *matCellDef="let item">{{ item.request.title }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="type">
-        <th mat-header-cell *matHeaderCellDef>Type</th>
-        <td mat-cell *matCellDef="let item">{{ item.request.typeLabel }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="step">
-        <th mat-header-cell *matHeaderCellDef>Your step</th>
-        <td mat-cell *matCellDef="let item">{{ item.step.roleLabel }} · step {{ item.position }} of {{ item.total }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="created">
-        <th mat-header-cell *matHeaderCellDef>Created</th>
-        <td mat-cell *matCellDef="let item">{{ item.request.createdAt | date: 'mediumDate' }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef><span class="visually-hidden">Actions</span></th>
-        <td mat-cell *matCellDef="let item">
-          <a mat-flat-button [routerLink]="['/requests', item.request.id]">Review</a>
-        </td>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="columns"></tr>
-      <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    <table class="approvals-table">
+      <thead>
+        <tr>
+          <th scope="col">Request ID</th>
+          <th scope="col">Title &amp; Type</th>
+          <th scope="col">Priority</th>
+          <th scope="col">Your step</th>
+          <th scope="col">Created</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of queue(); track item.request.id) {
+          <tr>
+            <td>
+              <a [routerLink]="['/requests', item.request.id]" class="id-link" [title]="item.request.id">
+                {{ item.request.shortId }}
+              </a>
+            </td>
+            <td>
+              <div class="title-cell">
+                <span class="title" [title]="item.request.title">{{ item.request.title }}</span>
+                <span class="type">
+                  <mat-icon aria-hidden="true">{{ typeIcon[item.request.type] }}</mat-icon>
+                  {{ item.request.typeLabel }}
+                </span>
+              </div>
+            </td>
+            <td>
+              <app-status-chip
+                [label]="item.request.priorityMeta.label"
+                [tone]="item.request.priorityMeta.tone"
+              />
+            </td>
+            <td class="step">
+              {{ item.step.roleLabel }}
+              <span class="muted">· step {{ item.position }} of {{ item.total }}</span>
+            </td>
+            <td class="created">{{ item.request.createdAt | date: 'mediumDate' }}</td>
+            <td class="actions">
+              <a
+                mat-flat-button
+                class="review"
+                [routerLink]="['/requests', item.request.id]"
+                [attr.aria-label]="'Review request ' + item.request.shortId"
+              >
+                Review
+              </a>
+            </td>
+          </tr>
+        }
+      </tbody>
     </table>
   }
 </mat-card>
