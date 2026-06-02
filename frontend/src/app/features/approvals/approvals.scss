@@ -17,12 +17,96 @@
 }
 
 .panel {
-  padding: 8px 16px 16px;
+  padding: 0;
+  overflow: hidden;
 }
 
 .approvals-table {
   width: 100%;
-  background: transparent;
+  border-collapse: collapse;
+  font: var(--mat-sys-body-medium);
+
+  th {
+    text-align: left;
+    padding: 12px 16px;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-label-medium);
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:hover {
+    background-color: var(--mat-sys-surface-container-low);
+  }
+}
+
+.id-link {
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+  font-weight: 600;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.title-cell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.step {
+  white-space: nowrap;
+}
+
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.created {
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
+.actions {
+  text-align: right;
+}
+
+.review {
+  background-color: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
 }
 
 .state {
@@ -44,4 +128,14 @@
   width: 40px;
   height: 40px;
   color: var(--mat-sys-outline);
+}
+
+@media (max-width: 599px) {
+  .title {
+    max-width: 160px;
+  }
+
+  .created {
+    display: none;
+  }
 }

@@ -86,7 +86,19 @@ Split into two PRs to keep each diff focused.
       Cost-center / location / delivery-date / live chain-preview simplified out (not in the domain).
 
 ### Phase 4 — Approvals + Assets
-- [ ] Approvals queue (approve/reject inline). Assets list + **slide-over detail** + history timeline.
+Split into two PRs (Assets' slide-over is substantial).
+
+**4a — Approvals ✅ done (this PR)**
+- [x] Approval-queue dense table (id-link, title + type icon, priority chip, "your step X of N",
+      created, Review → routes to the request detail where approve/reject happens). The decision
+      stays on the detail screen; the API re-checks role + department scope.
+- [x] **Simplified out:** SLA countdown, risk score, and the Approved/Rejected/Escalated tabs —
+      the domain has no SLA, risk, or per-user decision history to back them.
+
+**4b — Assets (next PR)**
+- [ ] Asset-inventory dense table + **slide-over detail** (summary + history timeline from
+      `/assets/{id}/history`); lifecycle actions stay on the full detail route. Specs
+      (serial/MAC/warranty) simplified — not in the domain.
 
 ### Phase 5 — Audit · Integrations · Reports
 - [ ] Audit log table; integration-status board; **Reports** with charts off the existing grouped counts.

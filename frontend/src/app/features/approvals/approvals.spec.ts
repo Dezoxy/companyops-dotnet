@@ -74,7 +74,7 @@ describe('Approvals', () => {
       ['Manager'],
     );
     await fixture.whenStable();
-    const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('tr[mat-row]');
+    const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.approvals-table tbody tr');
     expect(rows.length).toBe(1);
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('mine');
   });
