@@ -40,6 +40,11 @@ const isTerminal = (s: RequestStatus): boolean => TERMINAL_STATUSES.includes(s);
 const REPORTS_ROLES = ['Manager', 'Finance', 'ItAdmin', 'Auditor'] as const;
 const INTEGRATIONS_ROLES = ['ItAdmin', 'Auditor'] as const;
 
+// Employees count their KPIs client-side from /requests, so pull the server's max page (200) to
+// keep the counts accurate. Beyond 200 own requests it approximates — the real fix is a personal
+// counts endpoint (Reports phase); tracked as a follow-up, not built ahead of phase here.
+const EMPLOYEE_KPI_PAGE_SIZE = 200;
+
 /**
  * Dashboard Overview: KPI cards + recent activity + system status.
  *
@@ -198,7 +203,9 @@ export class Dashboard {
   }
 
   protected refresh(): void {
-    this.requestsService.loadAll();
+    // Privileged roles only need recent activity from the list (KPIs come from /reports), so the
+    // default page is fine. Employees count KPIs from the list, so pull the max page.
+    this.requestsService.loadAll(this.canViewReports() ? undefined : EMPLOYEE_KPI_PAGE_SIZE);
     if (this.canViewReports()) {
       this.reports.load();
     }

@@ -76,16 +76,19 @@ export class RequestsService {
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
 
-  /** Load (or refresh) the full request list into the signals. Ignored while a load is already
-   *  in flight — two consumers (dashboard + list) call this on init, and the refresh button is
-   *  disabled while loading — so this keeps it to a single GET without cancellation plumbing. */
-  loadAll(): void {
+  /** Load (or refresh) the request list into the signals. Ignored while a load is already in
+   *  flight — two consumers (dashboard + list) call this on init, and the refresh button is
+   *  disabled while loading — so this keeps it to a single GET without cancellation plumbing.
+   *  `pageSize` overrides the server default page size (e.g. the dashboard pulls a large page so
+   *  its client-side counts are accurate); omit it for the default page. */
+  loadAll(pageSize?: number): void {
     if (this._loading()) {
       return;
     }
     this._loading.set(true);
     this._error.set(false);
-    this.http.get<RequestDto[]>(this.baseUrl).pipe(map((dtos) => dtos.map(mapRequest))).subscribe({
+    const url = pageSize ? `${this.baseUrl}?pageSize=${pageSize}` : this.baseUrl;
+    this.http.get<RequestDto[]>(url).pipe(map((dtos) => dtos.map(mapRequest))).subscribe({
       next: (requests) => {
         this._requests.set(requests);
         this._loading.set(false);
