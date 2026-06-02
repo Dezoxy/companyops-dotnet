@@ -5,22 +5,23 @@ import { signal } from '@angular/core';
 import { of } from 'rxjs';
 
 import { Dashboard } from './dashboard';
+import { AuthService } from '../../core/auth/auth.service';
 import { RequestsService } from '../requests/requests.service';
 import { ReportsService } from '../reports/reports.service';
 import { IntegrationsService } from '../integrations/integrations.service';
-import { RequestStatus, RequestVm } from '../requests/requests.models';
+import { RequestPriority, RequestStatus, RequestVm } from '../requests/requests.models';
 import { KpiCounts, ReportVm } from '../reports/reports.models';
 import { IntegrationStatusVm } from '../integrations/integrations.models';
 
-function vm(status: RequestStatus, title: string): RequestVm {
+function vm(status: RequestStatus, title: string, priority: RequestPriority = 'Medium'): RequestVm {
   return {
     id: `${status}-0000-0000-0000-000000000000`,
     title,
     description: null,
     type: 'Procurement',
     typeLabel: 'Procurement',
-    priority: 'Medium',
-    priorityMeta: { label: 'Medium', tone: 'info' },
+    priority,
+    priorityMeta: { label: priority, tone: 'info' },
     category: null,
     categoryLabel: null,
     status,
@@ -52,7 +53,15 @@ const systemStatus: IntegrationStatusVm = {
   messages: [],
 };
 
-function render(reqs: RequestVm[]) {
+// Default role sees both /reports and /integrations (ItAdmin); pass ['Employee'] for personal mode.
+function render(reqs: RequestVm[], roles: string[] = ['ItAdmin']) {
+  const authService = {
+    hasRole: (r: string) => roles.includes(r),
+    roles: signal(roles),
+    userName: signal('Tester'),
+    isAuthenticated: signal(true),
+  } as unknown as AuthService;
+
   const requestsService = {
     requests: signal(reqs),
     loading: signal(false),
@@ -82,6 +91,7 @@ function render(reqs: RequestVm[]) {
     providers: [
       provideRouter([]),
       provideNoopAnimations(),
+      { provide: AuthService, useValue: authService },
       { provide: RequestsService, useValue: requestsService },
       { provide: ReportsService, useValue: reportsService },
       { provide: IntegrationsService, useValue: integrationsService },
@@ -112,11 +122,35 @@ describe('Dashboard', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('First request');
   });
 
-  it('renders a system-status row per derived service', async () => {
-    const fixture = render([vm('Submitted', 'A')]);
+  it('renders a system-status row per derived service for privileged roles', async () => {
+    const fixture = render([vm('Submitted', 'A')], ['ItAdmin']);
     await fixture.whenStable();
 
     const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.status-list li');
     expect(rows.length).toBe(3);
+  });
+
+  it('for an Employee, derives personal KPIs from their own list and hides system status', async () => {
+    // Employees cannot read /reports or /integrations — the dashboard must not 403 them.
+    const fixture = render(
+      [
+        vm('Submitted', 'A'),
+        vm('Approved', 'B'),
+        vm('Completed', 'C'),
+        vm('Submitted', 'D', 'Critical'),
+      ],
+      ['Employee'],
+    );
+    await fixture.whenStable();
+
+    const values = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.stat-value'),
+    ).map((el) => el.textContent?.trim());
+    // Personal: active (non-terminal: A,B,D = 3) · awaiting approval (Submitted: A,D = 2) ·
+    // critical active (D = 1) · completed (C = 1).
+    expect(values).toEqual(['3', '2', '1', '1']);
+
+    // System-status panel is not rendered for a role that can't read /integrations.
+    expect((fixture.nativeElement as HTMLElement).querySelector('.panel.system')).toBeNull();
   });
 });

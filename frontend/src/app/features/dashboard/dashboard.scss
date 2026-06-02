@@ -73,6 +73,11 @@
   grid-template-columns: 2fr 1fr;
   gap: 16px;
   align-items: start;
+
+  // No system-status panel for this role → recent activity spans the full width.
+  &.single {
+    grid-template-columns: 1fr;
+  }
 }
 
 .panel {
