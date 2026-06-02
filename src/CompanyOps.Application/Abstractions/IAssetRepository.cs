@@ -22,4 +22,7 @@ public interface IAssetRepository
     Task<Asset?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Asset>> ListAsync(int skip, int take, CancellationToken cancellationToken = default);
+
+    /// <summary>Total number of assets (no paging) — for the inventory list's pagination total.</summary>
+    Task<int> CountAsync(CancellationToken cancellationToken = default);
 }

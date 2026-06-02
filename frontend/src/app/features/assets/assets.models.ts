@@ -42,6 +42,17 @@ export const ASSET_TYPE_LABEL: Record<AssetType, string> = {
   Other: 'Other',
 };
 
+// Material Symbol per asset type — shown beside the type in the inventory table.
+export const ASSET_TYPE_ICON: Record<AssetType, string> = {
+  Laptop: 'laptop_mac',
+  Desktop: 'desktop_windows',
+  Mobile: 'smartphone',
+  Monitor: 'monitor',
+  Peripheral: 'keyboard',
+  Software: 'apps',
+  Other: 'devices_other',
+};
+
 /** Friendly labels for the asset audit actions shown in the history. */
 export const ASSET_ACTION_LABEL: Record<string, string> = {
   AssetRegistered: 'Registered',
@@ -62,6 +73,9 @@ export interface AssetVm {
   readonly status: AssetStatus;
   readonly statusMeta: ToneLabel;
   readonly assignedToId: string | null;
+  /** Short display form of the assignee id for the table (first 8 chars, upper-cased); null when
+   *  unassigned. Derived in the mapper so it isn't recomputed in templates. */
+  readonly assignedToIdShort: string | null;
   readonly createdAt: Date;
 }
 

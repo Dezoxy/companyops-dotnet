@@ -1,7 +1,7 @@
 <header class="page-head">
   <div>
-    <h1>Assets</h1>
-    <p>Inventory and lifecycle of company assets.</p>
+    <h1>Asset inventory</h1>
+    <p>Track hardware and software assets and their assignment.</p>
   </div>
   <div class="head-actions">
     <button mat-stroked-button (click)="refresh()" [disabled]="loading()">
@@ -9,7 +9,7 @@
       Refresh
     </button>
     @if (canManage()) {
-      <button mat-flat-button (click)="register()">
+      <button mat-flat-button class="provision" type="button" (click)="register()">
         <mat-icon>add</mat-icon>
         Register asset
       </button>
@@ -18,34 +18,6 @@
 </header>
 
 <mat-card appearance="outlined" class="panel">
-  <div class="filters">
-    <mat-form-field appearance="outline" class="search">
-      <mat-label>Search</mat-label>
-      <mat-icon matPrefix>search</mat-icon>
-      <input matInput #searchInput placeholder="Filter by name or tag" (input)="onSearch(searchInput.value)" />
-    </mat-form-field>
-
-    <mat-form-field appearance="outline">
-      <mat-label>Status</mat-label>
-      <mat-select [value]="statusFilter()" (selectionChange)="onStatus($event.value)">
-        <mat-option value="all">All statuses</mat-option>
-        @for (option of statusOptions; track option.value) {
-          <mat-option [value]="option.value">{{ option.label }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline">
-      <mat-label>Type</mat-label>
-      <mat-select [value]="typeFilter()" (selectionChange)="onType($event.value)">
-        <mat-option value="all">All types</mat-option>
-        @for (option of typeOptions; track option.value) {
-          <mat-option [value]="option.value">{{ option.label }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-  </div>
-
   @if (loading()) {
     <mat-progress-bar mode="indeterminate" />
   }
@@ -56,69 +28,136 @@
       <p>Couldn't load assets.</p>
       <button mat-stroked-button (click)="refresh()">Try again</button>
     </div>
-  } @else if (!loading() && assets().length === 0) {
+  } @else if (!loading() && total() === 0) {
     <div class="state">
       <mat-icon class="state-icon">inventory_2</mat-icon>
-      <p>No assets yet.</p>
-    </div>
-  } @else if (filtered().length === 0) {
-    <div class="state">
-      <mat-icon class="state-icon">search_off</mat-icon>
-      <p>No assets match your filters.</p>
+      <p>No assets registered.</p>
     </div>
   } @else {
-    <!-- The *mat* directives are the Material table API, not legacy control flow. -->
-    <table mat-table [dataSource]="paged()" class="assets-table">
-      <ng-container matColumnDef="tag">
-        <th mat-header-cell *matHeaderCellDef>Tag</th>
-        <td mat-cell *matCellDef="let row"><span class="mono">{{ row.tag }}</span></td>
-      </ng-container>
-
-      <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef>Name</th>
-        <td mat-cell *matCellDef="let row">{{ row.name }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="type">
-        <th mat-header-cell *matHeaderCellDef>Type</th>
-        <td mat-cell *matCellDef="let row">{{ row.typeLabel }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef>Status</th>
-        <td mat-cell *matCellDef="let row">
-          <app-status-chip [label]="row.statusMeta.label" [tone]="row.statusMeta.tone" />
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="assignee">
-        <th mat-header-cell *matHeaderCellDef>Assigned to</th>
-        <td mat-cell *matCellDef="let row">
-          @if (row.assignedToId) {
-            <span class="mono id-cell" [matTooltip]="row.assignedToId">{{ row.assignedToId }}</span>
-          } @else {
-            <span class="muted">—</span>
-          }
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef><span class="visually-hidden">Actions</span></th>
-        <td mat-cell *matCellDef="let row">
-          <a mat-button [routerLink]="['/assets', row.id]">View</a>
-        </td>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="columns"></tr>
-      <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    <table class="assets-table">
+      <thead>
+        <tr>
+          <th scope="col">Asset ID</th>
+          <th scope="col">Type</th>
+          <th scope="col">Name / Model</th>
+          <th scope="col">Assigned to</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (asset of assets(); track asset.id) {
+          <tr [class.selected]="selected()?.id === asset.id">
+            <td>
+              <button type="button" class="id-link" (click)="openDetail(asset)">{{ asset.tag }}</button>
+            </td>
+            <td>
+              <span class="type">
+                <mat-icon aria-hidden="true">{{ typeIcon[asset.type] }}</mat-icon>
+                {{ asset.typeLabel }}
+              </span>
+            </td>
+            <td class="name" [title]="asset.name">{{ asset.name }}</td>
+            <td class="assignee">
+              @if (asset.assignedToIdShort) {
+                <span class="mono">{{ asset.assignedToIdShort }}</span>
+              } @else {
+                <span class="muted">Unassigned</span>
+              }
+            </td>
+            <td><app-status-chip [label]="asset.statusMeta.label" [tone]="asset.statusMeta.tone" /></td>
+          </tr>
+        }
+      </tbody>
     </table>
 
-    <mat-paginator
-      [length]="filtered().length"
-      [pageSize]="pageSize()"
-      [pageIndex]="pageIndex()"
-      [pageSizeOptions]="[10, 25, 50]"
-      (page)="onPage($event)"
-    />
+    <nav class="pager" aria-label="Assets pagination">
+      <span class="summary">Showing {{ rangeStart() }}–{{ rangeEnd() }} of {{ total() }} assets</span>
+      <div class="pages">
+        <button mat-icon-button aria-label="Previous page" [disabled]="page() <= 1 || loading()" (click)="goTo(page() - 1)">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        @for (p of pageNumbers(); track $index) {
+          @if (p === null) {
+            <span class="gap" aria-hidden="true">…</span>
+          } @else {
+            <button
+              type="button"
+              class="page-num"
+              [class.current]="p === page()"
+              [attr.aria-current]="p === page() ? 'page' : null"
+              [attr.aria-label]="'Page ' + p"
+              [disabled]="loading()"
+              (click)="goTo(p)"
+            >
+              {{ p }}
+            </button>
+          }
+        }
+        <button mat-icon-button aria-label="Next page" [disabled]="page() >= totalPages() || loading()" (click)="goTo(page() + 1)">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </nav>
   }
 </mat-card>
+
+<!-- Slide-over quick-view -->
+@if (selected(); as asset) {
+  <div class="overlay" (click)="closeDetail()" aria-hidden="true"></div>
+  <aside
+    class="slide-over"
+    role="dialog"
+    aria-modal="true"
+    tabindex="-1"
+    cdkTrapFocus
+    cdkTrapFocusAutoCapture
+    [attr.aria-label]="'Asset ' + asset.tag"
+    (keydown.escape)="closeDetail()"
+  >
+    <header class="so-head">
+      <div>
+        <div class="so-tag mono">{{ asset.tag }}</div>
+        <h2>{{ asset.name }}</h2>
+        <app-status-chip [label]="asset.statusMeta.label" [tone]="asset.statusMeta.tone" />
+      </div>
+      <button mat-icon-button aria-label="Close" (click)="closeDetail()"><mat-icon>close</mat-icon></button>
+    </header>
+
+    <dl class="so-meta">
+      <dt>Type</dt>
+      <dd>{{ asset.typeLabel }}</dd>
+      <dt>Assigned to</dt>
+      <dd>
+        @if (asset.assignedToId) {
+          <span class="mono">{{ asset.assignedToId }}</span>
+        } @else {
+          <span class="muted">Unassigned</span>
+        }
+      </dd>
+      <dt>Registered</dt>
+      <dd>{{ asset.createdAt | date: 'medium' }}</dd>
+    </dl>
+
+    <section class="so-section">
+      <h3>Recent activity</h3>
+      @if (historyLoading()) {
+        <mat-progress-bar mode="indeterminate" />
+      } @else if (historyError()) {
+        <p class="muted">Couldn't load the activity history.</p>
+      } @else if (history().length === 0) {
+        <p class="muted">No activity recorded yet.</p>
+      } @else {
+        <ul class="so-history">
+          @for (entry of history(); track entry.id) {
+            <li>
+              <span class="so-action">{{ entry.actionLabel }}</span>
+              <span class="muted small">{{ entry.occurredAt | date: 'medium' }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <a mat-flat-button class="so-open" [routerLink]="['/assets', asset.id]">Open full detail</a>
+  </aside>
+}

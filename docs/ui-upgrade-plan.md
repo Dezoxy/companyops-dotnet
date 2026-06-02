@@ -95,10 +95,13 @@ Split into two PRs (Assets' slide-over is substantial).
 - [x] **Simplified out:** SLA countdown, risk score, and the Approved/Rejected/Escalated tabs —
       the domain has no SLA, risk, or per-user decision history to back them.
 
-**4b — Assets (next PR)**
-- [ ] Asset-inventory dense table + **slide-over detail** (summary + history timeline from
-      `/assets/{id}/history`); lifecycle actions stay on the full detail route. Specs
-      (serial/MAC/warranty) simplified — not in the domain.
+**4b — Assets ✅ done (this PR)**
+- [x] Asset-inventory dense table (tag, type icon, name, assignee, status) with **server-side
+      pagination** (paged envelope on `GET /assets`, mirroring requests) + a **slide-over detail**
+      (summary + recent history from `/assets/{id}/history`, "Open full detail" → the detail route
+      where lifecycle actions live). Register gated to IT Admin.
+- [x] **Simplified out:** specs (serial/MAC/warranty) — not in the domain.
+- [x] Extracted the shared `PagedResultDto<T>` to `shared/api/` (used by requests + assets).
 
 ### Phase 5 — Audit · Integrations · Reports
 - [ ] Audit log table; integration-status board; **Reports** with charts off the existing grouped counts.

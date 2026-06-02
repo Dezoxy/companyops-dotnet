@@ -26,4 +26,7 @@ internal sealed class AssetRepository(AppDbContext dbContext) : IAssetRepository
             .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);
+
+    public Task<int> CountAsync(CancellationToken cancellationToken = default) =>
+        dbContext.Assets.AsNoTracking().CountAsync(cancellationToken);
 }
