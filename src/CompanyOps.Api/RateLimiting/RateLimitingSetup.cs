@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace CompanyOps.Api.RateLimiting;
@@ -23,10 +24,28 @@ public static class RateLimitingSetup
         services.AddRateLimiter(limiter =>
         {
             limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            limiter.OnRejected = (context, _) =>
+            limiter.OnRejected = async (context, cancellationToken) =>
             {
-                context.HttpContext.Response.Headers.RetryAfter = options.WindowSeconds.ToString(CultureInfo.InvariantCulture);
-                return ValueTask.CompletedTask;
+                var http = context.HttpContext;
+                http.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                http.Response.Headers.RetryAfter = options.WindowSeconds.ToString(CultureInfo.InvariantCulture);
+
+                // Write an RFC 7807 problem+json body so the 429 matches the documented contract and
+                // clients get a consistent error shape (not just a bare status + Retry-After header).
+                var problemDetails = http.RequestServices.GetService<IProblemDetailsService>();
+                if (problemDetails is not null)
+                {
+                    await problemDetails.TryWriteAsync(new ProblemDetailsContext
+                    {
+                        HttpContext = http,
+                        ProblemDetails = new ProblemDetails
+                        {
+                            Status = StatusCodes.Status429TooManyRequests,
+                            Title = "Too Many Requests",
+                            Detail = $"Rate limit exceeded. Retry after {options.WindowSeconds} seconds.",
+                        },
+                    });
+                }
             };
 
             limiter.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>

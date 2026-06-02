@@ -68,12 +68,20 @@ Once emission is (re-)enabled, the generated doc is **accurate but bare**; the h
       remaining `additionalProperties` finding is the deliberate `ProblemDetails` exclusion. Data
       score 4.17 → 8.89 (the rest is Phase 4). No synthetic free-text patterns added.
 
-### Phase 4 — Completeness polish
-- [ ] Add `maxItems` to list responses (document the real, intended bound) — **and** decide whether
-      to add real **pagination** to the list endpoints (see `production-readiness.md` → Performance).
-- [ ] Add the standard error responses to all operations: `default`, `429` (real rate-limiter),
-      `415` (JSON-only), `406`. Prefer expressing these once via a convention/transformer, not 23×.
-- [ ] **Acceptance:** 42Crunch data-validation score is at target with no synthetic constraints.
+### Phase 4 — Completeness polish ✅ honest scope (this PR)
+- [x] Standard error responses via a document transformer: `default`, `429` (real rate-limiter) on
+      every operation; `415` (JSON-only) on body-bearing operations. **`406` skipped** — the API
+      doesn't do content negotiation today (would need `ReturnHttpNotAcceptable`); claiming it
+      would be dishonest.
+- [x] Honest string constraints via a schema transformer: `uuid`/`date-time` get `pattern` +
+      `maxLength`; free-text fields get the `maxLength` the Domain enforces (title/description/tag/
+      name/body). **No free-text `pattern`s** (synthetic) and **no response `maxLength`** the code
+      doesn't enforce.
+- [ ] `maxItems` on list responses — **deferred**: only honest once the lists are paginated. Tracked
+      as its own slice in [production-readiness.md](production-readiness.md) → Performance.
+- [x] **Acceptance:** 42Crunch data score reached the **70 target honestly — 77.52/100** (security
+      30/30, data 47.52/70), **with zero synthetic constraints**. Remaining findings are all genuine
+      "the code doesn't enforce this" items (free-text patterns, response maxLengths, `maxItems`).
 
 ### Phase 5 — Make the generated doc the single source of truth
 - [ ] Choose the canonical output path + name (e.g. emit to repo root as `openapi.json`, or keep

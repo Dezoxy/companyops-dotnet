@@ -25,13 +25,16 @@ public sealed class RateLimitingTests(ApiFactory factory)
         using var client = limited.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var statuses = new List<HttpStatusCode>();
+        var responses = new List<HttpResponseMessage>();
         for (var i = 0; i < limit + 1; i++)
         {
-            statuses.Add((await client.GetAsync("/requests")).StatusCode);
+            responses.Add(await client.GetAsync("/requests"));
         }
 
-        Assert.Equal(limit, statuses.Count(s => s == HttpStatusCode.OK)); // the first `limit` are allowed
-        Assert.Contains(HttpStatusCode.TooManyRequests, statuses);        // the one over the limit is rejected
+        Assert.Equal(limit, responses.Count(r => r.StatusCode == HttpStatusCode.OK)); // the first `limit` are allowed
+        var rejected = responses.First(r => r.StatusCode == HttpStatusCode.TooManyRequests); // the one over the limit
+        // The 429 carries Retry-After and an RFC 7807 problem+json body — matching the contract.
+        Assert.NotNull(rejected.Headers.RetryAfter);
+        Assert.Equal("application/problem+json", rejected.Content.Headers.ContentType?.MediaType);
     }
 }
