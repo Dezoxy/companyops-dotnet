@@ -104,7 +104,17 @@ Split into two PRs (Assets' slide-over is substantial).
 - [x] Extracted the shared `PagedResultDto<T>` to `shared/api/` (used by requests + assets).
 
 ### Phase 5 — Audit · Integrations · Reports
-- [ ] Audit log table; integration-status board; **Reports** with charts off the existing grouped counts.
+Split into two PRs.
+
+**5a — Audit ✅ done (this PR)**
+- [x] Audit-log dense table (timestamp, action chip, entity/id, actor, change) with **server-side
+      pagination** (paged envelope on `GET /audit-logs`, mirroring requests/assets — completes the
+      plan's three list endpoints) + the "of N entries" footer + the append-only compliance note.
+- [x] **Simplified out:** action/actor/date filtering (needs backend filter params).
+
+**5b — Integrations + Reports (next PR)**
+- [ ] Integration-status board (restyle over the outbox snapshot). **Reports** with charts off the
+      existing grouped counts (status/type/priority); defer time-series / spend / avg-approval / AI.
 
 ### Phase 6 — Settings + mobile + polish
 - [ ] Settings/profile; mobile responsive (bottom nav + FAB); a11y, loading/empty/error everywhere;

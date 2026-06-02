@@ -34,6 +34,9 @@ internal sealed class AuditLogStore(AppDbContext dbContext, IAuditContext auditC
             .Take(take)
             .ToListAsync(cancellationToken);
 
+    public Task<int> CountAsync(CancellationToken cancellationToken = default) =>
+        dbContext.AuditLogs.AsNoTracking().CountAsync(cancellationToken);
+
     public async Task<IReadOnlyList<AuditLog>> ListForTargetAsync(
         string targetType,
         Guid targetId,
