@@ -1,14 +1,16 @@
 using CompanyOps.Application.Abstractions;
+using CompanyOps.Application.Common;
 
 namespace CompanyOps.Application.Assets;
 
-public sealed record ListAssetsQuery;
+public sealed record ListAssetsQuery(PageRequest? Page = null);
 
 public sealed class ListAssetsHandler(IAssetRepository assets)
 {
     public async Task<IReadOnlyList<AssetDto>> HandleAsync(ListAssetsQuery query, CancellationToken cancellationToken = default)
     {
-        var all = await assets.ListAsync(cancellationToken);
+        var page = query.Page ?? new PageRequest();
+        var all = await assets.ListAsync(page.Skip, page.Take, cancellationToken);
         return all.Select(AssetDto.FromDomain).ToList();
     }
 }

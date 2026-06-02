@@ -24,11 +24,14 @@ internal sealed class AuditLogStore(AppDbContext dbContext, IAuditContext auditC
     // Cursor/limit pagination is the proper follow-up (see ListAuditLogsQuery).
     private const int MaxRows = 500;
 
-    public async Task<IReadOnlyList<AuditLog>> ListAsync(CancellationToken cancellationToken = default) =>
+    public async Task<IReadOnlyList<AuditLog>> ListAsync(int skip, int take, CancellationToken cancellationToken = default) =>
         await dbContext.AuditLogs
             .AsNoTracking()
+            // Tie-break on Id so paging is deterministic when OccurredAtUtc ties.
             .OrderByDescending(a => a.OccurredAtUtc)
-            .Take(MaxRows)
+            .ThenByDescending(a => a.Id)
+            .Skip(skip)
+            .Take(take)
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<AuditLog>> ListForTargetAsync(

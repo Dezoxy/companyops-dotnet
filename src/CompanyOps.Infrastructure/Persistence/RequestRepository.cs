@@ -22,6 +22,8 @@ internal sealed class RequestRepository(AppDbContext dbContext) : IRequestReposi
     public async Task<IReadOnlyList<Request>> ListAsync(
         Guid? requesterId,
         Guid? departmentId,
+        int skip,
+        int take,
         CancellationToken cancellationToken = default)
     {
         var query = dbContext.Requests.AsNoTracking();
@@ -37,7 +39,11 @@ internal sealed class RequestRepository(AppDbContext dbContext) : IRequestReposi
         }
 
         return await query
+            // Tie-break on Id so paging is deterministic when CreatedAtUtc ties.
             .OrderByDescending(r => r.CreatedAtUtc)
+            .ThenByDescending(r => r.Id)
+            .Skip(skip)
+            .Take(take)
             .ToListAsync(cancellationToken);
     }
 }

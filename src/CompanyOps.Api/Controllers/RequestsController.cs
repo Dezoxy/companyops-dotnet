@@ -1,5 +1,6 @@
 using CompanyOps.Api.Auth;
 using CompanyOps.Api.Contracts;
+using CompanyOps.Application.Common;
 using CompanyOps.Application.Requests;
 using CompanyOps.Application.Requests.ApproveRequest;
 using CompanyOps.Application.Requests.CancelRequest;
@@ -59,10 +60,13 @@ public sealed class RequestsController : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<RequestDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<RequestDto>>> List(
         [FromServices] ListRequestsHandler handler,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] int? page = null,
+        [FromQuery] int? pageSize = null)
     {
         var (requesterId, departmentId) = ReadScope();
-        var result = await handler.HandleAsync(new ListRequestsQuery(requesterId, departmentId), cancellationToken);
+        var result = await handler.HandleAsync(
+            new ListRequestsQuery(requesterId, departmentId, new PageRequest(page, pageSize)), cancellationToken);
         return Ok(result);
     }
 

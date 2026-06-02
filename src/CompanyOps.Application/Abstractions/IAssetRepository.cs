@@ -21,5 +21,5 @@ public interface IAssetRepository
     /// <summary>Tracked load for a lifecycle transition, so the change persists on save.</summary>
     Task<Asset?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<Asset>> ListAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Asset>> ListAsync(int skip, int take, CancellationToken cancellationToken = default);
 }

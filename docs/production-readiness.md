@@ -99,8 +99,10 @@ Authoritative: [deployment.md](deployment.md), ADR 0009/0012.
 - [ ] (out of scope) Blue/green or canary; multi-region — revisit per customer SLA.
 
 ## 7. Performance & scale
-- [ ] **Pagination on list endpoints** — today `GET /requests`, `/assets`, `/audit-logs` return
-      **all rows** (confirmed: no `Skip/Take`/limit). A real dataset needs limit/offset or cursor paging.
+- [x] **Pagination on list endpoints** — `GET /requests`, `/assets`, `/audit-logs` take `page` +
+      `pageSize` (default 50, max 200, clamped) and page in the DB (`Skip/Take`, deterministic order).
+      Follow-up: a paged envelope with a total count (today the response is a bounded array), and
+      adding `maxItems` to the generated contract (honest once this ships).
 - [ ] Load / soak test to establish a baseline (throughput, p95 latency, failure point).
 - [ ] N+1 / slow-query review on the read models; add DB indexes where needed.
 - [x] Redis cache available (used where it earns it).
@@ -127,7 +129,7 @@ Authoritative: [testing-strategy.md](testing-strategy.md).
 
 ## Suggested order (highest customer-impact first)
 
-1. **Pagination** (§7) and **input validation across all write endpoints** (§1) — correctness/abuse gaps a customer hits immediately.
+1. **Input validation across all write endpoints** (§1) — correctness/abuse gaps a customer hits immediately. (Pagination §7 is now done for the list endpoints.)
 2. **API contract finalisation + CI drift gate** (§2, [openapi-contract-plan.md](openapi-contract-plan.md)) — already in motion.
 3. **Tested restore drill + data retention/GDPR** (§5) — required before real customer data.
 4. **Staging environment + rollback** (§6) and **alerting/dashboards** (§4) — operate it safely.
