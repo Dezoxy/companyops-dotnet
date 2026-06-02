@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { EMPTY, Subject, catchError, switchMap, tap } from 'rxjs';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -65,38 +66,46 @@ export class RequestsList {
     return out;
   });
 
+  // One page stream + switchMap so a newer page request cancels an in-flight one (rapid clicks
+  // can't leave a slow earlier response overwriting a newer page).
+  private readonly pageRequest = new Subject<number>();
+
   constructor() {
-    this.load(1);
+    this.pageRequest
+      .pipe(
+        tap(() => {
+          this.loading.set(true);
+          this.error.set(false);
+        }),
+        switchMap((page) =>
+          this.service.fetchPageResult(page, this.pageSize()).pipe(
+            catchError(() => {
+              this.error.set(true);
+              this.loading.set(false);
+              return EMPTY;
+            }),
+          ),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((res) => {
+        this.requests.set(res.items);
+        this.total.set(res.total);
+        this.page.set(res.page);
+        this.pageSize.set(res.pageSize);
+        this.loading.set(false);
+      });
+
+    this.pageRequest.next(1);
   }
 
   protected goTo(page: number): void {
     if (page >= 1 && page <= this.totalPages() && page !== this.page() && !this.loading()) {
-      this.load(page);
+      this.pageRequest.next(page);
     }
   }
 
   protected refresh(): void {
-    this.load(this.page());
-  }
-
-  private load(page: number): void {
-    this.loading.set(true);
-    this.error.set(false);
-    this.service
-      .fetchPageResult(page, this.pageSize())
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => {
-          this.requests.set(res.items);
-          this.total.set(res.total);
-          this.page.set(res.page);
-          this.pageSize.set(res.pageSize);
-          this.loading.set(false);
-        },
-        error: () => {
-          this.error.set(true);
-          this.loading.set(false);
-        },
-      });
+    this.pageRequest.next(this.page());
   }
 }
