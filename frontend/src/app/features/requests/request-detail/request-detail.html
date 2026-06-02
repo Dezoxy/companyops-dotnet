@@ -33,13 +33,7 @@
           <app-status-chip [label]="r.statusMeta.label" [tone]="r.statusMeta.tone" />
           <app-status-chip [label]="r.priorityMeta.label + ' priority'" [tone]="r.priorityMeta.tone" />
         </div>
-        <p class="meta">
-          {{ r.typeLabel }}
-          @if (r.categoryLabel) {
-            · {{ r.categoryLabel }}
-          }
-          · Created {{ r.createdAt | date: 'medium' }}
-        </p>
+        <!-- Type / category / created live in the Details sidebar to avoid duplicating them here. -->
 
         @if (canSubmit() || canFulfill() || canDecide() || canCancel()) {
           <div class="detail-actions">
@@ -75,7 +69,8 @@
         }
       </header>
 
-      <div class="content">
+      <div class="detail-grid">
+        <div class="detail-main">
         @if (r.description) {
           <mat-card appearance="outlined">
             <mat-card-header><mat-card-title>Description</mat-card-title></mat-card-header>
@@ -108,10 +103,7 @@
               <ol class="timeline">
                 @for (step of r.approvalSteps; track step.order) {
                   <li class="step" [class.current]="step.isCurrent">
-                    <span
-                      class="dot"
-                      [style.background-color]="'var(--app-tone-' + step.decisionMeta.tone + '-fg)'"
-                    ></span>
+                    <span class="dot" [class]="'tone-' + step.decisionMeta.tone" aria-hidden="true"></span>
                     <div class="step-body">
                       <div class="step-head">
                         <span class="step-role">{{ step.roleLabel }}</span>
@@ -139,7 +131,30 @@
           </mat-card-content>
         </mat-card>
 
-        <app-comment-thread [requestId]="r.id" />
+          <app-comment-thread [requestId]="r.id" />
+        </div>
+
+        <aside class="detail-aside">
+          <mat-card appearance="outlined">
+            <mat-card-header><mat-card-title>Details</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <dl class="meta-list">
+                <dt>Status</dt>
+                <dd><app-status-chip [label]="r.statusMeta.label" [tone]="r.statusMeta.tone" /></dd>
+                <dt>Priority</dt>
+                <dd><app-status-chip [label]="r.priorityMeta.label" [tone]="r.priorityMeta.tone" /></dd>
+                <dt>Type</dt>
+                <dd>{{ r.typeLabel }}</dd>
+                @if (r.categoryLabel) {
+                  <dt>Category</dt>
+                  <dd>{{ r.categoryLabel }}</dd>
+                }
+                <dt>Created</dt>
+                <dd>{{ r.createdAt | date: 'medium' }}</dd>
+              </dl>
+            </mat-card-content>
+          </mat-card>
+        </aside>
       </div>
     }
   }

@@ -73,6 +73,9 @@ html {
   --app-tone-success-bg: light-dark(#d3f0dd, #123822);
   --app-tone-danger-fg: light-dark(#93000a, #ffb4ab);
   --app-tone-danger-bg: light-dark(#ffdad6, #5a0a0a);
+
+  // Sticky offset for in-content sidebars: toolbar height (~64px) + content padding (24px).
+  --app-content-top-offset: 88px;
 }
 
 body {
