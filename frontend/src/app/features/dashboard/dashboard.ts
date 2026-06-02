@@ -151,7 +151,7 @@ export class Dashboard {
       .slice(0, 5)
       .map((r) => ({
         id: r.id,
-        shortId: r.id.slice(0, 8).toUpperCase(),
+        shortId: r.shortId,
         title: r.title,
         typeLabel: r.typeLabel,
         typeIcon: REQUEST_TYPE_ICON[r.type],

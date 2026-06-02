@@ -10,6 +10,7 @@ import { RequestVm } from '../requests/requests.models';
 function vm(over: Partial<RequestVm> = {}): RequestVm {
   return {
     id: 'r',
+    shortId: 'R',
     title: 'A request',
     description: null,
     type: 'Helpdesk',

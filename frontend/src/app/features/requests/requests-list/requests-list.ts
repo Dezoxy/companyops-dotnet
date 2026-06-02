@@ -1,116 +1,77 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatCardModule } from '@angular/material/card';
-import { MatTooltipModule } from '@angular/material/tooltip';
 
+import { AuthService } from '../../../core/auth/auth.service';
 import { RequestsService } from '../requests.service';
-import {
-  REQUEST_STATUS_META,
-  REQUEST_TYPE_LABEL,
-  RequestStatus,
-  RequestType,
-} from '../requests.models';
+import { REQUEST_TYPE_ICON } from '../requests.models';
 import { StatusChip } from '../../../shared/status-chip/status-chip';
 
-/** Requests list: a filterable, paged table over GET /requests. Read-only — creating and
- *  acting on requests land in Phase 14b. Filtering/paging is client-side over the loaded list. */
+/** Requests list: a server-paged table over GET /requests (the API scopes rows by role). Pagination
+ *  is server-side so the footer shows the true total, not a capped page. Status/type filtering needs
+ *  backend filter params (not yet supported) — deferred; see docs/ui-upgrade-plan.md. */
 @Component({
   selector: 'app-requests-list',
-  imports: [
-    DatePipe,
-    RouterLink,
-    MatTableModule,
-    MatPaginatorModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressBarModule,
-    MatCardModule,
-    MatTooltipModule,
-    StatusChip,
-  ],
+  imports: [DatePipe, RouterLink, MatButtonModule, MatIconModule, MatProgressBarModule, MatCardModule, StatusChip],
   templateUrl: './requests-list.html',
   styleUrl: './requests-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RequestsList {
   private readonly service = inject(RequestsService);
+  private readonly auth = inject(AuthService);
 
   protected readonly requests = this.service.requests;
   protected readonly loading = this.service.loading;
   protected readonly error = this.service.error;
+  protected readonly total = this.service.total;
+  protected readonly page = this.service.page;
+  protected readonly pageSize = this.service.pageSize;
+  protected readonly totalPages = this.service.totalPages;
 
-  protected readonly columns = ['id', 'title', 'type', 'priority', 'status', 'created', 'actions'];
+  protected readonly typeIcon = REQUEST_TYPE_ICON;
+  // Only Employees create requests (docs/security.md); the API still enforces.
+  protected readonly canCreate = computed(() => this.auth.hasRole('Employee'));
 
-  // Filter options for the dropdowns (label + value), built from the display metadata.
-  protected readonly statusOptions = Object.entries(REQUEST_STATUS_META).map(([value, meta]) => ({
-    value: value as RequestStatus,
-    label: meta.label,
-  }));
-  protected readonly typeOptions = Object.entries(REQUEST_TYPE_LABEL).map(([value, label]) => ({
-    value: value as RequestType,
-    label,
-  }));
+  // "Showing 1–50 of 142" — the 1-based range of the current page.
+  protected readonly rangeStart = computed(() =>
+    this.total() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1,
+  );
+  protected readonly rangeEnd = computed(() => Math.min(this.page() * this.pageSize(), this.total()));
 
-  protected readonly search = signal('');
-  protected readonly statusFilter = signal<RequestStatus | 'all'>('all');
-  protected readonly typeFilter = signal<RequestType | 'all'>('all');
-  protected readonly pageIndex = signal(0);
-  protected readonly pageSize = signal(10);
-
-  protected readonly filtered = computed(() => {
-    const term = this.search().trim().toLowerCase();
-    const status = this.statusFilter();
-    const type = this.typeFilter();
-    return this.requests().filter(
-      (r) =>
-        (status === 'all' || r.status === status) &&
-        (type === 'all' || r.type === type) &&
-        (term === '' || r.title.toLowerCase().includes(term) || r.id.toLowerCase().includes(term)),
-    );
-  });
-
-  protected readonly paged = computed(() => {
-    const start = this.pageIndex() * this.pageSize();
-    return this.filtered().slice(start, start + this.pageSize());
+  // Windowed page numbers: first, last, and the current ±1, with `null` marking an ellipsis gap.
+  protected readonly pageNumbers = computed<(number | null)[]>(() => {
+    const last = this.totalPages();
+    const current = this.page();
+    const wanted = new Set([1, last, current, current - 1, current + 1]);
+    const pages = [...wanted].filter((p) => p >= 1 && p <= last).sort((a, b) => a - b);
+    const out: (number | null)[] = [];
+    let prev = 0;
+    for (const p of pages) {
+      if (p - prev > 1) {
+        out.push(null); // gap
+      }
+      out.push(p);
+      prev = p;
+    }
+    return out;
   });
 
   constructor() {
     this.service.loadAll();
   }
 
-  protected onSearch(value: string): void {
-    this.search.set(value);
-    this.pageIndex.set(0);
-  }
-
-  protected onStatus(value: RequestStatus | 'all'): void {
-    this.statusFilter.set(value);
-    this.pageIndex.set(0);
-  }
-
-  protected onType(value: RequestType | 'all'): void {
-    this.typeFilter.set(value);
-    this.pageIndex.set(0);
-  }
-
-  protected onPage(event: PageEvent): void {
-    this.pageIndex.set(event.pageIndex);
-    this.pageSize.set(event.pageSize);
+  protected goTo(page: number): void {
+    if (page >= 1 && page <= this.totalPages() && page !== this.page() && !this.loading()) {
+      this.service.loadAll(page, this.pageSize());
+    }
   }
 
   protected refresh(): void {
-    this.service.loadAll();
+    this.service.loadAll(this.page(), this.pageSize());
   }
 }

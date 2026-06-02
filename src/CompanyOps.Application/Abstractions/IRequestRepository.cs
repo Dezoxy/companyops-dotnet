@@ -27,4 +27,10 @@ public interface IRequestRepository
     /// only that department's; both null → all. The Api derives the scope from the principal's role.
     /// </summary>
     Task<IReadOnlyList<Request>> ListAsync(Guid? requesterId, Guid? departmentId, int skip, int take, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Total number of requests in the same scope as <see cref="ListAsync"/> (same filters, no
+    /// paging) — for the list's pagination total.
+    /// </summary>
+    Task<int> CountAsync(Guid? requesterId, Guid? departmentId, CancellationToken cancellationToken = default);
 }

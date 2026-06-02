@@ -16,6 +16,7 @@ import { IntegrationStatusVm } from '../integrations/integrations.models';
 function vm(status: RequestStatus, title: string, priority: RequestPriority = 'Medium'): RequestVm {
   return {
     id: `${status}-0000-0000-0000-000000000000`,
+    shortId: status.slice(0, 8).toUpperCase(),
     title,
     description: null,
     type: 'Procurement',

@@ -11,6 +11,7 @@ import { ApproverRole, RequestStatus, RequestVm } from '../requests/requests.mod
 function vm(title: string, status: RequestStatus, currentRole: ApproverRole | null): RequestVm {
   return {
     id: title,
+    shortId: title.slice(0, 8).toUpperCase(),
     title,
     description: null,
     type: 'Procurement',

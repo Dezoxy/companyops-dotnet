@@ -69,16 +69,36 @@ describe('RequestsService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('loadAll GETs /api/requests and populates the signal', () => {
+  it('loadAll GETs /api/requests and populates the items + pagination signals', () => {
     service.loadAll();
     const req = httpMock.expectOne('/api/requests');
     expect(req.request.method).toBe('GET');
-    req.flush([dto()]);
+    req.flush({ items: [dto()], total: 142, page: 1, pageSize: 50 });
 
     expect(service.loading()).toBe(false);
     expect(service.error()).toBe(false);
     expect(service.requests()).toHaveLength(1);
     expect(service.requests()[0].title).toBe('New laptop');
+    expect(service.total()).toBe(142);
+    expect(service.page()).toBe(1);
+    expect(service.totalPages()).toBe(3); // ceil(142 / 50)
+  });
+
+  it('loadAll passes 1-based page + pageSize as query params', () => {
+    service.loadAll(2, 25);
+    const req = httpMock.expectOne((r) => r.url === '/api/requests');
+    expect(req.request.params.get('page')).toBe('2');
+    expect(req.request.params.get('pageSize')).toBe('25');
+    req.flush({ items: [], total: 0, page: 2, pageSize: 25 });
+  });
+
+  it('fetchPage returns just the mapped items for the given page size', () => {
+    let titles: string[] | undefined;
+    service.fetchPage(200).subscribe((items) => (titles = items.map((i) => i.title)));
+    const req = httpMock.expectOne((r) => r.url === '/api/requests');
+    expect(req.request.params.get('pageSize')).toBe('200');
+    req.flush({ items: [dto()], total: 1, page: 1, pageSize: 200 });
+    expect(titles).toEqual(['New laptop']);
   });
 
   it('loadAll sets the error signal on failure', () => {

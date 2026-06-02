@@ -42,6 +42,7 @@ function step(role: ApproverRole): ApprovalStepVm {
 function vm(overrides: Partial<RequestVm> = {}): RequestVm {
   return {
     id: 'abcdef12-0000-0000-0000-000000000000',
+    shortId: 'ABCDEF12',
     title: 'New laptop',
     description: 'For onboarding',
     type: 'Procurement',

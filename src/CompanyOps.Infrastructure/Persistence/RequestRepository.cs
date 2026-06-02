@@ -24,7 +24,20 @@ internal sealed class RequestRepository(AppDbContext dbContext) : IRequestReposi
         Guid? departmentId,
         int skip,
         int take,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        await Scoped(requesterId, departmentId)
+            // Tie-break on Id so paging is deterministic when CreatedAtUtc ties.
+            .OrderByDescending(r => r.CreatedAtUtc)
+            .ThenByDescending(r => r.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+
+    public Task<int> CountAsync(Guid? requesterId, Guid? departmentId, CancellationToken cancellationToken = default) =>
+        Scoped(requesterId, departmentId).CountAsync(cancellationToken);
+
+    // Same scope filters for both the page and its count, so the total can't drift from the list.
+    private IQueryable<Request> Scoped(Guid? requesterId, Guid? departmentId)
     {
         var query = dbContext.Requests.AsNoTracking();
 
@@ -38,12 +51,6 @@ internal sealed class RequestRepository(AppDbContext dbContext) : IRequestReposi
             query = query.Where(r => r.DepartmentId == department);
         }
 
-        return await query
-            // Tie-break on Id so paging is deterministic when CreatedAtUtc ties.
-            .OrderByDescending(r => r.CreatedAtUtc)
-            .ThenByDescending(r => r.Id)
-            .Skip(skip)
-            .Take(take)
-            .ToListAsync(cancellationToken);
+        return query;
     }
 }

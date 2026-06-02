@@ -5,12 +5,14 @@ import { signal } from '@angular/core';
 import { of } from 'rxjs';
 
 import { RequestsList } from './requests-list';
+import { AuthService } from '../../../core/auth/auth.service';
 import { RequestsService } from '../requests.service';
 import { RequestVm } from '../requests.models';
 
 function vm(title: string): RequestVm {
   return {
     id: `${title}-0000-0000-0000-000000000000`,
+    shortId: title.slice(0, 8).toUpperCase(),
     title,
     description: null,
     type: 'Procurement',
@@ -29,27 +31,37 @@ function vm(title: string): RequestVm {
   };
 }
 
-function fakeService(requests: RequestVm[]): RequestsService {
+function fakeService(requests: RequestVm[], total = requests.length): RequestsService {
   return {
     requests: signal(requests),
     loading: signal(false),
     error: signal(false),
+    total: signal(total),
+    page: signal(1),
+    pageSize: signal(50),
+    totalPages: signal(Math.max(1, Math.ceil(total / 50))),
     loadAll: () => undefined,
     getById: () => of(requests[0]),
   } as unknown as RequestsService;
 }
 
 describe('RequestsList', () => {
-  function setup(service: RequestsService) {
+  function setup(service: RequestsService, roles: string[] = ['Employee']) {
+    const auth = { hasRole: (r: string) => roles.includes(r) } as unknown as AuthService;
     TestBed.configureTestingModule({
       imports: [RequestsList],
-      providers: [provideRouter([]), provideNoopAnimations(), { provide: RequestsService, useValue: service }],
+      providers: [
+        provideRouter([]),
+        provideNoopAnimations(),
+        { provide: RequestsService, useValue: service },
+        { provide: AuthService, useValue: auth },
+      ],
     });
     return TestBed.createComponent(RequestsList);
   }
 
   it('shows the empty state when there are no requests', async () => {
-    const fixture = setup(fakeService([]));
+    const fixture = setup(fakeService([], 0));
     await fixture.whenStable();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('No requests yet.');
   });
@@ -57,7 +69,19 @@ describe('RequestsList', () => {
   it('renders a row per request', async () => {
     const fixture = setup(fakeService([vm('alpha'), vm('beta')]));
     await fixture.whenStable();
-    const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('tr[mat-row]');
+    const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.requests-table tbody tr');
     expect(rows.length).toBe(2);
+  });
+
+  it('shows the true total in the pagination footer', async () => {
+    const fixture = setup(fakeService([vm('alpha'), vm('beta')], 142));
+    await fixture.whenStable();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('of 142 results');
+  });
+
+  it('hides the New request action for roles that cannot create', async () => {
+    const fixture = setup(fakeService([vm('alpha')]), ['Auditor']);
+    await fixture.whenStable();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('New request');
   });
 });

@@ -30,7 +30,8 @@ public sealed class RequestReadScopingTests(ApiFactory factory)
     private async Task<List<RequestResponse>> ListAsync(string user)
     {
         var client = factory.CreateClientWithToken(await factory.GetTokenAsync(user));
-        return (await client.GetFromJsonAsync<List<RequestResponse>>("/requests"))!;
+        // GET /requests returns a paged envelope { items, total, page, pageSize }.
+        return (await client.GetFromJsonAsync<PagedResponse<RequestResponse>>("/requests"))!.Items;
     }
 
     private async Task<HttpResponseMessage> GetByIdAsync(string user, Guid id)
@@ -147,4 +148,6 @@ public sealed class RequestReadScopingTests(ApiFactory factory)
     }
 
     private sealed record RequestResponse(Guid Id, Guid RequesterId, Guid DepartmentId);
+
+    private sealed record PagedResponse<T>(List<T> Items, int Total, int Page, int PageSize);
 }
