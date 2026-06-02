@@ -41,6 +41,9 @@ export interface AuditLogVm {
   readonly actionMeta: ToneLabel;
   readonly targetType: string;
   readonly targetId: string;
+  /** Short display form of the target id (first 8 chars, upper-cased); the full id is the tooltip.
+   *  Derived in the mapper so it isn't recomputed in the template. */
+  readonly targetIdShort: string;
   readonly fromStatus: string | null;
   readonly toStatus: string | null;
 }

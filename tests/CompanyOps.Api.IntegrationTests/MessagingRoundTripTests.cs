@@ -59,7 +59,7 @@ public sealed class MessagingRoundTripTests(ApiFactory factory)
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
         while (DateTime.UtcNow < deadline)
         {
-            var entries = (await auditor.GetFromJsonAsync<List<AuditLogResponse>>("/audit-logs"))!;
+            var entries = (await auditor.GetFromJsonAsync<PagedResponse<AuditLogResponse>>("/audit-logs"))!.Items;
             if (entries.Any(e => e.TargetId == requestId && e.Action == action))
             {
                 return true;
@@ -111,4 +111,6 @@ public sealed class MessagingRoundTripTests(ApiFactory factory)
     }
 
     private sealed record AuditLogResponse(string Action, Guid TargetId);
+
+    private sealed record PagedResponse<T>(List<T> Items, int Total, int Page, int PageSize);
 }

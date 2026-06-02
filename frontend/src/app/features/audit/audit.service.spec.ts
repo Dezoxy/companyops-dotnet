@@ -3,7 +3,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { AuditService, mapAuditLog } from './audit.service';
-import { AuditLogDto } from './audit.models';
+import { AuditLogDto, AuditLogVm } from './audit.models';
+import { PagedResultDto } from '../../shared/api/paged-result';
 
 function dto(overrides: Partial<AuditLogDto> = {}): AuditLogDto {
   return {
@@ -45,14 +46,16 @@ describe('AuditService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('loadAll GETs /api/audit-logs and populates the signal', () => {
-    service.loadAll();
-    const req = httpMock.expectOne('/api/audit-logs');
+  it('fetchPageResult GETs /api/audit-logs with paging and returns the mapped envelope', () => {
+    let result: PagedResultDto<AuditLogVm> | undefined;
+    service.fetchPageResult(2, 25).subscribe((res) => (result = res));
+    const req = httpMock.expectOne((r) => r.url === '/api/audit-logs');
     expect(req.request.method).toBe('GET');
-    req.flush([dto()]);
+    expect(req.request.params.get('page')).toBe('2');
+    expect(req.request.params.get('pageSize')).toBe('25');
+    req.flush({ items: [dto()], total: 12408, page: 2, pageSize: 25 });
 
-    expect(service.logs()).toHaveLength(1);
-    expect(service.logs()[0].action).toBe('RequestApproved');
-    expect(service.loading()).toBe(false);
+    expect(result?.total).toBe(12408);
+    expect(result?.items[0].action).toBe('RequestApproved');
   });
 });

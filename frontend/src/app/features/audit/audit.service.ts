@@ -1,7 +1,8 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable, inject, signal } from '@angular/core';
-import { map } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { PagedResultDto } from '../../shared/api/paged-result';
 import { AUDIT_ACTION_META, AuditLogDto, AuditLogVm } from './audit.models';
 
 /** The reserved system-worker actor (WellKnownActors.SystemWorker) — worker-driven audit
@@ -20,40 +21,30 @@ export function mapAuditLog(dto: AuditLogDto): AuditLogVm {
     actionMeta: AUDIT_ACTION_META[dto.action] ?? { label: dto.action, tone: 'neutral' },
     targetType: dto.targetType,
     targetId: dto.targetId,
+    targetIdShort: dto.targetId.slice(0, 8).toUpperCase(),
     fromStatus: dto.fromStatus,
     toStatus: dto.toStatus,
   };
 }
 
-/** Owns GET /audit-logs and exposes the (read-only) trail as signals. Auditor-gated by the route. */
+/** Owns GET /audit-logs (read-only trail, Auditor/IT-Admin gated by the route). Server-paged: the
+ *  trail can be large, so the screen pages through the API rather than loading it all. */
 @Injectable({ providedIn: 'root' })
 export class AuditService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiBaseUrl}/audit-logs`;
 
-  private readonly _logs = signal<readonly AuditLogVm[]>([]);
-  private readonly _loading = signal(false);
-  private readonly _error = signal(false);
-
-  readonly logs = this._logs.asReadonly();
-  readonly loading = this._loading.asReadonly();
-  readonly error = this._error.asReadonly();
-
-  loadAll(): void {
-    if (this._loading()) {
-      return;
+  /** One-shot fetch of a page envelope (entries mapped + total/page/pageSize). */
+  fetchPageResult(page?: number, pageSize?: number): Observable<PagedResultDto<AuditLogVm>> {
+    let params = new HttpParams();
+    if (page !== undefined) {
+      params = params.set('page', page);
     }
-    this._loading.set(true);
-    this._error.set(false);
-    this.http.get<AuditLogDto[]>(this.baseUrl).pipe(map((dtos) => dtos.map(mapAuditLog))).subscribe({
-      next: (logs) => {
-        this._logs.set(logs);
-        this._loading.set(false);
-      },
-      error: () => {
-        this._error.set(true);
-        this._loading.set(false);
-      },
-    });
+    if (pageSize !== undefined) {
+      params = params.set('pageSize', pageSize);
+    }
+    return this.http
+      .get<PagedResultDto<AuditLogDto>>(this.baseUrl, { params })
+      .pipe(map((res) => ({ ...res, items: res.items.map(mapAuditLog) })));
   }
 }

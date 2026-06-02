@@ -20,8 +20,8 @@ public sealed class AuditLogsController : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = Policies.ReadAuditLog)]
-    [ProducesResponseType(typeof(IReadOnlyList<AuditLogDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<AuditLogDto>>> List(
+    [ProducesResponseType(typeof(PagedResult<AuditLogDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<AuditLogDto>>> List(
         [FromServices] ListAuditLogsHandler handler,
         CancellationToken cancellationToken,
         [FromQuery] int? page = null,

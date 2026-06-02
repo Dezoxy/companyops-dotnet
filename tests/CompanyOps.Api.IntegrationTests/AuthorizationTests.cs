@@ -163,7 +163,7 @@ public sealed class AuthorizationTests(ApiFactory factory)
 
         var auditor = factory.CreateClientWithToken(await factory.GetTokenAsync("auditor.user"));
         var response = await auditor.GetAsync("/audit-logs");
-        var entries = (await response.Content.ReadFromJsonAsync<List<AuditLogResponse>>())!
+        var entries = (await response.Content.ReadFromJsonAsync<PagedResponse<AuditLogResponse>>())!.Items
             .Where(e => e.TargetId == id)
             .Select(e => e.Action)
             .ToList();
@@ -210,7 +210,7 @@ public sealed class AuthorizationTests(ApiFactory factory)
         var response = await auditor.GetAsync("/audit-logs");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var entries = (await response.Content.ReadFromJsonAsync<List<AuditLogResponse>>())!
+        var entries = (await response.Content.ReadFromJsonAsync<PagedResponse<AuditLogResponse>>())!.Items
             .Where(e => e.TargetId == id)
             .Select(e => e.Action)
             .ToList();
@@ -467,6 +467,8 @@ public sealed class AuthorizationTests(ApiFactory factory)
     private sealed record RequestResponse(Guid Id, string Status, string Priority, string? Category, Guid RequesterId, Guid DepartmentId);
 
     private sealed record AuditLogResponse(string Action, Guid TargetId, string? FromStatus, string? ToStatus);
+
+    private sealed record PagedResponse<T>(List<T> Items, int Total, int Page, int PageSize);
 
     private sealed record CommentResponse(Guid Id, Guid RequestId, Guid AuthorId, string Body, DateTimeOffset CreatedAtUtc);
 }
