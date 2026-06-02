@@ -42,6 +42,20 @@ jobs:
       - name: Verify formatting
         run: dotnet format --verify-no-changes
       - run: dotnet build --no-restore --configuration Release
+      - name: API contract up to date (OpenAPI drift gate)
+        # The build regenerates the committed contract (openapi.json) from the code. If the working
+        # tree shows ANY change to it — modified, deleted, or regenerated-but-untracked (e.g. a PR
+        # deleted the committed file) — the contract drifted. `git status --porcelain` is used over
+        # `git diff` because the latter ignores untracked files, so a delete-then-regenerate would
+        # slip through. See docs/openapi-contract-plan.md (Phase 7) and ADR 0013.
+        run: |
+          status="$(git status --porcelain -- openapi.json)"
+          if [ -n "$status" ]; then
+            echo "::error::openapi.json is out of date with the code (or missing). Run 'dotnet build' and commit the regenerated contract."
+            echo "$status"
+            git diff -- openapi.json || true
+            exit 1
+          fi
       - name: Domain unit tests
         run: dotnet test tests/CompanyOps.Domain.Tests --no-build --configuration Release
       - name: Application unit tests

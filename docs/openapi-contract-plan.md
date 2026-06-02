@@ -98,12 +98,15 @@ Once emission is (re-)enabled, the generated doc is **accurate but bare**; the h
       high**, no BOLA/BFLA (as in the prior session).
 - [ ] **Acceptance:** audit ≥ 70 (target), scan shows no authorization findings.
 
-### Phase 7 — CI drift gate (so it can never go stale)
-- [ ] Add a CI step (extend `.github/workflows/ci.yml`): regenerate the doc and **fail the build if
-      it differs** from the committed copy (`dotnet build` then `git diff --exit-code` on the doc).
-- [ ] (Optional) Publish the contract as browsable docs (Scalar is already wired, dev-only) and/or
-      run the 42Crunch audit in CI as a non-blocking report.
-- [ ] **Acceptance:** a PR that changes an endpoint without updating the contract is rejected by CI.
+### Phase 7 — CI drift gate (so it can never go stale) ✅ (this PR)
+- [x] Added a CI step in `.github/workflows/ci.yml` (build job): after `dotnet build` regenerates the
+      contract, `git status --porcelain -- openapi.json` fails the build (with a fix instruction) if
+      the committed contract drifted — modified, deleted, or regenerated-but-untracked.
+- [ ] (Optional, deferred) Publish the contract as browsable docs / run the 42Crunch audit in CI as a
+      non-blocking report.
+- [x] **Acceptance:** verified locally — a clean build leaves `openapi.json` unchanged (no
+      false-positive), and both a simulated endpoint change and a committed deletion are caught. A PR
+      that changes the API without committing the regenerated contract is rejected by CI.
 
 ## Risks & rollback
 
