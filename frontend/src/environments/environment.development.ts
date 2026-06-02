@@ -3,6 +3,8 @@
 // http://localhost:8080 for SPA login (see frontend/CLAUDE.md).
 export const environment = {
   production: false,
+  // Shown as a badge in the app shell (non-production only).
+  name: 'Development',
   apiBaseUrl: '/api',
   keycloak: {
     authority: 'http://localhost:8080/realms/companyops',
