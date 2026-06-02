@@ -1,7 +1,7 @@
 # Plan — UI upgrade to the "Enterprise Suite" design
 
 Date: 2026-06-02
-Status: **Proposed**
+Status: **Complete** — all phases shipped (PRs #89, #90, #91, #92, #93, #94, #95, #96, and this PR).
 Owner hats: frontend (implementation), architecture (SPA-stays-a-thin-client rule), design (fidelity)
 
 > **Trackable doc.** Boxes are GitHub task-lists. Tick (`- [x]`) as each screen lands; link the PR.
@@ -120,9 +120,15 @@ Split into two PRs.
       bar tones moved to classes. Deferred: time-series / spend / avg-approval-time / AI insights
       (no domain data).
 
-### Phase 6 — Settings + mobile + polish
-- [ ] Settings/profile; mobile responsive (bottom nav + FAB); a11y, loading/empty/error everywhere;
-      `angular-guardian` pass on the whole diff.
+### Phase 6 — Settings + mobile + polish ✅ done (this PR)
+- [x] **Settings/profile** — already shipped (profile from the OIDC session + theme preference +
+      Keycloak account link); no change needed.
+- [x] **Mobile:** handset **bottom navigation** (quick tabs for the top role-visible sections; full
+      nav via the existing drawer) + a **New-request FAB** (Employee), rendered outside the sidenav
+      container so `position: fixed` resolves to the viewport. Dense tables wrapped in a shared
+      `.table-scroll` so they scroll horizontally instead of overflowing on narrow screens.
+- [x] **Polish:** loading/empty/error states are present on every screen; angular-guardian pass on
+      the diff (no must-fix outstanding).
 
 ### Backend-where-cheap (parallel, small slices)
 - [ ] **Paged envelope** `PagedResult<T>` on `listRequests`/`listAssets`/`listAuditLogs` (+ contract,

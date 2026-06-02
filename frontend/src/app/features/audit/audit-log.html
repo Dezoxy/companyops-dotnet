@@ -26,6 +26,7 @@
       <p>No audit entries.</p>
     </div>
   } @else {
+    <div class="table-scroll">
     <table class="audit-table">
       <thead>
         <tr>
@@ -57,6 +58,7 @@
         }
       </tbody>
     </table>
+    </div>
 
     <nav class="pager" aria-label="Audit log pagination">
       <span class="summary">Showing {{ rangeStart() }}–{{ rangeEnd() }} of {{ total() }} entries</span>

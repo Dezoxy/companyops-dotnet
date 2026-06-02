@@ -208,3 +208,60 @@
     display: none; // reclaim space on mobile; search returns when there's a backend
   }
 }
+
+/* ---- Handset bottom navigation + FAB ---- */
+// One source for the bar height so the FAB offset and content clearance stay in sync.
+:root {
+  --bottom-nav-height: 64px;
+}
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: space-around;
+  min-height: var(--bottom-nav-height);
+  background-color: var(--mat-sys-surface-container-lowest);
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  padding-bottom: env(safe-area-inset-bottom); // clear the iOS home indicator
+}
+
+.bn-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1 1 0;
+  padding: 8px 4px;
+  text-decoration: none;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-small);
+
+  mat-icon {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+  }
+
+  &.active {
+    color: var(--mat-sys-primary);
+  }
+}
+
+.new-request-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--bottom-nav-height) + 16px + env(safe-area-inset-bottom)); // above the bottom nav
+  z-index: 6;
+}
+
+// When the bottom nav is present (handset), keep content clear of it (bar + FAB room + safe area).
+@media (max-width: 599px) {
+  .app-content {
+    padding: 16px;
+    padding-bottom: calc(var(--bottom-nav-height) + 16px + env(safe-area-inset-bottom));
+  }
+}

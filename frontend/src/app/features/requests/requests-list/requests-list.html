@@ -34,6 +34,7 @@
       <p>No requests yet.</p>
     </div>
   } @else {
+    <div class="table-scroll">
     <table class="requests-table">
       <thead>
         <tr>
@@ -68,6 +69,7 @@
         }
       </tbody>
     </table>
+    </div>
 
     <nav class="pager" aria-label="Requests pagination">
       <span class="summary">Showing {{ rangeStart() }}–{{ rangeEnd() }} of {{ total() }} results</span>

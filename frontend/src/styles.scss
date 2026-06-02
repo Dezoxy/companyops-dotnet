@@ -101,6 +101,11 @@ body {
   border: 0;
 }
 
+// Wrap dense tables so they scroll horizontally on narrow screens instead of overflowing the card.
+.table-scroll {
+  overflow-x: auto;
+}
+
 // The design uses Material Symbols Outlined (configured as the default mat-icon font set).
 .material-symbols-outlined {
   font-variation-settings:

@@ -103,6 +103,12 @@ export class App {
     { initialValue: false },
   );
 
+  // The nav the current role can see; the first few drive the handset bottom-nav (rest via "More").
+  protected readonly visibleNav = computed(() => this.nav.filter((item) => this.canSee(item)));
+  protected readonly bottomNav = computed(() => this.visibleNav().slice(0, 4));
+  // Only Employees create requests (docs/security.md) — drives the mobile New-request FAB.
+  protected readonly canCreate = computed(() => this.auth.hasRole('Employee'));
+
   // UI-only: hide nav for roles the user lacks (the API still enforces every action).
   protected canSee(item: NavItem): boolean {
     return !item.requiredRoles || item.requiredRoles.some((role) => this.auth.hasRole(role));
