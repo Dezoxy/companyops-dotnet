@@ -76,9 +76,9 @@ export class RequestsService {
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
 
-  /** Load (or refresh) the full request list into the signals. Ignored while a load is already
-   *  in flight — two consumers (dashboard + list) call this on init, and the refresh button is
-   *  disabled while loading — so this keeps it to a single GET without cancellation plumbing. */
+  /** Load (or refresh) the request list into the shared signals. Ignored while a load is already
+   *  in flight — the list screen calls this on init and its refresh button is disabled while
+   *  loading — so this keeps it to a single GET without cancellation plumbing. */
   loadAll(): void {
     if (this._loading()) {
       return;
@@ -95,6 +95,14 @@ export class RequestsService {
         this._loading.set(false);
       },
     });
+  }
+
+  /** One-shot fetch of a page mapped to view models, independent of the shared list signal and its
+   *  single-flight guard. For callers that need their own snapshot regardless of what the list
+   *  screen is doing (e.g. the dashboard's KPI/recent counts). `pageSize` overrides the default. */
+  fetchPage(pageSize?: number): Observable<readonly RequestVm[]> {
+    const url = pageSize ? `${this.baseUrl}?pageSize=${pageSize}` : this.baseUrl;
+    return this.http.get<RequestDto[]>(url).pipe(map((dtos) => dtos.map(mapRequest)));
   }
 
   /** Fetch a single request by id (used by the detail screen). */

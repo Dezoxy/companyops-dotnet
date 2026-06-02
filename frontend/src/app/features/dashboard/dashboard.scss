@@ -16,76 +16,266 @@
   }
 }
 
+/* ---- KPI cards ---- */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
-.stat {
+.stat-card {
+  padding: 16px;
+}
+
+.stat-top {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
-.stat-icon {
-  color: var(--mat-sys-primary);
-  font-size: 32px;
-  width: 32px;
-  height: 32px;
-}
-
-.stat-value {
-  font: var(--mat-sys-headline-medium);
-}
-
-.stat-label {
-  color: var(--mat-sys-on-surface-variant);
-  font: var(--mat-sys-body-small);
-}
-
-.muted {
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.recent-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.recent-item {
-  display: flex;
+.stat-tile {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 4px;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  color: inherit;
-  text-decoration: none;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
 
-  &:hover {
-    color: var(--mat-sys-primary);
+  mat-icon {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
   }
 }
 
-.recent-list li:last-child .recent-item {
-  border-bottom: none;
+.stat-value {
+  font: var(--mat-sys-display-small);
+  line-height: 1.1;
+
+  &.emphasis {
+    color: var(--app-tone-danger-fg);
+  }
 }
 
-.recent-title {
-  flex: 1 1 auto;
-  min-width: 0;
+.stat-label {
+  margin-top: 4px;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-medium);
+}
+
+/* ---- Two-column body ---- */
+.grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  align-items: start;
+
+  // No system-status panel for this role → recent activity spans the full width.
+  &.single {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  padding: 16px 20px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+
+  h2 {
+    font: var(--mat-sys-title-medium);
+    margin: 0;
+  }
+}
+
+.panel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+  font: var(--mat-sys-label-large);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.panel-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 16px;
+  color: var(--mat-sys-on-surface-variant);
+  text-align: center;
+
+  mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: var(--mat-sys-outline);
+  }
+}
+
+/* ---- Recent activity table ---- */
+.activity {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--mat-sys-body-medium);
+
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-label-medium);
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  td {
+    padding: 12px;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:hover {
+    background-color: var(--mat-sys-surface-container-low);
+  }
+}
+
+.id-link {
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+  font-weight: 600;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.type {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.subject {
+  max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.recent-date {
+.time {
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
+/* ---- System status panel ---- */
+// One state colour ('--st') drives the overall pill, the row dots (as background) and the row
+// icons (as colour) — set per state here, consumed below. Keeps the three in lockstep, one place.
+.overall-operational,
+.state-operational {
+  --st: var(--app-tone-success-fg);
+}
+.overall-degraded,
+.state-degraded {
+  --st: var(--app-tone-progress-fg);
+}
+.overall-down,
+.state-down {
+  --st: var(--app-tone-danger-fg);
+}
+
+.overall {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--st, var(--app-tone-neutral-fg));
+}
+
+.status-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+}
+
+.dot {
   flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--st, var(--app-tone-neutral-fg));
+}
+
+.status-meta {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.status-name {
+  font: var(--mat-sys-body-medium);
+}
+
+.status-detail {
+  color: var(--mat-sys-on-surface-variant);
   font: var(--mat-sys-body-small);
 }
 
+.status-icon {
+  flex: 0 0 auto;
+  color: var(--st);
+}
+
+.status-footer {
+  display: inline-block;
+  margin-top: 12px;
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+  font: var(--mat-sys-label-large);
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* ---- Shared error/empty card ---- */
 .state {
   display: flex;
   flex-direction: column;
@@ -105,4 +295,15 @@
   width: 40px;
   height: 40px;
   color: var(--mat-sys-outline);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 839px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .subject {
+    max-width: 160px;
+  }
 }

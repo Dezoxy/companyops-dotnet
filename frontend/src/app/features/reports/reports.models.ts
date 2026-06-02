@@ -32,6 +32,29 @@ export interface AssetReportDto {
   readonly byType: readonly CategoryCountDto[];
 }
 
+// --- KPI counts view model ---------------------------------------------------
+// The request aggregates keyed by enum name for direct, type-safe lookup (e.g. the dashboard KPI
+// cards). Maps the GROUP BY arrays into records so callers read `byStatus.Submitted` instead of
+// scanning a DTO array — no raw HTTP shape leaks past the service.
+
+export interface KpiCounts {
+  readonly total: number;
+  readonly byStatus: Readonly<Partial<Record<RequestStatus, number>>>;
+  readonly byPriority: Readonly<Partial<Record<RequestPriority, number>>>;
+}
+
+function toCountMap<K extends string>(buckets: readonly CategoryCountDto[]): Partial<Record<K, number>> {
+  return Object.fromEntries(buckets.map((b) => [b.key, b.count])) as Partial<Record<K, number>>;
+}
+
+export function mapKpiCounts(dto: RequestReportDto): KpiCounts {
+  return {
+    total: dto.total,
+    byStatus: toCountMap<RequestStatus>(dto.byStatus),
+    byPriority: toCountMap<RequestPriority>(dto.byPriority),
+  };
+}
+
 // --- View models -------------------------------------------------------------
 
 /** One bar in a breakdown: its label, count, share of the section total (bar width), and tone. */

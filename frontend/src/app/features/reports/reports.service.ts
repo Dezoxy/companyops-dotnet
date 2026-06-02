@@ -4,9 +4,11 @@ import { forkJoin } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   AssetReportDto,
+  KpiCounts,
   ReportVm,
   RequestReportDto,
   mapAssetReport,
+  mapKpiCounts,
   mapRequestReport,
 } from './reports.models';
 
@@ -22,11 +24,16 @@ export class ReportsService {
 
   private readonly _requestReport = signal<ReportVm | null>(null);
   private readonly _assetReport = signal<ReportVm | null>(null);
+  // Enum-keyed request counts (true GROUP BY totals) for callers that need a specific bucket by
+  // name rather than the presentation breakdown — e.g. the dashboard KPI cards. Not capped by a
+  // list page size, so they stay accurate as the data grows.
+  private readonly _kpiCounts = signal<KpiCounts | null>(null);
   private readonly _loading = signal(false);
   private readonly _error = signal(false);
 
   readonly requestReport = this._requestReport.asReadonly();
   readonly assetReport = this._assetReport.asReadonly();
+  readonly kpiCounts = this._kpiCounts.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
 
@@ -44,6 +51,7 @@ export class ReportsService {
       next: ({ requests, assets }) => {
         this._requestReport.set(mapRequestReport(requests));
         this._assetReport.set(mapAssetReport(assets));
+        this._kpiCounts.set(mapKpiCounts(requests));
         this._loading.set(false);
       },
       error: () => {
