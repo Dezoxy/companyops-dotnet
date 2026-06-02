@@ -44,10 +44,15 @@ shell from the designs. This plan upgrades each screen to match the suite, scree
 
 ## Phased plan
 
-### Phase 1 — App shell + theme lock ✅ foundation
-- [ ] Sidebar nav + top bar (search, Staging/role chips, notifications, theme toggle, user profile),
-      responsive layout, dark-mode parity. Lock/verify the design tokens against the Figma variables.
-- [ ] **Acceptance:** every existing route renders inside the new shell; light/dark both clean.
+### Phase 1 — App shell + theme lock ✅ done (PR `feat/ui-shell`)
+- [x] Sidebar (brand + "Enterprise ERP" + **New Request** + nav + **user profile pinned bottom**)
+      and top bar (env badge, role chip, notifications/help, **theme menu** light·dark·system,
+      account menu), responsive (handset → over-mode drawer). Styled with the existing
+      `--mat-sys-*` Precision tokens only — no hardcoded values. Search/notifications/help are
+      honest disabled placeholders (no backend yet).
+- [x] **Acceptance:** every route renders inside the new shell; `ng build` + `ng lint` + 88 unit
+      tests green; angular-guardian reviewed (no must-fix). Shell is uniform across the design
+      variants, so no per-screen variant pick here — that starts at the Dashboard (Phase 2).
 
 ### Phase 2 — Dashboard
 - [ ] Pick variant → KPI stat cards (from reports counts), recent-activity table, system-status panel

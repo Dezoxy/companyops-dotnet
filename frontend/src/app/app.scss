@@ -3,33 +3,110 @@
 }
 
 .app-sidenav {
-  width: 260px;
+  width: 264px;
   background-color: var(--mat-sys-surface-container-lowest);
   border-right: 1px solid var(--mat-sys-outline-variant);
+  // Column layout so the user card can pin to the bottom.
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 4px;
+  box-sizing: border-box;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 64px;
-  padding: 0 20px;
+  height: 56px;
+  padding: 0 8px;
 }
 
 .brand-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background-color: var(--mat-sys-primary-container);
-  color: var(--mat-sys-on-primary-container);
-  font-size: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background-color: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+  font-size: 22px;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
 }
 
 .brand-name {
-  font-size: 18px;
+  font: var(--mat-sys-title-medium);
+  font-weight: 600;
+}
+
+.brand-sub {
+  font: var(--mat-sys-label-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.new-request {
+  margin: 8px 4px 12px;
+  background-color: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+}
+
+.nav {
+  padding-top: 0;
+}
+
+// User profile pinned to the bottom of the sidebar.
+.user-card {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.user-name {
+  font: var(--mat-sys-label-large);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-role {
+  font: var(--mat-sys-label-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Initials avatar (no photos in the app — derived from the name).
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+  font: var(--mat-sys-label-medium);
+  font-weight: 600;
+}
+
+.avatar-sm {
+  width: 30px;
+  height: 30px;
+  font: var(--mat-sys-label-small);
   font-weight: 600;
 }
 
@@ -37,29 +114,91 @@
   position: sticky;
   top: 0;
   z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   background-color: var(--mat-sys-surface-container-lowest);
   border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+// Rounded search field (placeholder until a search backend exists).
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 200px;
+  max-width: 420px;
+  flex: 0 1 420px;
+  padding: 0 14px;
+  height: 40px;
+  border-radius: 999px;
+  background-color: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  input {
+    flex: 1 1 auto;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--mat-sys-on-surface);
+    font: var(--mat-sys-body-medium);
+
+    &::placeholder {
+      color: var(--mat-sys-on-surface-variant);
+    }
+  }
 }
 
 .spacer {
   flex: 1 1 auto;
 }
 
+// Pill badges in the top bar (environment + role).
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font: var(--mat-sys-label-small);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip-env {
+  background-color: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+}
+
+.chip-role {
+  background-color: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+
+.theme-check {
+  margin-left: auto;
+  color: var(--mat-sys-primary);
+}
+
 .app-content {
   padding: 24px;
 }
 
-// The logged-in user's name shown next to the account icon in the toolbar (desktop only).
-.account-trigger-name {
-  margin-right: 4px;
-  font: var(--mat-sys-label-large);
-  color: var(--mat-sys-on-surface);
-  text-transform: none; // names aren't button labels — don't uppercase
-}
-
-// The name repeated at the top of the opened account menu (also covers the handset case).
+// The name repeated at the top of the opened account menu.
 .account-name {
   padding: 8px 16px;
   font: var(--mat-sys-label-large);
   color: var(--mat-sys-on-surface-variant);
+}
+
+@media (max-width: 599px) {
+  .search {
+    display: none; // reclaim space on mobile; search returns when there's a backend
+  }
 }
