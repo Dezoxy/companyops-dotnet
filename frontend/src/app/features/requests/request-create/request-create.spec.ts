@@ -10,6 +10,7 @@ import { CreateRequestInput, RequestVm } from '../requests.models';
 function vm(): RequestVm {
   return {
     id: 'new-id',
+    shortId: 'NEW-ID',
     title: 'Laptop',
     description: null,
     type: 'Procurement',

@@ -26,14 +26,16 @@ internal sealed class FakeRequestRepository : IRequestRepository
         Task.FromResult(_store.GetValueOrDefault(id));
 
     public Task<IReadOnlyList<Request>> ListAsync(Guid? requesterId, Guid? departmentId, int skip, int take, CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<Request>>(
-        [
-            .. _store.Values
-                .Where(r => requesterId is not { } requester || r.RequesterId == requester)
-                .Where(r => departmentId is not { } department || r.DepartmentId == department)
-                .OrderByDescending(r => r.CreatedAtUtc).ThenByDescending(r => r.Id)
-                .Skip(skip).Take(take),
-        ]);
+        Task.FromResult<IReadOnlyList<Request>>([.. Scoped(requesterId, departmentId).Skip(skip).Take(take)]);
+
+    public Task<int> CountAsync(Guid? requesterId, Guid? departmentId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Scoped(requesterId, departmentId).Count());
+
+    private IEnumerable<Request> Scoped(Guid? requesterId, Guid? departmentId) =>
+        _store.Values
+            .Where(r => requesterId is not { } requester || r.RequesterId == requester)
+            .Where(r => departmentId is not { } department || r.DepartmentId == department)
+            .OrderByDescending(r => r.CreatedAtUtc).ThenByDescending(r => r.Id);
 }
 
 internal sealed class FakeCommentRepository : ICommentRepository

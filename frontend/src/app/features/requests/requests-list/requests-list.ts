@@ -1,116 +1,111 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { EMPTY, Subject, catchError, switchMap, tap } from 'rxjs';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatCardModule } from '@angular/material/card';
-import { MatTooltipModule } from '@angular/material/tooltip';
 
+import { AuthService } from '../../../core/auth/auth.service';
 import { RequestsService } from '../requests.service';
-import {
-  REQUEST_STATUS_META,
-  REQUEST_TYPE_LABEL,
-  RequestStatus,
-  RequestType,
-} from '../requests.models';
+import { REQUEST_TYPE_ICON, RequestVm } from '../requests.models';
 import { StatusChip } from '../../../shared/status-chip/status-chip';
 
-/** Requests list: a filterable, paged table over GET /requests. Read-only — creating and
- *  acting on requests land in Phase 14b. Filtering/paging is client-side over the loaded list. */
+/** Requests list: a server-paged table over GET /requests (the API scopes rows by role). Owns its
+ *  own page fetch (fetchPageResult) rather than the shared list signal, so paging here never
+ *  clobbers what the Approvals/Fulfilment queue screens read. Pagination is server-side so the
+ *  footer shows the true total. Status/type filtering needs backend filter params (not yet
+ *  supported) — deferred; see docs/ui-upgrade-plan.md. */
 @Component({
   selector: 'app-requests-list',
-  imports: [
-    DatePipe,
-    RouterLink,
-    MatTableModule,
-    MatPaginatorModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressBarModule,
-    MatCardModule,
-    MatTooltipModule,
-    StatusChip,
-  ],
+  imports: [DatePipe, RouterLink, MatButtonModule, MatIconModule, MatProgressBarModule, MatCardModule, StatusChip],
   templateUrl: './requests-list.html',
   styleUrl: './requests-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RequestsList {
   private readonly service = inject(RequestsService);
+  private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly requests = this.service.requests;
-  protected readonly loading = this.service.loading;
-  protected readonly error = this.service.error;
+  protected readonly requests = signal<readonly RequestVm[]>([]);
+  protected readonly loading = signal(false);
+  protected readonly error = signal(false);
+  protected readonly total = signal(0);
+  protected readonly page = signal(1);
+  protected readonly pageSize = signal(50);
+  protected readonly totalPages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize())));
 
-  protected readonly columns = ['id', 'title', 'type', 'priority', 'status', 'created', 'actions'];
+  protected readonly typeIcon = REQUEST_TYPE_ICON;
+  // Only Employees create requests (docs/security.md); the API still enforces.
+  protected readonly canCreate = computed(() => this.auth.hasRole('Employee'));
 
-  // Filter options for the dropdowns (label + value), built from the display metadata.
-  protected readonly statusOptions = Object.entries(REQUEST_STATUS_META).map(([value, meta]) => ({
-    value: value as RequestStatus,
-    label: meta.label,
-  }));
-  protected readonly typeOptions = Object.entries(REQUEST_TYPE_LABEL).map(([value, label]) => ({
-    value: value as RequestType,
-    label,
-  }));
+  // "Showing 1–50 of 142" — the 1-based range of the current page.
+  protected readonly rangeStart = computed(() =>
+    this.total() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1,
+  );
+  protected readonly rangeEnd = computed(() => Math.min(this.page() * this.pageSize(), this.total()));
 
-  protected readonly search = signal('');
-  protected readonly statusFilter = signal<RequestStatus | 'all'>('all');
-  protected readonly typeFilter = signal<RequestType | 'all'>('all');
-  protected readonly pageIndex = signal(0);
-  protected readonly pageSize = signal(10);
-
-  protected readonly filtered = computed(() => {
-    const term = this.search().trim().toLowerCase();
-    const status = this.statusFilter();
-    const type = this.typeFilter();
-    return this.requests().filter(
-      (r) =>
-        (status === 'all' || r.status === status) &&
-        (type === 'all' || r.type === type) &&
-        (term === '' || r.title.toLowerCase().includes(term) || r.id.toLowerCase().includes(term)),
-    );
+  // Windowed page numbers: first, last, and the current ±1, with `null` marking an ellipsis gap.
+  protected readonly pageNumbers = computed<(number | null)[]>(() => {
+    const last = this.totalPages();
+    const current = this.page();
+    const wanted = new Set([1, last, current, current - 1, current + 1]);
+    const pages = [...wanted].filter((p) => p >= 1 && p <= last).sort((a, b) => a - b);
+    const out: (number | null)[] = [];
+    let prev = 0;
+    for (const p of pages) {
+      if (p - prev > 1) {
+        out.push(null); // gap
+      }
+      out.push(p);
+      prev = p;
+    }
+    return out;
   });
 
-  protected readonly paged = computed(() => {
-    const start = this.pageIndex() * this.pageSize();
-    return this.filtered().slice(start, start + this.pageSize());
-  });
+  // One page stream + switchMap so a newer page request cancels an in-flight one (rapid clicks
+  // can't leave a slow earlier response overwriting a newer page).
+  private readonly pageRequest = new Subject<number>();
 
   constructor() {
-    this.service.loadAll();
+    this.pageRequest
+      .pipe(
+        tap(() => {
+          this.loading.set(true);
+          this.error.set(false);
+        }),
+        switchMap((page) =>
+          this.service.fetchPageResult(page, this.pageSize()).pipe(
+            catchError(() => {
+              this.error.set(true);
+              this.loading.set(false);
+              return EMPTY;
+            }),
+          ),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((res) => {
+        this.requests.set(res.items);
+        this.total.set(res.total);
+        this.page.set(res.page);
+        this.pageSize.set(res.pageSize);
+        this.loading.set(false);
+      });
+
+    this.pageRequest.next(1);
   }
 
-  protected onSearch(value: string): void {
-    this.search.set(value);
-    this.pageIndex.set(0);
-  }
-
-  protected onStatus(value: RequestStatus | 'all'): void {
-    this.statusFilter.set(value);
-    this.pageIndex.set(0);
-  }
-
-  protected onType(value: RequestType | 'all'): void {
-    this.typeFilter.set(value);
-    this.pageIndex.set(0);
-  }
-
-  protected onPage(event: PageEvent): void {
-    this.pageIndex.set(event.pageIndex);
-    this.pageSize.set(event.pageSize);
+  protected goTo(page: number): void {
+    if (page >= 1 && page <= this.totalPages() && page !== this.page() && !this.loading()) {
+      this.pageRequest.next(page);
+    }
   }
 
   protected refresh(): void {
-    this.service.loadAll();
+    this.pageRequest.next(this.page());
   }
 }

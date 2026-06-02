@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -8,6 +8,7 @@ import {
   ApprovalStepDto,
   ApprovalStepVm,
   CreateRequestInput,
+  PagedResultDto,
   REQUEST_CATEGORY_LABEL,
   REQUEST_PRIORITY_META,
   REQUEST_STATUS_META,
@@ -15,6 +16,19 @@ import {
   RequestDto,
   RequestVm,
 } from './requests.models';
+
+/** Build the optional page/pageSize query params (only those provided are sent). Explicit
+ *  undefined checks, not truthiness, so a literal 0 is still forwarded for the API to reject. */
+function pageParams(page?: number, pageSize?: number): HttpParams {
+  let params = new HttpParams();
+  if (page !== undefined) {
+    params = params.set('page', page);
+  }
+  if (pageSize !== undefined) {
+    params = params.set('pageSize', pageSize);
+  }
+  return params;
+}
 
 /** Map one API step DTO → view model. `isCurrent` is set by the caller (it depends on the
  *  whole chain — the first pending step). Exported for unit testing. */
@@ -40,6 +54,7 @@ export function mapRequest(dto: RequestDto): RequestVm {
   const currentOrder = steps.find((s) => s.decision === 'Pending')?.order ?? null;
   return {
     id: dto.id,
+    shortId: dto.id.slice(0, 8).toUpperCase(),
     title: dto.title,
     description: dto.description,
     type: dto.type,
@@ -68,6 +83,9 @@ export class RequestsService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiBaseUrl}/requests`;
 
+  // The shared default-page list, used by the simple queue screens (Approvals, Fulfilment) that
+  // just want "the requests". Screens that page (the list) own their own fetch via fetchPageResult
+  // so their page selection never pollutes this shared signal.
   private readonly _requests = signal<readonly RequestVm[]>([]);
   private readonly _loading = signal(false);
   private readonly _error = signal(false);
@@ -76,33 +94,46 @@ export class RequestsService {
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
 
-  /** Load (or refresh) the request list into the shared signals. Ignored while a load is already
-   *  in flight — the list screen calls this on init and its refresh button is disabled while
-   *  loading — so this keeps it to a single GET without cancellation plumbing. */
+  /** Load (or refresh) the default page into the shared signal. Ignored while a load is already in
+   *  flight (single GET, no cancellation plumbing). For screens that just need the request list;
+   *  paged screens use {@link fetchPageResult} so they don't share/clobber this signal. */
   loadAll(): void {
     if (this._loading()) {
       return;
     }
     this._loading.set(true);
     this._error.set(false);
-    this.http.get<RequestDto[]>(this.baseUrl).pipe(map((dtos) => dtos.map(mapRequest))).subscribe({
-      next: (requests) => {
-        this._requests.set(requests);
-        this._loading.set(false);
-      },
-      error: () => {
-        this._error.set(true);
-        this._loading.set(false);
-      },
-    });
+    this.http
+      .get<PagedResultDto<RequestDto>>(this.baseUrl)
+      .pipe(map((res) => res.items.map(mapRequest)))
+      .subscribe({
+        next: (items) => {
+          this._requests.set(items);
+          this._loading.set(false);
+        },
+        error: () => {
+          this._error.set(true);
+          this._loading.set(false);
+        },
+      });
   }
 
-  /** One-shot fetch of a page mapped to view models, independent of the shared list signal and its
-   *  single-flight guard. For callers that need their own snapshot regardless of what the list
-   *  screen is doing (e.g. the dashboard's KPI/recent counts). `pageSize` overrides the default. */
+  /** One-shot fetch of a page's items, mapped to view models, independent of the shared list signal
+   *  and its single-flight guard. For callers that need their own snapshot regardless of what the
+   *  list screen is doing (e.g. the dashboard's KPI/recent counts). `pageSize` overrides the default. */
   fetchPage(pageSize?: number): Observable<readonly RequestVm[]> {
-    const url = pageSize ? `${this.baseUrl}?pageSize=${pageSize}` : this.baseUrl;
-    return this.http.get<RequestDto[]>(url).pipe(map((dtos) => dtos.map(mapRequest)));
+    return this.http
+      .get<PagedResultDto<RequestDto>>(this.baseUrl, { params: pageParams(undefined, pageSize) })
+      .pipe(map((res) => res.items.map(mapRequest)));
+  }
+
+  /** One-shot fetch of a full page envelope (items mapped to view models, plus the total/page/
+   *  pageSize for the footer), independent of the shared list signal. The paged list screen owns
+   *  this so its page selection never clobbers the shared `requests` signal other screens read. */
+  fetchPageResult(page?: number, pageSize?: number): Observable<PagedResultDto<RequestVm>> {
+    return this.http
+      .get<PagedResultDto<RequestDto>>(this.baseUrl, { params: pageParams(page, pageSize) })
+      .pipe(map((res) => ({ ...res, items: res.items.map(mapRequest) })));
   }
 
   /** Fetch a single request by id (used by the detail screen). */

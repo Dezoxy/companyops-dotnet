@@ -8,42 +8,16 @@
       <mat-icon>refresh</mat-icon>
       Refresh
     </button>
-    <a mat-flat-button routerLink="/requests/new">
-      <mat-icon>add</mat-icon>
-      New request
-    </a>
+    @if (canCreate()) {
+      <a mat-flat-button class="new-request" routerLink="/requests/new">
+        <mat-icon>add</mat-icon>
+        New request
+      </a>
+    }
   </div>
 </header>
 
 <mat-card appearance="outlined" class="panel">
-  <div class="filters">
-    <mat-form-field appearance="outline" class="search">
-      <mat-label>Search</mat-label>
-      <mat-icon matPrefix>search</mat-icon>
-      <input matInput #searchInput placeholder="Filter by title or ID" (input)="onSearch(searchInput.value)" />
-    </mat-form-field>
-
-    <mat-form-field appearance="outline">
-      <mat-label>Status</mat-label>
-      <mat-select [value]="statusFilter()" (selectionChange)="onStatus($event.value)">
-        <mat-option value="all">All statuses</mat-option>
-        @for (option of statusOptions; track option.value) {
-          <mat-option [value]="option.value">{{ option.label }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline">
-      <mat-label>Type</mat-label>
-      <mat-select [value]="typeFilter()" (selectionChange)="onType($event.value)">
-        <mat-option value="all">All types</mat-option>
-        @for (option of typeOptions; track option.value) {
-          <mat-option [value]="option.value">{{ option.label }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-  </div>
-
   @if (loading()) {
     <mat-progress-bar mode="indeterminate" />
   }
@@ -54,73 +28,84 @@
       <p>Couldn't load requests.</p>
       <button mat-stroked-button (click)="refresh()">Try again</button>
     </div>
-  } @else if (!loading() && requests().length === 0) {
+  } @else if (!loading() && total() === 0) {
     <div class="state">
       <mat-icon class="state-icon">inbox</mat-icon>
       <p>No requests yet.</p>
     </div>
-  } @else if (filtered().length === 0) {
-    <div class="state">
-      <mat-icon class="state-icon">search_off</mat-icon>
-      <p>No requests match your filters.</p>
-    </div>
   } @else {
-    <!-- The *mat* directives below are the Material table API, not legacy control flow — they
-         have no @-block equivalent. The rest of the template uses @if/@for as standard. -->
-    <table mat-table [dataSource]="paged()" class="requests-table">
-      <ng-container matColumnDef="id">
-        <th mat-header-cell *matHeaderCellDef>ID</th>
-        <td mat-cell *matCellDef="let row">
-          <span class="mono id-cell" [matTooltip]="row.id">{{ row.id }}</span>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="title">
-        <th mat-header-cell *matHeaderCellDef>Title</th>
-        <td mat-cell *matCellDef="let row">{{ row.title }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="type">
-        <th mat-header-cell *matHeaderCellDef>Type</th>
-        <td mat-cell *matCellDef="let row">{{ row.typeLabel }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="priority">
-        <th mat-header-cell *matHeaderCellDef>Priority</th>
-        <td mat-cell *matCellDef="let row">
-          <app-status-chip [label]="row.priorityMeta.label" [tone]="row.priorityMeta.tone" />
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef>Status</th>
-        <td mat-cell *matCellDef="let row">
-          <app-status-chip [label]="row.statusMeta.label" [tone]="row.statusMeta.tone" />
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="created">
-        <th mat-header-cell *matHeaderCellDef>Created</th>
-        <td mat-cell *matCellDef="let row">{{ row.createdAt | date: 'mediumDate' }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef><span class="visually-hidden">Actions</span></th>
-        <td mat-cell *matCellDef="let row">
-          <a mat-button [routerLink]="['/requests', row.id]">View</a>
-        </td>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="columns"></tr>
-      <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    <table class="requests-table">
+      <thead>
+        <tr>
+          <th scope="col">Request ID</th>
+          <th scope="col">Title &amp; Type</th>
+          <th scope="col">Status</th>
+          <th scope="col">Priority</th>
+          <th scope="col">Created</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of requests(); track row.id) {
+          <tr>
+            <td>
+              <a [routerLink]="['/requests', row.id]" class="id-link" [title]="row.id">{{ row.shortId }}</a>
+            </td>
+            <td>
+              <div class="title-cell">
+                <span class="title" [title]="row.title">{{ row.title }}</span>
+                <span class="type">
+                  <mat-icon aria-hidden="true">{{ typeIcon[row.type] }}</mat-icon>
+                  {{ row.typeLabel }}
+                </span>
+              </div>
+            </td>
+            <td><app-status-chip [label]="row.statusMeta.label" [tone]="row.statusMeta.tone" /></td>
+            <td><app-status-chip [label]="row.priorityMeta.label" [tone]="row.priorityMeta.tone" /></td>
+            <td class="created">{{ row.createdAt | date: 'mediumDate' }}</td>
+            <td class="actions"><a mat-button [routerLink]="['/requests', row.id]">View</a></td>
+          </tr>
+        }
+      </tbody>
     </table>
 
-    <mat-paginator
-      [length]="filtered().length"
-      [pageSize]="pageSize()"
-      [pageIndex]="pageIndex()"
-      [pageSizeOptions]="[10, 25, 50]"
-      (page)="onPage($event)"
-    />
+    <nav class="pager" aria-label="Requests pagination">
+      <span class="summary">Showing {{ rangeStart() }}–{{ rangeEnd() }} of {{ total() }} results</span>
+      <div class="pages">
+        <button
+          mat-icon-button
+          aria-label="Previous page"
+          [disabled]="page() <= 1 || loading()"
+          (click)="goTo(page() - 1)"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        @for (p of pageNumbers(); track $index) {
+          @if (p === null) {
+            <span class="gap" aria-hidden="true">…</span>
+          } @else {
+            <button
+              type="button"
+              class="page-num"
+              [class.current]="p === page()"
+              [attr.aria-current]="p === page() ? 'page' : null"
+              [attr.aria-label]="'Page ' + p"
+              [disabled]="loading()"
+              (click)="goTo(p)"
+            >
+              {{ p }}
+            </button>
+          }
+        }
+        <button
+          mat-icon-button
+          aria-label="Next page"
+          [disabled]="page() >= totalPages() || loading()"
+          (click)="goTo(page() + 1)"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </nav>
   }
 </mat-card>

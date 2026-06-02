@@ -66,10 +66,22 @@ shell from the designs. This plan upgrades each screen to match the suite, scree
       in later phases) — additive, no business logic in the SPA.
 
 ### Phase 3 — Requests flow
-- [ ] **List:** table (id-link, type, requester avatar, status/priority chips), filter chips,
-      pagination footer (needs the paged envelope — see Phase 0-backend below).
-- [ ] **Detail:** approval-timeline stepper (from `approvalSteps`), requester info, audit preview.
-- [ ] **Create:** sectioned form + approval-summary preview (chain from `ApprovalChains`).
+Split into two PRs to keep each diff focused.
+
+**3a — List + paged envelope ✅ done (this PR)**
+- [x] **List:** dense table (id-link, title + type icon, status/priority chips, created), **server-side
+      pagination footer** ("Showing X–Y of N" + windowed page numbers) over the new paged envelope.
+      `New request` role-gated to Employee. Per-panel loading/empty/error.
+- [x] **Backend:** `PagedResult<T>` envelope on `GET /requests` (handler total + `CountAsync`,
+      contract regen, drift gate, service consumes it) — the sanctioned "backend-where-cheap" slice.
+- [x] **Deferred (not cheap):** status/type **filtering** needs backend filter params; requester /
+      department **names** need a user directory — both simplified out for now (follow-ups).
+
+**3b — Detail + Create (next PR)**
+- [ ] **Detail:** approval-timeline stepper (from `approvalSteps`), request meta; line-items /
+      requester-name / per-request integration health simplified (domain doesn't have them).
+- [ ] **Create:** sectioned form (title/type/priority/description/category); cost-center / location /
+      delivery-date / chain-preview simplified (not in the domain).
 
 ### Phase 4 — Approvals + Assets
 - [ ] Approvals queue (approve/reject inline). Assets list + **slide-over detail** + history timeline.

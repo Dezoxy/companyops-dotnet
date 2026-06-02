@@ -57,8 +57,8 @@ public sealed class RequestsController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<RequestDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<RequestDto>>> List(
+    [ProducesResponseType(typeof(PagedResult<RequestDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<RequestDto>>> List(
         [FromServices] ListRequestsHandler handler,
         CancellationToken cancellationToken,
         [FromQuery] int? page = null,

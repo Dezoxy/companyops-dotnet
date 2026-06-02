@@ -18,48 +18,149 @@
 
 .head-actions {
   display: flex;
-  gap: 12px;
-  flex-shrink: 0;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.new-request {
+  background-color: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
 }
 
 .panel {
-  padding: 8px 16px 16px;
-}
-
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: center;
-  padding-top: 8px;
-
-  .search {
-    flex: 1 1 280px;
-  }
+  padding: 0;
+  overflow: hidden;
 }
 
 .requests-table {
   width: 100%;
-  background: transparent;
+  border-collapse: collapse;
+  font: var(--mat-sys-body-medium);
+
+  th {
+    text-align: left;
+    padding: 12px 16px;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-label-medium);
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:hover {
+    background-color: var(--mat-sys-surface-container-low);
+  }
 }
 
-.mono {
-  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
-  font-size: 13px;
-  color: var(--mat-sys-on-surface-variant);
+.id-link {
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+  font-weight: 600;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
-// The domain has no human request number yet, so show the real id, truncated (full value in
-// the tooltip). Replaced by a server-issued friendly id in a later phase.
-.id-cell {
-  display: inline-block;
-  max-width: 96px;
+.title-cell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title {
+  max-width: 320px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  vertical-align: middle;
 }
 
+.type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.created {
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
+.actions {
+  text-align: right;
+}
+
+/* ---- Pagination footer ---- */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  flex-wrap: wrap;
+}
+
+.summary {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
+.pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-num {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+  background-color: transparent;
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-label-large);
+  cursor: pointer;
+
+  &:hover:not(:disabled):not(.current) {
+    background-color: var(--mat-sys-surface-container-high);
+  }
+
+  &.current {
+    background-color: var(--mat-sys-primary);
+    color: var(--mat-sys-on-primary);
+    border-color: var(--mat-sys-primary);
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.gap {
+  padding: 0 4px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+/* ---- States ---- */
 .state {
   display: flex;
   flex-direction: column;
@@ -79,4 +180,14 @@
   width: 40px;
   height: 40px;
   color: var(--mat-sys-outline);
+}
+
+@media (max-width: 599px) {
+  .title {
+    max-width: 160px;
+  }
+
+  .created {
+    display: none;
+  }
 }

@@ -52,6 +52,15 @@ export interface RequestDto {
   readonly approvalSteps: readonly ApprovalStepDto[];
 }
 
+/** A page of a list response: the items plus the unpaged total and the window that produced it.
+ *  Mirrors the server's PagedResult<T>. */
+export interface PagedResultDto<T> {
+  readonly items: readonly T[];
+  readonly total: number;
+  readonly page: number;
+  readonly pageSize: number;
+}
+
 /** Body for POST /requests (create). Requester + department come from the JWT, never the body. */
 export interface CreateRequestInput {
   readonly title: string;
@@ -136,6 +145,9 @@ export interface ApprovalStepVm {
 
 export interface RequestVm {
   readonly id: string;
+  /** Short, human-friendly id for tables/links (first 8 chars, upper-cased) until the API issues a
+   *  friendly request number. Derived once in the mapper so it isn't recomputed in templates. */
+  readonly shortId: string;
   readonly title: string;
   readonly description: string | null;
   readonly type: RequestType;

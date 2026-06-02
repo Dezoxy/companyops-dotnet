@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { RequestsService, mapRequest } from './requests.service';
-import { RequestDto } from './requests.models';
+import { PagedResultDto, RequestDto, RequestVm } from './requests.models';
 
 function dto(overrides: Partial<RequestDto> = {}): RequestDto {
   return {
@@ -69,16 +69,36 @@ describe('RequestsService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('loadAll GETs /api/requests and populates the signal', () => {
+  it('loadAll GETs the default page and populates the shared items signal', () => {
     service.loadAll();
     const req = httpMock.expectOne('/api/requests');
     expect(req.request.method).toBe('GET');
-    req.flush([dto()]);
+    req.flush({ items: [dto()], total: 142, page: 1, pageSize: 50 });
 
     expect(service.loading()).toBe(false);
     expect(service.error()).toBe(false);
     expect(service.requests()).toHaveLength(1);
     expect(service.requests()[0].title).toBe('New laptop');
+  });
+
+  it('fetchPageResult passes 1-based page + pageSize and returns the mapped envelope', () => {
+    let result: PagedResultDto<RequestVm> | undefined;
+    service.fetchPageResult(2, 25).subscribe((res) => (result = res));
+    const req = httpMock.expectOne((r) => r.url === '/api/requests');
+    expect(req.request.params.get('page')).toBe('2');
+    expect(req.request.params.get('pageSize')).toBe('25');
+    req.flush({ items: [dto()], total: 142, page: 2, pageSize: 25 });
+    expect(result?.total).toBe(142);
+    expect(result?.items.map((i) => i.title)).toEqual(['New laptop']);
+  });
+
+  it('fetchPage returns just the mapped items for the given page size', () => {
+    let titles: string[] | undefined;
+    service.fetchPage(200).subscribe((items) => (titles = items.map((i) => i.title)));
+    const req = httpMock.expectOne((r) => r.url === '/api/requests');
+    expect(req.request.params.get('pageSize')).toBe('200');
+    req.flush({ items: [dto()], total: 1, page: 1, pageSize: 200 });
+    expect(titles).toEqual(['New laptop']);
   });
 
   it('loadAll sets the error signal on failure', () => {
