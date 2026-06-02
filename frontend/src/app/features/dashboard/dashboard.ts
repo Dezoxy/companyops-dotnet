@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -68,6 +69,13 @@ export class Dashboard {
   private readonly requestsService = inject(RequestsService);
   private readonly reports = inject(ReportsService);
   private readonly integrations = inject(IntegrationsService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  // The dashboard owns its own request snapshot (via fetchPage), independent of the list screen's
+  // shared signal — so navigating from the list never starves the dashboard's load.
+  private readonly _requests = signal<readonly RequestVm[]>([]);
+  private readonly _requestsLoading = signal(false);
+  private readonly _requestsError = signal(false);
 
   protected readonly canViewReports = computed(() => REPORTS_ROLES.some((r) => this.auth.hasRole(r)));
   protected readonly canViewIntegrations = computed(() =>
@@ -77,15 +85,15 @@ export class Dashboard {
   // Top progress bar: any section the role actually loads. Each panel renders its own error/empty.
   protected readonly loading = computed(
     () =>
-      this.requestsService.loading() ||
+      this._requestsLoading() ||
       (this.canViewReports() && this.reports.loading()) ||
       (this.canViewIntegrations() && this.integrations.loading()),
   );
-  // KPI source is /reports for privileged roles, otherwise the /requests list — so its error follows.
+  // KPI source is /reports for privileged roles, otherwise the request snapshot — error follows it.
   protected readonly kpiError = computed(() =>
-    this.canViewReports() ? this.reports.error() : this.requestsService.error(),
+    this.canViewReports() ? this.reports.error() : this._requestsError(),
   );
-  protected readonly recentError = this.requestsService.error;
+  protected readonly recentError = this._requestsError.asReadonly();
   protected readonly systemError = this.integrations.error;
 
   protected readonly stats = computed<readonly StatCard[]>(() =>
@@ -118,7 +126,7 @@ export class Dashboard {
 
   // Personal KPIs for roles without /reports access (Employee): counted from their own request list.
   private personalStats(): readonly StatCard[] {
-    const mine = this.requestsService.requests();
+    const mine = this._requests();
     const count = (predicate: (r: RequestVm) => boolean) => mine.filter(predicate).length;
     const pending = count((r) => r.status === 'Submitted');
     const critical = count((r) => r.priority === 'Critical' && !isTerminal(r.status));
@@ -138,7 +146,7 @@ export class Dashboard {
 
   // Five most recent requests for the activity table.
   protected readonly recent = computed(() =>
-    [...this.requestsService.requests()]
+    [...this._requests()]
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(0, 5)
       .map((r) => ({
@@ -203,9 +211,24 @@ export class Dashboard {
   }
 
   protected refresh(): void {
-    // Privileged roles only need recent activity from the list (KPIs come from /reports), so the
-    // default page is fine. Employees count KPIs from the list, so pull the max page.
-    this.requestsService.loadAll(this.canViewReports() ? undefined : EMPLOYEE_KPI_PAGE_SIZE);
+    // Privileged roles only need recent activity from the snapshot (KPIs come from /reports), so the
+    // default page is enough. Employees count KPIs from it, so pull the server max page.
+    this._requestsLoading.set(true);
+    this._requestsError.set(false);
+    this.requestsService
+      .fetchPage(this.canViewReports() ? undefined : EMPLOYEE_KPI_PAGE_SIZE)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (requests) => {
+          this._requests.set(requests);
+          this._requestsLoading.set(false);
+        },
+        error: () => {
+          this._requestsError.set(true);
+          this._requestsLoading.set(false);
+        },
+      });
+
     if (this.canViewReports()) {
       this.reports.load();
     }

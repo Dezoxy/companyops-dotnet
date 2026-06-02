@@ -67,6 +67,7 @@ function render(reqs: RequestVm[], roles: string[] = ['ItAdmin']) {
     loading: signal(false),
     error: signal(false),
     loadAll: () => undefined,
+    fetchPage: () => of(reqs as readonly RequestVm[]),
     getById: () => of(reqs[0]),
   } as unknown as RequestsService;
 
