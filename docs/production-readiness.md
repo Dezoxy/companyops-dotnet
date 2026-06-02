@@ -49,10 +49,10 @@ Authoritative: [security.md](security.md) (role × action matrix + STRIDE threat
 ## 2. API contract & documentation
 Authoritative: [openapi-contract-plan.md](openapi-contract-plan.md).
 
-- [ ] OpenAPI document generated at build time from the code (prototyped + verified this session, then reverted to keep PRs focused; re-introduced as Phase 1 of [openapi-contract-plan.md](openapi-contract-plan.md)).
+- [x] OpenAPI document **generated at build time** from the code (v1.2.0) — no hand-maintained drift.
+- [x] **Single canonical, security-accurate contract** committed (`openapi.json`); hand-tuned spec retired. Documents Bearer security + HTTPS server, `additionalProperties:false`, honest error responses, string constraints, and stable `operationId`s. 42Crunch audit 77.5/100 (security 30/30); see [openapi-contract-plan.md](openapi-contract-plan.md) + [ADR 0013](decisions/0013-code-generated-api-contract.md).
+- [x] **CI gate fails on contract drift** (regenerate + `git status --porcelain` on `openapi.json`).
 - [x] Interactive API docs (Scalar) — currently dev-only.
-- [ ] Single canonical, security-accurate contract; hand-tuned `openapi.json` retired (in progress — see the plan).
-- [ ] CI gate that fails on contract drift.
 - [ ] Explicit API versioning strategy (e.g. `/v1`) before external consumers integrate.
 - [ ] Customer-facing integration guide (auth flow, examples, error model).
 
@@ -129,9 +129,10 @@ Authoritative: [testing-strategy.md](testing-strategy.md).
 
 ## Suggested order (highest customer-impact first)
 
-1. **Input validation across all write endpoints** (§1) — correctness/abuse gaps a customer hits immediately. (Pagination §7 is now done for the list endpoints.)
-2. **API contract finalisation + CI drift gate** (§2, [openapi-contract-plan.md](openapi-contract-plan.md)) — already in motion.
-3. **Tested restore drill + data retention/GDPR** (§5) — required before real customer data.
-4. **Staging environment + rollback** (§6) and **alerting/dashboards** (§4) — operate it safely.
-5. **Secrets manager, CSP, least-privilege DB, token rotation** (§1 Tier B) — deepen the security posture.
-6. **README + customer handover pack** (§9) — make it ownable by someone else.
+_Shipped in v1.2.0: input validation (create/register), the code-generated + audited + CI-gated API contract (§2), and pagination on the list endpoints (§7)._
+
+1. **Input validation across the *remaining* write endpoints** (§1) — submit/approve/reject/fulfill/cancel/comment/assign still lack validators.
+2. **Tested restore drill + data retention/GDPR** (§5) — required before real customer data.
+3. **Staging environment + rollback** (§6) and **alerting/dashboards** (§4) — operate it safely.
+4. **Secrets manager, CSP, least-privilege DB, token rotation** (§1 Tier B) — deepen the security posture.
+5. **README + customer handover pack** (§9) — make it ownable by someone else.

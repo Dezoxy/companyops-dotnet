@@ -1,12 +1,12 @@
 # Plan — single, code-generated, audited API contract
 
 Date: 2026-06-01
-Status: **Proposed** (not started — this document is the plan, to be approved before the code changes)
+Status: **Implemented** — shipped in **v1.2.0** (#79–#86). All phases complete; the API contract is
+code-generated, committed, audited, and CI-gated. Retained as the record of how and why.
 Owner hats: architecture (decision), backend (implementation), security (audit/scan verification)
 
 > **Trackable doc.** The boxes below are GitHub task-lists — they render as a progress bar on the
-> PR/file view. Tick them (`- [x]`) as each step lands; link the PR next to the box. Nothing here
-> changes runtime behaviour until a step is actually implemented and merged.
+> PR/file view. All phases are now ticked (delivered in v1.2.0); see [ADR 0013](decisions/0013-code-generated-api-contract.md).
 
 ## In one paragraph (plain language)
 
@@ -18,18 +18,20 @@ finishes the job: make that generated contract complete and security-accurate, r
 hand-written file, re-prove it's clean with the 42Crunch audit + scan, and add a CI gate so it can
 **never drift again**. End state: one always-true, audit-clean contract that maintains itself.
 
-## Where we are now
+## Final state (delivered)
 
 | | State |
 |---|---|
-| Build-time emission (`Microsoft.Extensions.ApiDescription.Server`) | ❌ **not in the repo.** Prototyped and verified working this session (it emitted `src/CompanyOps.Api/openapi/CompanyOps.Api.json`), then **reverted** so the PRs stayed focused. Re-introduced as Phase 1 below — including the design-time gotcha already solved. |
-| Input-validation hardening (FluentValidation + JSON `Disallow`/`allowIntegerValues:false`) | ✅ done (separate PR) — so `additionalProperties:false` will be *honest* of the running API |
-| Hand-tuned `openapi.json` (repo root) | ⚠️ the only audited contract today; **drifts** from code; gitignored, slated for deletion |
-| Generated doc — security scheme, servers, error-response polish | ❌ absent |
-| CI drift gate | ❌ none |
+| Build-time emission (`Microsoft.Extensions.ApiDescription.Server`) | ✅ `dotnet build` emits the doc → published to repo-root `openapi.json` |
+| Input-validation hardening (FluentValidation + JSON `Disallow`/`allowIntegerValues:false`) | ✅ so `additionalProperties:false` is honest of the running API |
+| `openapi.json` (repo root) | ✅ the committed, code-generated, audited contract (hand-tuned spec retired) |
+| Generated doc — security scheme, servers, error responses, string constraints, operationIds | ✅ via document/schema/operation transformers |
+| CI drift gate | ✅ a PR that changes the API without committing the regenerated contract fails the build |
 
-Once emission is (re-)enabled, the generated doc is **accurate but bare**; the hand-tuned one is
-**hardened but drifts**. This plan turns the generated doc into the single hardened source of truth.
+42Crunch audit **77.52/100** (security 30/30); scan shows **no authorization findings**. The
+generated doc is the single hardened source of truth. Open follow-ups are tracked in
+[production-readiness.md](production-readiness.md) (pagination `maxItems` envelope; the 401/403
+content-type conformance nit).
 
 ## The plan
 
