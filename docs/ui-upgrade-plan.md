@@ -1,7 +1,7 @@
 # Plan — UI upgrade to the "Enterprise Suite" design
 
 Date: 2026-06-02
-Status: **Complete** — all phases shipped (PRs #89, #90, #91, #92, #93, #94, #95, #96, and this PR).
+Status: **Complete** — all 6 phases shipped, [#89](https://github.com/Dezoxy/companyops-dotnet/pull/89)–[#97](https://github.com/Dezoxy/companyops-dotnet/pull/97) (merged 2026-08). Retained as the record of what was built and what was deliberately simplified out.
 Owner hats: frontend (implementation), architecture (SPA-stays-a-thin-client rule), design (fidelity)
 
 > **Trackable doc.** Boxes are GitHub task-lists. Tick (`- [x]`) as each screen lands; link the PR.
@@ -54,7 +54,7 @@ shell from the designs. This plan upgrades each screen to match the suite, scree
       tests green; angular-guardian reviewed (no must-fix). Shell is uniform across the design
       variants, so no per-screen variant pick here — that starts at the Dashboard (Phase 2).
 
-### Phase 2 — Dashboard ✅ done (this PR)
+### Phase 2 — Dashboard ✅ done ([#90](https://github.com/Dezoxy/companyops-dotnet/pull/90))
 - [x] **Variant 2** ("Dashboard Overview") → 4 KPI stat cards (active / pending approvals / critical
       priority / managed assets, from the `/reports` GROUP BY totals — accurate, not capped by a list
       page), recent-activity table (`/requests`), system-status panel honestly derived from the
@@ -68,7 +68,7 @@ shell from the designs. This plan upgrades each screen to match the suite, scree
 ### Phase 3 — Requests flow
 Split into two PRs to keep each diff focused.
 
-**3a — List + paged envelope ✅ done (this PR)**
+**3a — List + paged envelope ✅ done ([#91](https://github.com/Dezoxy/companyops-dotnet/pull/91))**
 - [x] **List:** dense table (id-link, title + type icon, status/priority chips, created), **server-side
       pagination footer** ("Showing X–Y of N" + windowed page numbers) over the new paged envelope.
       `New request` role-gated to Employee. Per-panel loading/empty/error.
@@ -77,7 +77,7 @@ Split into two PRs to keep each diff focused.
 - [x] **Deferred (not cheap):** status/type **filtering** needs backend filter params; requester /
       department **names** need a user directory — both simplified out for now (follow-ups).
 
-**3b — Detail + Create ✅ done (this PR)**
+**3b — Detail + Create ✅ done ([#92](https://github.com/Dezoxy/companyops-dotnet/pull/92))**
 - [x] **Detail:** two-column layout — main column (description, approval-timeline stepper from
       `approvalSteps`, comments) + a Details sidebar (status/priority/type/category/created/id).
       Line-items / requester-name / per-request integration health simplified out (domain lacks them).
@@ -88,14 +88,14 @@ Split into two PRs to keep each diff focused.
 ### Phase 4 — Approvals + Assets
 Split into two PRs (Assets' slide-over is substantial).
 
-**4a — Approvals ✅ done (this PR)**
+**4a — Approvals ✅ done ([#93](https://github.com/Dezoxy/companyops-dotnet/pull/93))**
 - [x] Approval-queue dense table (id-link, title + type icon, priority chip, "your step X of N",
       created, Review → routes to the request detail where approve/reject happens). The decision
       stays on the detail screen; the API re-checks role + department scope.
 - [x] **Simplified out:** SLA countdown, risk score, and the Approved/Rejected/Escalated tabs —
       the domain has no SLA, risk, or per-user decision history to back them.
 
-**4b — Assets ✅ done (this PR)**
+**4b — Assets ✅ done ([#94](https://github.com/Dezoxy/companyops-dotnet/pull/94))**
 - [x] Asset-inventory dense table (tag, type icon, name, assignee, status) with **server-side
       pagination** (paged envelope on `GET /assets`, mirroring requests) + a **slide-over detail**
       (summary + recent history from `/assets/{id}/history`, "Open full detail" → the detail route
@@ -106,13 +106,13 @@ Split into two PRs (Assets' slide-over is substantial).
 ### Phase 5 — Audit · Integrations · Reports
 Split into two PRs.
 
-**5a — Audit ✅ done (this PR)**
+**5a — Audit ✅ done ([#95](https://github.com/Dezoxy/companyops-dotnet/pull/95))**
 - [x] Audit-log dense table (timestamp, action chip, entity/id, actor, change) with **server-side
       pagination** (paged envelope on `GET /audit-logs`, mirroring requests/assets — completes the
       plan's three list endpoints) + the "of N entries" footer + the append-only compliance note.
 - [x] **Simplified out:** action/actor/date filtering (needs backend filter params).
 
-**5b — Integrations + Reports ✅ done (this PR)**
+**5b — Integrations + Reports ✅ done ([#96](https://github.com/Dezoxy/companyops-dotnet/pull/96))**
 - [x] **Integrations:** outbox/worker status tiles + recent-messages dense semantic table (restyle
       off the existing snapshot).
 - [x] **Reports:** KPI summary cards (total requests / pending / critical / managed assets, from the
@@ -120,7 +120,7 @@ Split into two PRs.
       bar tones moved to classes. Deferred: time-series / spend / avg-approval-time / AI insights
       (no domain data).
 
-### Phase 6 — Settings + mobile + polish ✅ done (this PR)
+### Phase 6 — Settings + mobile + polish ✅ done ([#97](https://github.com/Dezoxy/companyops-dotnet/pull/97))
 - [x] **Settings/profile** — already shipped (profile from the OIDC session + theme preference +
       Keycloak account link); no change needed.
 - [x] **Mobile:** handset **bottom navigation** (quick tabs for the top role-visible sections; full
@@ -131,8 +131,12 @@ Split into two PRs.
       the diff (no must-fix outstanding).
 
 ### Backend-where-cheap (parallel, small slices)
-- [ ] **Paged envelope** `PagedResult<T>` on `listRequests`/`listAssets`/`listAuditLogs` (+ contract,
-      drift-gate regen, frontend) — unlocks the designed pagination footer and `maxItems`.
+- [x] **Paged envelope** `PagedResult<T>` on `listRequests` (#91) / `listAssets` (#94) /
+      `listAuditLogs` (#95) — shipped inside the phases that needed it rather than as a separate
+      slice, each with the contract regenerated through the drift gate (`PagedResultOfRequestDto`,
+      `PagedResultOfAssetDto`, `PagedResultOfAuditLogDto` in `openapi.json`). Unlocked the designed
+      pagination footer. **`maxItems` on the list responses is still not emitted** — the remaining
+      contract follow-up, tracked in [openapi-contract-plan.md](openapi-contract-plan.md) Phase 4.
 
 ## Per-screen loop (every screen)
 review the 3 variants → maintainer picks → `figma-port` (pull Figma structure/tokens, rebuild in

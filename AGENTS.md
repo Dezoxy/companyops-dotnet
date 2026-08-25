@@ -43,6 +43,12 @@ business logic**; the API is the source of truth and re-validates everything.
   declared by the repo-root file `ACTIVE_PHASE` containing a single integer
   `1..20`; tools and humans must not introduce features for phases greater than
   that value.
+- **`ACTIVE_PHASE` is now `20` — all 20 phases have shipped, so the gate no longer blocks
+  anything.** New work is therefore *not* "the next phase": it is hardening, fixing, or a
+  deliberate new slice. Before adding a feature, check whether it is already tiered as a
+  conscious deferral in [docs/future-improvements.md](docs/future-improvements.md) or
+  [docs/production-readiness.md](docs/production-readiness.md) — if it is, the decision to defer
+  it was made on purpose and reversing it needs a reason, not just an opportunity.
 - When you introduce an enterprise pattern in this repo/module, add a 2–3
   sentence rationale plus a 3-line alternative in the PR description and add a
   single-line code comment linking to the ADR if applicable.
@@ -267,9 +273,21 @@ ng lint                            # lint (CI enforces this)
 `dotnet build` clean → `dotnet test` green → `dotnet format` clean →
 layer rules respected → no secrets staged.
 
-CI enforces this on every push/PR: `.github/workflows/ci.yml` runs format + build +
-domain unit tests (fast job) then the Testcontainers integration tests (Docker job);
-`.github/workflows/security.yml` runs gitleaks. Green CI is required.
+CI enforces this on every push/PR. `.github/workflows/ci.yml` runs five jobs:
+
+1. **build + unit tests** — `dotnet format --verify-no-changes`, a vulnerable-package scan,
+   build, the **OpenAPI drift gate** (a build regenerates `openapi.json`; CI fails if the
+   committed copy differs — so an API change must commit the regenerated contract), then the
+   Domain and Application suites.
+2. **integration tests** — the Testcontainers suite (needs Docker; gated on job 1).
+3. **docker images** — builds every service image plus the SPA image.
+4. **iac validate** — Terraform fmt/validate, ShellCheck, prod-Compose config, ansible-lint
+   (mirrored locally by `make iac`).
+5. **frontend** — `ng build` + `ng lint` + `ng test`.
+
+`security.yml` runs gitleaks; `codeql.yml` runs C# code scanning (guarded to activate when the
+repo goes public); `release.yml` builds, provisions, and deploys on a published GitHub Release.
+Green CI is required.
 
 Code changes that affect runtime behavior or data (API, Domain,
 Infrastructure, Worker, migrations) must include audit entries. Pure docs,

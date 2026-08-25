@@ -11,12 +11,11 @@ Owner hats: architecture (decision), backend (implementation), security (audit/s
 ## In one paragraph (plain language)
 
 An **API contract** is the document a customer's developers read to integrate with CompanyOps.
-Today it's a **hand-written file** (`openapi.json`) that can silently fall out of sync with the
-real code — a contract that lies to the customer. We have already switched on **build-time
-generation** (the contract is produced automatically from the code on every build). This plan
-finishes the job: make that generated contract complete and security-accurate, retire the
-hand-written file, re-prove it's clean with the 42Crunch audit + scan, and add a CI gate so it can
-**never drift again**. End state: one always-true, audit-clean contract that maintains itself.
+It *used* to be a **hand-written file** (`openapi.json`) that could silently fall out of sync with
+the real code — a contract that lies to the customer. This plan replaced it: the contract is now
+produced automatically from the code on every build, made complete and security-accurate, re-proven
+with the 42Crunch audit + scan, and guarded by a CI gate so it can **never drift again**. End
+state, now shipped: one always-true, audit-clean contract that maintains itself.
 
 ## Final state (delivered)
 
@@ -30,15 +29,17 @@ hand-written file, re-prove it's clean with the 42Crunch audit + scan, and add a
 
 42Crunch audit **77.52/100** (security 30/30); scan shows **no authorization findings**. The
 generated doc is the single hardened source of truth. Open follow-ups are tracked in
-[production-readiness.md](production-readiness.md) (pagination `maxItems` envelope; the 401/403
-content-type conformance nit).
+[production-readiness.md](production-readiness.md): **`maxItems` on the list responses** — the
+paged envelope it was waiting on has since shipped (`PagedResultOfRequestDto` /
+`…AssetDto` / `…AuditLogDto`, see [ui-upgrade-plan.md](ui-upgrade-plan.md)), so emitting it is now
+honest and is the last item — and the 401/403 content-type conformance nit.
 
 ## The plan
 
 ### Phase 0 — Decide & record
 - [x] Write **ADR 0013 — code-generated API contract** ([decisions/0013-code-generated-api-contract.md](decisions/0013-code-generated-api-contract.md)):
       records the move from a hand-maintained spec to a build-time-generated + CI-gated contract,
-      the alternatives, and approvers. (Phase 5 PR)
+      the alternatives, and approvers. ([#82](https://github.com/Dezoxy/companyops-dotnet/pull/82))
 - [x] Link this plan from `docs/future-improvements.md` and from the API-layer notes. (#77)
 
 ### Phase 1 — Enable build-time generation ✅ (#79)
@@ -60,8 +61,8 @@ content-type conformance nit).
       the score depends on an https server; gated to build-time only so the dev `/openapi` stays
       relative to localhost.)
 
-### Phase 3 — Honest hardening (only what the code actually enforces) ✅ (this PR)
-- [x] Document transformer: production **`servers`** entry (`https://companyops.toomhorvath.com`) — done in Phase 2.
+### Phase 3 — Honest hardening (only what the code actually enforces) ✅ ([#80](https://github.com/Dezoxy/companyops-dotnet/pull/80))
+- [x] Document transformer: production **`servers`** entry (`https://companyops.toomhorvath.com`) — done in Phase 2 (#79).
 - [x] Schema transformer: set **`additionalProperties:false`** on request/response objects — truthful,
       because the API rejects unknown request fields (`UnmappedMemberHandling.Disallow`) and returns
       exactly the declared DTO shape. RFC 7807 `ProblemDetails` is left open (extensible).
@@ -70,7 +71,7 @@ content-type conformance nit).
       remaining `additionalProperties` finding is the deliberate `ProblemDetails` exclusion. Data
       score 4.17 → 8.89 (the rest is Phase 4). No synthetic free-text patterns added.
 
-### Phase 4 — Completeness polish ✅ honest scope (this PR)
+### Phase 4 — Completeness polish ✅ honest scope ([#81](https://github.com/Dezoxy/companyops-dotnet/pull/81))
 - [x] Standard error responses via a document transformer: `default`, `429` (real rate-limiter) on
       every operation; `415` (JSON-only) on body-bearing operations. **`406` skipped** — the API
       doesn't do content negotiation today (would need `ReturnHttpNotAcceptable`); claiming it
@@ -79,13 +80,15 @@ content-type conformance nit).
       `maxLength`; free-text fields get the `maxLength` the Domain enforces (title/description/tag/
       name/body). **No free-text `pattern`s** (synthetic) and **no response `maxLength`** the code
       doesn't enforce.
-- [ ] `maxItems` on list responses — **deferred**: only honest once the lists are paginated. Tracked
-      as its own slice in [production-readiness.md](production-readiness.md) → Performance.
+- [ ] `maxItems` on list responses — **still open**. The precondition is now met: the lists are
+      paginated *and* return a paged envelope with a capped `pageSize` (max 200), so a `maxItems`
+      the code actually enforces can be emitted. Nothing emits it yet. Tracked as its own slice in
+      [production-readiness.md](production-readiness.md) → Performance.
 - [x] **Acceptance:** 42Crunch data score reached the **70 target honestly — 77.52/100** (security
       30/30, data 47.52/70), **with zero synthetic constraints**. Remaining findings are all genuine
       "the code doesn't enforce this" items (free-text patterns, response maxLengths, `maxItems`).
 
-### Phase 5 — Make the generated doc the single source of truth ✅ (this PR)
+### Phase 5 — Make the generated doc the single source of truth ✅ ([#82](https://github.com/Dezoxy/companyops-dotnet/pull/82))
 - [x] Canonical location chosen: **repo-root `openapi.json`** (the conventional name the `.42c` scan
       config already references). The build emits to a gitignored `artifacts/openapi/` intermediate,
       then the `CopyOpenApiToRoot` target publishes it to `openapi.json`. Recorded in ADR 0013.
@@ -94,7 +97,7 @@ content-type conformance nit).
 - [x] **Committed** the generated doc (un-gitignored) so it's diffable/reviewed in every PR; the
       Phase 7 CI gate keeps it honest.
 
-### Phase 6 — Re-prove it's clean ✅ (this PR)
+### Phase 6 — Re-prove it's clean ✅ ([#83](https://github.com/Dezoxy/companyops-dotnet/pull/83))
 - [x] **Fix surfaced by re-proving:** the generated contract had **null `operationId`s** (AddOpenApi
       doesn't emit them for controllers) — so it was un-scannable and bad for client codegen. Added
       `OperationIdTransformer` (stable ids by route). The committed `openapi.json` now has all 23.
@@ -108,7 +111,7 @@ content-type conformance nit).
       authz tests. No authorization regression; tracked for when the scan config is regenerated.
 - [x] **Acceptance:** audit ≥ 70 ✅; scan shows no authorization findings ✅ (no regression).
 
-### Phase 7 — CI drift gate (so it can never go stale) ✅ (this PR)
+### Phase 7 — CI drift gate (so it can never go stale) ✅ ([#84](https://github.com/Dezoxy/companyops-dotnet/pull/84))
 - [x] Added a CI step in `.github/workflows/ci.yml` (build job): after `dotnet build` regenerates the
       contract, `git status --porcelain -- openapi.json` fails the build (with a fix instruction) if
       the committed contract drifted — modified, deleted, or regenerated-but-untracked.

@@ -63,9 +63,23 @@ npx ng test --watch=false   # Vitest unit tests
 npx ng lint          # ESLint
 ```
 
-## The suite (Phases 12–20)
+## The suite (Phases 12–20) — all shipped
 
-Foundation (12, ✅) → Auth & API client (13) → Core workflow UI: Dashboard / Requests
+Foundation (12) → Auth & API client (13) → Core workflow UI: Dashboard / Requests
 (list/detail/create) / Approvals / Audit (14) → Helpdesk (15) → Assets (16) → IT-Admin console
-(17) → Reports (18) → Integrations (19) → Settings (20).
+(17) → Reports (18) → Integrations (19) → Settings (20). Every screen was then rebuilt to the
+Enterprise Suite design ([../docs/ui-upgrade-plan.md](../docs/ui-upgrade-plan.md), #89–#97).
 Build each screen with its backend slice; never invent business logic to fill a screen.
+
+Patterns that came out of that pass and are now the house style:
+
+- **Dense list tables** paginate **server-side** over the API's paged envelope
+  (`PagedResultDto<T>` in `shared/api/`, backing `/requests`, `/assets`, `/audit-logs`). Don't
+  fetch-all-and-slice in the client.
+- Wrap a wide table in `.table-scroll` (in `styles.scss`) so it scrolls horizontally instead of
+  overflowing on a handset.
+- Handset layout is a **bottom nav + FAB** rendered *outside* the sidenav container (so
+  `position: fixed` resolves against the viewport), with the full nav still in the drawer.
+- When a design shows something the domain can't back (SLA countdowns, line items, asset specs,
+  requester names), **simplify it out and record it** — don't fabricate data to fill the screen.
+  The list of what was dropped, and why, is in the UI upgrade plan.

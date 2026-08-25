@@ -57,16 +57,33 @@ The SPA runs against that stack with the Angular dev server (proxies `/api` to t
 cd frontend && npm install && npx ng serve   # http://localhost:4200
 ```
 
+One caveat for browser login: the SPA's OIDC authority is `localhost:8080` while the compose
+stack issues tokens as `keycloak:8080` — pick one of the two fixes in
+[docs/local-development.md](docs/local-development.md#the-angular-spa). In the deployed stack the
+SPA, API, and Keycloak share one origin, so this doesn't arise.
+
 ## Tests & CI
 
 ```bash
 dotnet test    # domain + application unit tests + Testcontainers integration tests
 ```
 
-CI (`.github/workflows/`) runs format + build + unit tests (fast), the Testcontainers
-integration suite (Docker), a vulnerable-package scan, and a Docker image build; gitleaks
-gates secrets; CodeQL activates if the repo goes public. See
+```bash
+cd frontend && npx ng test --watch=false    # Vitest unit tests
+```
+
+CI (`.github/workflows/ci.yml`) runs five jobs: **build + unit tests** (format check,
+vulnerable-package scan, build, an **OpenAPI drift gate** that fails if the committed
+`openapi.json` doesn't match the freshly generated one, then the Domain and Application suites),
+the **Testcontainers integration suite** (Docker, gated on the first job), **docker images**
+(every service image plus the SPA image), **IaC validate** (Terraform fmt/validate, ShellCheck,
+prod-Compose config, ansible-lint), and **frontend** (`ng build` + `ng lint` + `ng test`).
+`security.yml` gates secrets with gitleaks; `codeql.yml` activates if the repo goes public;
+`release.yml` builds, provisions, and deploys on a published Release. See
 [docs/testing-strategy.md](docs/testing-strategy.md) and [docs/security.md](docs/security.md).
+
+`make check` is the fast local pre-commit gate (format + build + unit tests); `make help` lists
+the rest.
 
 ## Operability
 
@@ -99,6 +116,13 @@ workspace foundation (12), OIDC/PKCE auth + typed API client (13), core workflow
 dashboard / requests / approvals / audit (14), helpdesk-light flow (15), asset console +
 request-driven lifecycle (16), IT-admin fulfilment console (17), reports & analytics (18),
 integrations status (19), settings & profile with light/dark theming (20).
+
+Since then the client has been rebuilt to the **Enterprise Suite** design
+([#89](https://github.com/Dezoxy/companyops-dotnet/pull/89)–[#97](https://github.com/Dezoxy/companyops-dotnet/pull/97),
+[docs/ui-upgrade-plan.md](docs/ui-upgrade-plan.md)): app shell, KPI dashboard, dense tables with
+server-side pagination over a paged API envelope, the approval-timeline detail view, an asset
+slide-over, charts, and a handset layout. What the designs showed but the domain can't back
+(SLA countdowns, line items, asset specs) was deliberately left out rather than faked.
 
 Three real processes run on the one engine — IT/helpdesk requests, asset lifecycle, and generic
 internal approvals — distinguished by configurable approval chains, not separate code paths

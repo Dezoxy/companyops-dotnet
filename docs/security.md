@@ -1,9 +1,9 @@
 # CompanyOps — Security
 
 Security model, authorization rules, and threat model for CompanyOps. This is a
-living document: sections marked **TODO** are filled in as the relevant phase
-lands. The authorization matrix below is the source of truth that code reviews
-and the (future) `security-guardian` check against. Deferred hardening (the **TODO**s
+living document: sections marked **TODO** are hardening that is *not* implemented —
+each one is a real, open gap, not a placeholder. The authorization matrix below is the source of
+truth that code reviews and the `security-guardian` subagent (`.claude/agents/`) check against. Deferred hardening (the **TODO**s
 below) is indexed and tiered in [future-improvements.md](future-improvements.md).
 
 ## Principles
@@ -29,8 +29,9 @@ below) is indexed and tiered in [future-improvements.md](future-improvements.md)
 | Auditor | Reads everything (incl. audit logs). **Never mutates.** |
 
 > A real person may hold more than one role (e.g. a Manager is also an Employee).
-> Whether managers/finance can also *create* requests is an open decision —
-> **TODO: resolve in an ADR** and update the matrix.
+> **Resolved:** roles compose — anyone holding the Employee role may create requests, so a
+> Manager or Finance user creates via *that* role, not by virtue of being an approver. The matrix
+> below reflects this.
 
 ## Authorization matrix (role × action)
 
@@ -55,7 +56,7 @@ in the same transaction. IT names the asset in the `…/fulfill` body (`assigned
 rejects a fulfillment that names no asset for this type, or names one for any other type.
 
 Anyone holding the **Employee** role may create requests; Managers/Finance create via
-their Employee role (roles compose — resolves the earlier Create TODO).
+their Employee role (roles compose).
 
 **Cancel** (`…/cancel`) *withdraws* a request that hasn't been decided yet (Draft or Submitted) —
 distinct from `…/reject`, which is an approver's decision *on the merits* (carries a reason,
@@ -170,8 +171,10 @@ attempt count, error text) — **never the event payload**. Read-only — no mut
 
 - **Keycloak 26 (OIDC).** The API is a resource server validating JWTs (issuer,
   audience `companyops-api`, expiry, signature) via `JwtBearer`. Realm + seed users
-  are a committed export imported on `compose up` (`infra/keycloak/`). The SPA will be
-  a public client using Authorization Code + PKCE (Phase 12) on the same client.
+  are a committed export imported on `compose up` (`infra/keycloak/`). The SPA authenticates
+  against its **own** public client (`companyops-spa`, Authorization Code + PKCE) — shipped in
+  Phase 13, see "Keycloak client split" below — and sends the resulting token to the bearer-only
+  `companyops-api` audience.
 - **Role mapping:** Keycloak realm roles → ASP.NET role claims (the nested
   `realm_access.roles` is flattened in `OnTokenValidated`); endpoint policies
   (`AuthorizationPolicies.cs`) gate by role. Actor id (`sub`) and `department` claim
@@ -206,9 +209,11 @@ attempt count, error text) — **never the event payload**. Read-only — no mut
   it to a real user.
 - Correlation id + trace id flow through logs and traces (Phase 10), so any audited action is
   traceable end-to-end; the source IP is now persisted on the audit record itself (above), while
-  persisting the correlation/trace ids onto it too remains an optional follow-up. DB-level grants
-  so even the app user cannot UPDATE/DELETE `audit_logs` (Phase 11); tamper-evidence / hash chain —
-  enterprise-optional.
+  persisting the correlation/trace ids onto it too remains an optional follow-up.
+- **TODO (not implemented):** DB-level grants so even the app user cannot UPDATE/DELETE
+  `audit_logs` — the app still connects as the owning role (`infra/postgres/initdb/` only creates
+  Keycloak's database user), so append-only is an application-level guarantee, not a database one.
+  Tamper-evidence / hash chain — enterprise-optional.
 
 ## Secrets handling
 
@@ -219,18 +224,36 @@ attempt count, error text) — **never the event payload**. Read-only — no mut
   blocked, and history is scanned. The committed local-dev throwaways
   (`localdev_only_not_a_secret`, `Passw0rd!`) are low-entropy and non-routable, so
   neither scanner flags them.
-- Connection strings / client secrets via env vars or .NET user-secrets in dev;
-  a secrets manager in deployed environments (TODO: choose — Phase 11).
-- Least-privilege DB user (not owner/superuser). TODO: define roles/grants.
+- Connection strings / client secrets via env vars or .NET user-secrets in dev. In the deployed
+  stack they are GitHub Actions secrets rendered into an env file on the VM by Ansible — no
+  secrets manager. **TODO (not implemented):** choose one (cloud KMS/Secret Manager or Vault) for
+  managed rotation and access control.
+- **TODO (not implemented):** least-privilege DB user. The app currently connects as the database
+  owner; a non-owner role with no DDL rights and no `UPDATE`/`DELETE` on `audit_logs` is the
+  intended end state.
 
 ## Input validation
 
-- Input is validated at the **Application / Domain boundary**: Domain factories and aggregate
-  methods reject invalid input by throwing `DomainException`, mapped to an RFC 7807 **400** by
-  `DomainExceptionHandler` (`ConflictException` → 409, `MissingClaimException` → 403). This is the
-  AGENTS.md "FluentValidation **or equivalent**" — the equivalent: the rules live in one place (the
-  Domain) instead of being duplicated in a validator layer. ProblemDetails is wired
-  (`AddProblemDetails` + the `IExceptionHandler`s in the API).
+Two layers, deliberately:
+
+- **FluentValidation at the Application boundary** (added in
+  [#78](https://github.com/Dezoxy/companyops-dotnet/pull/78)) on the two commands that carry a
+  free-text payload: `CreateRequest` (`CreateRequestValidator`) and `RegisterAsset` (the validator
+  declared alongside the command in `Assets/RegisterAsset.cs`); a failure surfaces as an RFC 7807
+  **400** via `ValidationExceptionHandler`. Validating these two shapes explicitly is what makes
+  `additionalProperties:false` and the string constraints in the generated contract *honest* —
+  see [openapi-contract-plan.md](openapi-contract-plan.md).
+- **Domain invariants as the backstop for everything else.** The remaining write endpoints
+  (submit / approve / reject / fulfill / cancel / comment / assign) take an id plus at most a
+  reason or comment; their rules are workflow rules, so they are enforced where they belong — the
+  aggregate throws `DomainException`, mapped to **400** by `DomainExceptionHandler`
+  (`ConflictException` → 409, `MissingClaimException` → 403). This is the AGENTS.md
+  "FluentValidation **or equivalent**".
+- JSON binding is hardened too: `UnmappedMemberHandling.Disallow` (unknown fields are rejected)
+  and `allowIntegerValues:false` on enums. ProblemDetails is wired (`AddProblemDetails` + the
+  `IExceptionHandler`s in the API).
+- **Open:** [production-readiness.md](production-readiness.md) §1 tracks extending explicit
+  validators to the remaining write endpoints as a defence-in-depth follow-up.
 
 ## Transport & headers
 
@@ -272,10 +295,14 @@ attempt count, error text) — **never the event payload**. Read-only — no mut
 
 ## Backup encryption & recovery
 
-- [backup-restore.md](backup-restore.md) documents what to back up (Postgres is the
-  only source of truth), RPO/RTO targets, and a tested restore drill (Phase 10).
-- TODO (Phase 11): encryption at rest, scheduled/offsite backups, and managed
-  point-in-time recovery in a deployed (EU-region) environment.
+- [backup-restore.md](backup-restore.md) documents what to back up, RPO/RTO targets, and the
+  restore drill (proven locally, Phase 10).
+- **Implemented:** a nightly `pg_dump` cron with 14-day retention on the deployed VM, installed by
+  the Ansible playbook (`infra/backup/pg-backup.sh`).
+- **TODO (not implemented):** encryption at rest, **offsite** copies (the dumps sit on the same VM
+  as the database), managed point-in-time recovery, a restore drill against a *deployed* dump —
+  and backing up the **`keycloak` database**, which holds every real user account and is not in
+  the nightly dump today.
 
 ## Threat model (skeleton — STRIDE)
 

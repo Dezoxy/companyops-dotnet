@@ -13,6 +13,13 @@ This is not meant to be a simple CRUD demo.
 > **Status:** all 20 phases are complete — the build is feature-complete (see the
 > [README](../README.md#status) and the git history). The per-phase `✅` markers in the sections
 > below were not all backfilled; treat the README's status section as canonical.
+>
+> **This is the original plan, kept as the record of intent.** Where it describes something the
+> build did differently (repository layout, the documentation set, ADR numbering), the notes below
+> say so — but the plan text itself is not rewritten to match. For what actually exists, start at
+> the [README](../README.md); for what is deliberately *not* done, see
+> [future-improvements.md](future-improvements.md) and
+> [production-readiness.md](production-readiness.md).
 
 The purpose is to demonstrate that I understand how backend systems work in a real company environment.
 
@@ -137,6 +144,18 @@ companyops/
 └── .github/
     └── workflows/
 ```
+
+**As built, this differs in four ways:**
+
+- `src/` also holds **`CompanyOps.FakeExternals`** — the mock Finance/Inventory service (Phase 6).
+- Tests are split three ways by layer, not two: **`CompanyOps.Domain.Tests`**,
+  **`CompanyOps.Application.Tests`**, **`CompanyOps.Api.IntegrationTests`** (see
+  [testing-strategy.md](testing-strategy.md)).
+- `frontend/` is a **full client**, not a demo SPA — Phases 12–20
+  ([ADR 0010](decisions/0010-frontend-full-client-angular-material.md)).
+- `infra/` also holds `docker-compose.prod.yml`, `keycloak/` (dev + prod realm exports),
+  `backup/`, and `postgres/initdb/`; the repo root additionally carries `Makefile`, `ACTIVE_PHASE`,
+  `AGENTS.md`, and the generated `openapi.json`.
 
 ---
 
@@ -464,6 +483,15 @@ external integrations
 deployment model
 ```
 
+> **Not built as a separate file.** This content ended up distributed instead: components and data
+> flow in the [README](../README.md#architecture) and the per-layer `CLAUDE.md` files; trust
+> boundaries, authn/authz in [security.md](security.md); the queue in
+> [ADR 0007](decisions/0007-async-messaging-outbox.md); external integrations in
+> [ADR 0008](decisions/0008-external-integration-resilience.md); the deployment model in
+> [deployment.md](deployment.md) + [ADR 0009](decisions/0009-deployment-topology-edge.md). A C4
+> context/container diagram is still missing — tracked in
+> [production-readiness.md](production-readiness.md) §9.
+
 ### docs/security.md
 
 Should describe:
@@ -521,6 +549,13 @@ Example:
 0004-use-rabbitmq-for-background-processing.md
 0005-configurable-approval-workflow.md
 ```
+
+> **As built, `docs/decisions/` starts at 0005.** The four illustrative stack choices above were
+> never written up as ADRs — they are recorded instead in the "Locked stack decisions" table in
+> [AGENTS.md](../AGENTS.md), which is also where the process for changing one lives. The real ADRs
+> are **0005–0013**, covering the approval workflow, the approval-step domain model, async
+> messaging/outbox, integration resilience, deployment topology, the Angular full client, Figma as
+> the design source, release-driven deployment, and the code-generated API contract.
 
 ---
 
