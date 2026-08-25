@@ -1,6 +1,6 @@
 # CompanyOps — Production-Readiness Guide
 
-Date: 2026-06-01
+Date: 2026-06-01 · last reconciled against the repo 2026-08-25
 Status: **Living checklist** — the honest gap list between "works on my machine / portfolio build"
 and "I can hand this to a paying customer."
 
@@ -43,8 +43,11 @@ Authoritative: [security.md](security.md) (role × action matrix + STRIDE threat
 - [ ] Token lifetime / refresh / signing-key rotation tuned away from Keycloak defaults — Tier B.
 - [ ] Content-Security-Policy + security headers on the SPA edge — Tier B.
 - [ ] Least-privilege DB user; `audit_logs` denied UPDATE/DELETE at the DB level — Tier B.
-- [ ] Dependency vulnerability scanning + container image scanning in CI (CodeQL ✅ present; add
-      `dotnet list package --vulnerable` / Trivy / dependency-review).
+- [x] **Dependency vulnerability scanning in CI** — `dotnet list package --vulnerable` fails the
+      build job; CodeQL is wired (guarded to activate when the repo goes public); gitleaks +
+      GitHub push protection gate secrets.
+- [ ] **Container image scanning** (Trivy/Grype on the built images) + `dependency-review` on PRs —
+      the images are built in CI but never scanned. npm dependencies are not scanned either.
 
 ## 2. API contract & documentation
 Authoritative: [openapi-contract-plan.md](openapi-contract-plan.md).
@@ -64,7 +67,9 @@ Authoritative: [runbook.md](runbook.md), ADR 0007/0008.
 - [x] External integrations have timeouts + retry / graceful degradation (Polly).
 - [x] DB migrations applied by a one-shot migrator; generated SQL reviewed before apply.
 - [ ] Graceful-shutdown / draining verified under load.
-- [ ] Dead-letter handling + replay procedure documented in the runbook.
+- [x] Dead-letter handling + replay procedure documented — [runbook.md](runbook.md)
+      "Messages in `companyops.worker.dead-letter`" (inspect → fix → shovel back; consumers dedup,
+      so replay is a no-op).
 - [ ] (out of scope) HA / multi-instance / failover — revisit for a customer SLA.
 
 ## 4. Observability & operations
@@ -81,7 +86,14 @@ Authoritative: [runbook.md](runbook.md), [troubleshooting.md](troubleshooting.md
 Authoritative: [backup-restore.md](backup-restore.md), [security.md](security.md).
 
 - [x] Backup & restore procedure documented.
+- [x] **Automated nightly backup** in the deployed stack — `pg_dump` cron, 14-day retention,
+      installed by Ansible (`infra/backup/pg-backup.sh`).
 - [x] EU data residency (Azure westeurope) — default region.
+- [ ] **Back up the `keycloak` database too** — the cron dumps only `companyops`, so the deployed
+      stack's real user accounts (the prod realm ships no seed users) are unprotected. Cheapest
+      open gap here.
+- [ ] Backups encrypted and stored **off the primary host** — today they sit unencrypted on the
+      same VM as the database.
 - [ ] **Restore actually tested** from a backup into a clean environment (drill, with RTO/RPO recorded).
 - [ ] Data retention + deletion policy (how long audit/request data is kept).
 - [ ] GDPR: PII inventory, data-subject-access/erasure process, processor agreement (DPA) — needed before real customer data.
@@ -101,8 +113,12 @@ Authoritative: [deployment.md](deployment.md), ADR 0009/0012.
 ## 7. Performance & scale
 - [x] **Pagination on list endpoints** — `GET /requests`, `/assets`, `/audit-logs` take `page` +
       `pageSize` (default 50, max 200, clamped) and page in the DB (`Skip/Take`, deterministic order).
-      Follow-up: a paged envelope with a total count (today the response is a bounded array), and
-      adding `maxItems` to the generated contract (honest once this ships).
+- [x] **Paged envelope with a total count** — all three now return
+      `{items, total, page, pageSize}` (`PagedResultOf*Dto` in `openapi.json`), shipped alongside
+      the screens that consume it ([ui-upgrade-plan.md](ui-upgrade-plan.md) 3a/4b/5a).
+- [ ] `maxItems` on the list responses in the generated contract — now *honest* to emit (the page
+      size is capped at 200) but not yet emitted; the last open item from
+      [openapi-contract-plan.md](openapi-contract-plan.md) Phase 4.
 - [ ] Load / soak test to establish a baseline (throughput, p95 latency, failure point).
 - [ ] N+1 / slow-query review on the read models; add DB indexes where needed.
 - [x] Redis cache available (used where it earns it).
@@ -121,7 +137,8 @@ Authoritative: [testing-strategy.md](testing-strategy.md).
 ## 9. Documentation & handover
 - [x] Architecture decisions recorded as ADRs; per-layer `CLAUDE.md` guides.
 - [x] Operational runbook + troubleshooting guide.
-- [ ] Top-level `README` for a new engineer (what it is, how to run, how to deploy).
+- [x] Top-level [`README`](../README.md) for a new engineer — what it is, the architecture, how to
+      run it, test it, operate it, and deploy it, each linking to the authoritative doc.
 - [ ] Customer/operator handover pack: SLAs, support model, contacts, known limitations.
 - [ ] Architecture diagram (C4 context/container) kept current.
 
@@ -129,10 +146,16 @@ Authoritative: [testing-strategy.md](testing-strategy.md).
 
 ## Suggested order (highest customer-impact first)
 
-_Shipped in v1.2.0: input validation (create/register), the code-generated + audited + CI-gated API contract (§2), and pagination on the list endpoints (§7)._
+_Shipped in v1.2.0: input validation (create/register), the code-generated + audited + CI-gated
+API contract (§2), and pagination on the list endpoints (§7). Shipped since, in the Enterprise
+Suite UI pass ([#89](https://github.com/Dezoxy/companyops-dotnet/pull/89)–[#97](https://github.com/Dezoxy/companyops-dotnet/pull/97),
+[ui-upgrade-plan.md](ui-upgrade-plan.md)): the paged envelope on all three list endpoints (§7) and
+the full designed client — dashboard, requests, approvals, assets, audit, reports, integrations,
+settings, plus the handset layout._
 
 1. **Input validation across the *remaining* write endpoints** (§1) — submit/approve/reject/fulfill/cancel/comment/assign still lack validators.
-2. **Tested restore drill + data retention/GDPR** (§5) — required before real customer data.
+2. **Tested restore drill (against a *deployed* dump), the missing `keycloak` backup, and data
+   retention/GDPR** (§5) — required before real customer data.
 3. **Staging environment + rollback** (§6) and **alerting/dashboards** (§4) — operate it safely.
 4. **Secrets manager, CSP, least-privilege DB, token rotation** (§1 Tier B) — deepen the security posture.
 5. **README + customer handover pack** (§9) — make it ownable by someone else.

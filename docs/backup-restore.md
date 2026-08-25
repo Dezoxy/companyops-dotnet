@@ -9,7 +9,7 @@ in [runbook.md](runbook.md).
 | Data | Store | Back up? | Why |
 |---|---|---|---|
 | Requests, approval steps, **audit logs**, outbox, idempotency | **Postgres** | **Yes — this is the only source of truth** | Losing it loses business + audit history (append-only audit must survive). |
-| Identity (realm, users, roles) | Keycloak | No (dev) | The dev realm is committed (`infra/keycloak/realm-companyops.json`) and re-imported on boot. A deployed realm is a separate backup target — **(Phase 11)**. |
+| Identity (realm, users, roles) | Keycloak → its own `keycloak` database on the same Postgres | **Dev: no. Deployed: yes — and it is currently NOT backed up.** | The dev realm is committed (`infra/keycloak/realm-companyops.json`) and re-imported on boot, so dev needs nothing. In the deployed stack the prod realm ships **no seed users** — real users are created by an admin and live only in the `keycloak` database. The nightly cron dumps the `companyops` database **only** (`infra/backup/pg-backup.sh`), so losing the volume loses every real user account. **Open gap** — see [Deployed environments](#deployed-environments--phase-11). |
 | In-flight events | RabbitMQ | No | Transient. Durable quorum queue + outbox means unpublished work is reconstructable from `outbox_messages`; in-flight events replay safely (idempotent consumers). |
 | Cache | Redis | No | Rebuildable from Postgres. |
 
@@ -22,7 +22,7 @@ This is a learning/portfolio project, so these are stated as *intent*, not an SL
 
 | Metric | Target | Meaning |
 |---|---|---|
-| **RPO** (max data loss) | ≤ 24h (dev: best-effort) | A daily logical dump bounds loss to one day. PITR shrinks this to minutes — **(Phase 11)**. |
+| **RPO** (max data loss) | ≤ 24h (dev: best-effort) | The nightly dump in the deployed stack bounds loss to one day. PITR would shrink this to minutes — **not implemented**. |
 | **RTO** (max downtime) | ≤ 1h | Time to restore a dump into a fresh Postgres and bring the app tier back. |
 
 A backup is only real once its **restore has been tested** (drill below).
@@ -78,9 +78,19 @@ guess.
 ## Deployed environments — Phase 11
 
 **Implemented:** the Ansible deploy installs a **nightly `pg_dump` cron**
-(`infra/backup/pg-backup.sh` — `-Fc` custom format, 14-day retention) to
-`/var/backups/companyops` on the VM. That delivers the scheduled-dump path below; the
-remaining hardening (encryption, offsite copies, PITR) is what's still open.
+(`infra/backup/pg-backup.sh` — `-Fc` custom format, 14-day retention, `umask 077`) to
+`/var/backups/companyops` on the VM, scheduled at 02:30 (`backup_hour`/`backup_minute` in
+`infra/ansible/playbook.yml`) and logging to `/var/log/companyops-backup.log`.
+
+**Still open (be honest about these):**
+
+- **Only the `companyops` database is dumped.** The `keycloak` database — which holds every real
+  user account in the deployed stack — is not. Adding it is a one-line change to the backup script
+  and the cheapest gap here to close.
+- **The dumps are unencrypted and sit on the same VM as the database.** A host loss loses both.
+- **The restore drill above has never been run against a deployed dump** — only locally. Until it
+  has, the deployed RTO is an estimate, not a measurement.
+- **No PITR.** Recovery granularity is one night.
 
 Two paths for my context (EU-based, cost-conscious, evaluating clouds):
 

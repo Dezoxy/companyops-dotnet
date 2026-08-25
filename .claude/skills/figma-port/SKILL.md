@@ -5,8 +5,8 @@ description: Turn a Figma "CompanyOps Enterprise Suite" screen into an Angular M
 
 # Port a Figma screen → Angular Material (CompanyOps)
 
-The frontend is the **CompanyOps Enterprise Suite** ([ADR 0010](../../docs/decisions/0010-frontend-full-client-angular-material.md),
-design source updated by [ADR 0011](../../docs/decisions/0011-design-source-figma.md)). Each
+The frontend is the **CompanyOps Enterprise Suite** ([ADR 0010](../../../docs/decisions/0010-frontend-full-client-angular-material.md),
+design source updated by [ADR 0011](../../../docs/decisions/0011-design-source-figma.md)). Each
 screen is designed in **Figma**; we **rebuild it in Angular Material** — the Figma output is the
 **visual + information-architecture reference**, never copy-pasted markup or emitted code.
 

@@ -5,10 +5,14 @@ How to operate, observe, and recover the running system. Pairs with
 [backup-restore.md](backup-restore.md) (data recovery). For first-time setup see
 [local-development.md](local-development.md).
 
-> Scope: this runbook targets the **local Docker Compose** stack (the only
-> environment that exists today). A deployed environment with orchestrated
-> probes, alerting, and a metrics backend arrives in Phase 11; items that change
-> there are marked **(Phase 11)**.
+> Scope: the commands below target the **local Docker Compose** stack
+> (`infra/docker-compose.yml`). A deployed environment now exists too — the
+> `infra/docker-compose.prod.yml` stack behind a Traefik TLS edge on a VM
+> ([deployment.md](deployment.md), [ADR 0009](decisions/0009-deployment-topology-edge.md)) — where
+> the same services run under the same names; substitute the prod compose file and add `sudo`
+> where the playbook installed it. Items still **open** in the deployed stack (nothing scrapes the
+> health endpoints, no metrics backend) are marked **(open)** and listed under
+> [Known gaps](#known-gaps).
 
 ## Service map
 
@@ -21,6 +25,11 @@ How to operate, observe, and recover the running system. Pairs with
 | `rabbitmq` | Event broker (+ mgmt UI :15672) | 5672 | transient (quorum queue) |
 | `redis` | Cache (not yet consumed) | 6379 | transient |
 | `fakeexternals` | Mock Finance/Inventory | 5090 | stateless mock |
+
+Two more services exist **only in the prod stack** (`infra/docker-compose.prod.yml`): `traefik`
+(the TLS edge and only public ingress, ports 80/443) and `frontend` (the built Angular SPA served
+by nginx at the site root). Locally the SPA runs from the Angular dev server instead — see
+[local-development.md](local-development.md).
 
 The API and Worker hold **no durable state** — they can be killed and restarted
 freely. All business state lives in Postgres.
@@ -63,8 +72,10 @@ curl -s http://localhost:5080/health/ready                                    # 
 
 `200 Healthy` / `503 Unhealthy`. The Worker has no HTTP server — its liveness is
 the process plus its broker connection (it logs `Listening for integration events
-on queue 'companyops.worker'` once connected). **(Phase 11)** wire orchestrator
-liveness/readiness probes to these endpoints.
+on queue 'companyops.worker'` once connected). **(open)** nothing scrapes these endpoints in
+either stack — Postgres and RabbitMQ have compose healthchecks, `api`/`worker` do not, so an
+unhealthy app tier is not auto-restarted. Wiring the probes is a follow-up
+([production-readiness.md](production-readiness.md) §4).
 
 ## Logs
 
@@ -96,12 +107,14 @@ Npgsql / RabbitMQ). Export is environment-driven:
 - **`OTEL_EXPORTER_OTLP_ENDPOINT` set:** export via OTLP to that collector.
 
 ```bash
-# Point the stack at an OTLP collector (Phase 11 wires a real one)
+# Point the stack at an OTLP collector
 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
 ```
 
-**(Phase 11)** stand up a collector + backend (e.g. Prometheus/Tempo/Grafana or a
-managed APM) and set the endpoint per service.
+The prod stack passes `OTEL_EXPORTER_OTLP_ENDPOINT` through to `api` and `worker`
+(`infra/docker-compose.prod.yml`, optional `otel_exporter_otlp_endpoint` in the Ansible vars), so
+the wiring is there — but **(open)** no collector or backend is deployed, so nothing is stored or
+queried today. Standing one up (Prometheus/Tempo/Grafana or a managed APM) is a follow-up.
 
 ## Inspecting the broker
 
@@ -157,10 +170,18 @@ Diagnose with [troubleshooting.md](troubleshooting.md); these are the *actions*.
   [troubleshooting.md](troubleshooting.md). The API is the resource server; it does
   not mint tokens, so this is a Keycloak/config issue, not an API restart.
 
-## Known gaps / Phase 11 follow-ups
+## Known gaps
 
-- No alerting, dashboards, or metrics backend yet (console/OTLP only).
-- No orchestrated health probes (endpoints exist; nothing scrapes them).
+Open in **both** stacks, including the deployed one. Tiered in
+[future-improvements.md](future-improvements.md), tracked in
+[production-readiness.md](production-readiness.md).
+
+- No alerting, dashboards, or metrics backend (the OTLP endpoint is wired but points nowhere).
+- No health probes (endpoints exist; nothing scrapes them, and `api`/`worker` have no compose
+  healthcheck).
 - DB-level grants so the app user cannot `UPDATE/DELETE audit_logs` (see
   [security.md](security.md)).
-- Backup automation + restore drills — see [backup-restore.md](backup-restore.md).
+- **Backups are automated** — the Ansible deploy installs a nightly `pg_dump` cron with 14-day
+  retention — but they are **unencrypted, on the same VM, and the restore drill has not been run
+  against them**; the Keycloak database is not in the dump. See
+  [backup-restore.md](backup-restore.md).
